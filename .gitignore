@@ -1,0 +1,4 @@
+## Files/Folders to ignore
+.*.swp
+bin
+resources
