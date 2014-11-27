@@ -1,9 +1,9 @@
 // File RemoteData.cpp
 // Contains the implementation for the class RemoteData
 
-#include "RemoteData.h"
+#include "transaction/RemoteData.h"
 // Factory needs the children to be fully declared
-#include "RemoteDataHttp.h"
+#include "transaction/RemoteDataHttp.h"
 
 // The factory method. It takes in a fullUrl and returns a
 // pointer to a RemoteData Object of the appropriate type.

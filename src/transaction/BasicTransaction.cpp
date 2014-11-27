@@ -1,4 +1,4 @@
-#include "BasicTransaction.h"
+#include "transaction/BasicTransaction.h"
 
 BasicTransaction::BasicTransaction(RemoteData* rdata,
         const Range& range)
@@ -9,11 +9,11 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
     m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0) { mptr_response = new boost::asio::streambuf; }
 
-static Basictransaction* BasicTransaction::factory(RemoteData* rdata,
+/*static Basictransaction* BasicTransaction::factory(RemoteData* rdata,
         const Range& range = Range(0,0)) {
     return new BasicTransaction;
 
-}
+}*/
 
 void BasicTransaction::registerReader(
         boost::function<void (boost::asio::streambuf&)>& bytereader) {

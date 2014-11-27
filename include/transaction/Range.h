@@ -4,7 +4,7 @@
 #ifndef __CO_RANGE__
 #define __CO_RANGE__
 #include<iostream>
-#include "ex.h"
+#include "common/ex.h"
 
 // Class Range
 // Represents a range or chunk of the file being downloaded.

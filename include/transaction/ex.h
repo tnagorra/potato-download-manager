@@ -5,7 +5,7 @@
 
 #ifndef DOWNLOAD_EXCEPTION_H
 #define DOWNLOAD_EXCEPTION_H
-#include "ex.h"
+#include "common/ex.h"
 
 // Namesepace ex
 // This is the namespace which contains all exception classes.

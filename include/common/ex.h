@@ -42,6 +42,8 @@
 #define Throw(...) GET_MACRO(__VA_ARGS__, Throw3, Throw2, Throw1)\
         (__VA_ARGS__)
 
+#define print(thing) std::cout<<thing<<std::endl;
+
 // Namesepace ex
 // This is the namespace which contains all exception classes.
 namespace ex{

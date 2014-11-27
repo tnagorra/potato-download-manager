@@ -1,11 +1,11 @@
 #include <typeinfo>
 #include <iostream>
 #include <boost/asio.hpp>
-#include "ex.h"
-#include "exDownload.h"
-#include "Range.h"
-#include "RemoteDataHttp.h"
-#include "HttpTransaction.h"
+#include "common/ex.h"
+#include "transaction/ex.h"
+#include "transaction/Range.h"
+#include "transaction/RemoteDataHttp.h"
+#include "transaction/HttpTransaction.h"
 
 void reader(boost::asio::streambuf& buf) {
     std::cout<<&buf;

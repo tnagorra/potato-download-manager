@@ -7,7 +7,7 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/chrono.hpp>
 
-#include "HttpTransaction.h"
+#include "transaction/HttpTransaction.h"
 
 using boost::asio::ip::tcp;
 template class HttpTransaction<PlainSock>;
@@ -194,6 +194,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
         clearProgress();
         if (rd->scheme()==mptr_rdata->scheme()) {
             mptr_rdata->fullUrl(location);
+
         } else {
             RemoteDataHttp* rdx = dynamic_cast<RemoteDataHttp*>(rd);
 

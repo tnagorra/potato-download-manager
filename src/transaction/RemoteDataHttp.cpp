@@ -1,7 +1,7 @@
 // File RemoteDataHttp.cpp
 // Contains the implementation for the class RemoteDataHttp
 
-#include "RemoteDataHttp.h"
+#include "transaction/RemoteDataHttp.h"
 
 // Constructor
 RemoteDataHttp::RemoteDataHttp(const std::string& fullUri,

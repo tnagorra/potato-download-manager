@@ -13,11 +13,11 @@
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
 
-#include "ex.h"
-#include "exDownload.h"
-#include "Transaction.h"
-#include "Range.h"
-#include "RemoteDataHttp.h"
+#include "common/ex.h"
+#include "transaction/ex.h"
+#include "transaction/Transaction.h"
+#include "transaction/Range.h"
+#include "transaction/RemoteDataHttp.h"
 
 
 // class HttpTransaction

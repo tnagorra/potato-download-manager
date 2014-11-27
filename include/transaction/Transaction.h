@@ -6,8 +6,8 @@
 
 #include <boost/asio/ssl.hpp>
 
-#include "BasicTransaction.h"
-#include "SocketTypes.h"
+#include "transaction/BasicTransaction.h"
+#include "transaction/SocketTypes.h"
 
 using boost::asio::ip::tcp;
 

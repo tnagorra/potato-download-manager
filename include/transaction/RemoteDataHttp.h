@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 #include <map>
-#include "RemoteData.h"
+#include "transaction/RemoteData.h"
 
 // Class RemoteDataHttp
 // This class represents a TCP-HTTP connection to a remote server.

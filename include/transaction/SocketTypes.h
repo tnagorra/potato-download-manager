@@ -6,7 +6,6 @@
 
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
-#include <iostream>
 
 using boost::asio::ip::tcp;
 namespace ssl = boost::asio::ssl;
@@ -39,7 +38,6 @@ struct SockTraits<SSLSock> {
         ctx.set_default_verify_paths();
 
         SSLSock* ssock = new SSLSock(*ios,ctx);
-        std::cout<<"\na transformation happens\n";
         return ssock;
     }
 };

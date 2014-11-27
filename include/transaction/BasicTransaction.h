@@ -10,10 +10,10 @@
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
 
-#include "ex.h"
-#include "exDownload.h"
-#include "RemoteData.h"
-#include "Range.h"
+#include "common/ex.h"
+#include "transaction/ex.h"
+#include "transaction/RemoteData.h"
+#include "transaction/Range.h"
 
 using boost::asio::ip::tcp;
 
