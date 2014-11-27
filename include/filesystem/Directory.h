@@ -3,8 +3,8 @@
 
 #ifndef __CO_DIRECTORY__
 #define __CO_DIRECTORY__
-#include"Node.h"
-#include"File.h"
+#include"filesystem/Node.h"
+#include"filesystem/File.h"
 
 // Class Directory
 // Represents a directory, which is a filesystem node with can

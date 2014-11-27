@@ -1,7 +1,7 @@
 // File Directory.cpp
 // Cointains implementation for class Directory
 
-#include "Directory.h"
+#include "filesystem/Directory.h"
 
 // Asserts that the filename is clean for portability.
 // That means the function does nothing if the filename is

@@ -3,7 +3,7 @@
 #ifndef __CO_OBJECT__
 #define __CO_OBJECT__
 #include <boost/filesystem.hpp>
-#include "exFile.h"
+#include "filesystem/ex.h"
 
 namespace fs = boost::filesystem;
 

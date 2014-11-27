@@ -1,7 +1,7 @@
 // File Node.cpp
 // Cointains implementation for class Node
 
-#include "Node.h"
+#include "filesystem/Node.h"
 
 // Asserts that the filename is clean for portability.
 // That means the function checks if the filename is

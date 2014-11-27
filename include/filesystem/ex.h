@@ -5,7 +5,7 @@
 
 #ifndef __CO_EX_FILE__
 #define __CO_EX_FILE__
-#include"ex.h"
+#include"common/ex.h"
 
 // Namesepace ex
 // This is the namespace which contains all exception classes.

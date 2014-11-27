@@ -3,8 +3,8 @@
 
 #ifndef __CO_FILE__
 #define __CO_FILE__
-#include "Node.h"
-#include "Directory.h"
+#include "filesystem/Node.h"
+#include "filesystem/Directory.h"
 #include <fstream>
 
 // Let's be aware of Directory's existence
