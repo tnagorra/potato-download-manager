@@ -72,7 +72,7 @@ fs::path Node::parentpath() const {
 // Returns what type the Node is
 Node::Type Node::what() const {
    if( !exists() )
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
     if(fs::is_directory(m_name))
         return DIRECTORY;
     else if (fs::is_regular_file(m_name))

@@ -21,11 +21,11 @@ class Directory : public Node {
         Directory(const fs::path& name);
 
         // Lists files or directories and returns the vector of string
-        // Throws fs::filesystem_error, ex::file::NotThere
+        // Throws fs::filesystem_error, ex::filesystem::NotThere
         std::vector<std::string> list(Type type = FILE, bool onlyfilename = false);
 
         // Lists files or directoires recursively and returns the vector of string
-        // Throws fs::filesystem_error, ex::file::NotThere
+        // Throws fs::filesystem_error, ex::filesystem::NotThere
         std::vector<std::string> listrecursive(Type type = FILE, bool onlyfilename = false);
 
         // Returns if the Directory is empty
@@ -42,17 +42,17 @@ class Directory : public Node {
         int remove(Conflict c = LEAVE);
 
         // Copies Directories
-        // Throws fs::filesystem_error, ex::file::AlreadyThere,
-        // ex::file::NotThere, ex::Invalid
+        // Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+        // ex::filesystem::NotThere, ex::Invalid
         void copy(const fs::path& tos,Conflict c = LEAVE);
 
         // Moves a Directory
-        // Throws fs::filesystem_error, ex::file::AlreadyThere,
-        // and ex::file::NotThere
+        // Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+        // and ex::filesystem::NotThere
         void move(const fs::path& tos, Conflict c = LEAVE);
 
        // Returns content size of Directories
-        // Throws fs::file::NotThere, ex::Invalid
+        // Throws fs::filesystem::NotThere, ex::Invalid
         uintmax_t size();
 };
 

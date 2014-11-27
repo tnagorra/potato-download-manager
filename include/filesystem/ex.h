@@ -14,9 +14,9 @@ namespace ex{
     // Namesepace ex::file
     // This is the namespace which contains classes for filesystem-
     // related errors.
-    namespace file{
+    namespace filesystem{
 
-        // Class ex::file::NotThere
+        // Class ex::filesystem::NotThere
         // Derives from Error and says that a file or directory is
         // not there, when it should.
         class NotThere : public Error {
@@ -28,7 +28,7 @@ namespace ex{
                     : Error("\""+name+"\" is not there.", o) { }
         };
 
-        // Class ex::file::AlreadyThere
+        // Class ex::filesystem::AlreadyThere
         // Derives from Error and says that a file or directory is
         // already there, when it should not have been.
         class AlreadyThere : public Error {
@@ -41,7 +41,7 @@ namespace ex{
                     : Error("\""+name+"\" is already there.",o) { }
         };
 
-        // Class ex::file::End
+        // Class ex::filesystem::End
         // Derives from Error and says that the end of a file has
         // been reached unexpectedly.
         class End : public Error {

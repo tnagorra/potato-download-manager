@@ -71,19 +71,19 @@ int File::remove() {
 }
 
 // Copies a File to another file
-// Throws fs::filesystem_error, ex::file::AlreadyThere,
-// ex::file::NotThere
+// Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+// ex::filesystem::NotThere
 void File::copy(const fs::path& tos,Conflict c) {
     fs::path toss = tos;
     if (!exists())
-        Throw(ex::file::NotThere,path().string());
+        Throw(ex::filesystem::NotThere,path().string());
     // To consider paths like "hari/shiva/"
     Node to(tos);
     if( to.exists() && to.what() == DIRECTORY || (to.filename() == "." || to.filename() == ".."))
         toss /= filename();
     File too(toss);
     if( too.exists() && c==LEAVE)
-        Throw(ex::file::AlreadyThere,too.path().string());
+        Throw(ex::filesystem::AlreadyThere,too.path().string());
     close();
     if( too.path().has_parent_path())
         Directory(too.parentpath().string()).create();
@@ -91,18 +91,18 @@ void File::copy(const fs::path& tos,Conflict c) {
 }
 
 // Moves a file
-// Throws fs::filesystem_error, ex::file::AlreadyThere,
-// ex::file::NotThere
+// Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+// ex::filesystem::NotThere
 void File::move(const fs::path& tos,Conflict c) {
     fs::path toss = tos;
     if (!exists())
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
     Node to(tos);
     if( to.exists() && to.what() == DIRECTORY || (to.filename() == "." || to.filename() == ".."))
         toss /= filename();
     File too(toss);
     if( too.exists() && c==LEAVE)
-        Throw(ex::file::AlreadyThere,too.path().string());
+        Throw(ex::filesystem::AlreadyThere,too.path().string());
     close();
     if( too.path().has_parent_path())
         Directory(too.parentpath().string()).create();
@@ -158,27 +158,27 @@ void File::open(State mode) {
 }
 
 // Creates an empty File
-// Throws ex::file::AlreadyThere
+// Throws ex::filesystem::AlreadyThere
 void File::write(Conflict c) {
     if( c == LEAVE && exists())
-        Throw(ex::file::AlreadyThere,m_name.string());
+        Throw(ex::filesystem::AlreadyThere,m_name.string());
     open(WRITE);
 }
 
 // Creates a File using string, B+T
-// Throws ex::file::AlreadyThere
+// Throws ex::filesystem::AlreadyThere
 void File::write(const std::string& data,Conflict c) {
     if( c == LEAVE && exists())
-        Throw(ex::file::AlreadyThere,m_name.string());
+        Throw(ex::filesystem::AlreadyThere,m_name.string());
     open(WRITE);
     m_stream << data;
 }
 
 // Creates a File using istream, B+T ??
-// Throws ex::file::AlreadyThere
+// Throws ex::filesystem::AlreadyThere
 void File::write(std::istream& data,Conflict c,uintmax_t n){
     if( c == LEAVE && exists())
-        Throw(ex::file::AlreadyThere,m_name.string());
+        Throw(ex::filesystem::AlreadyThere,m_name.string());
     open(WRITE);
     streamCopy(data, n);
 }
@@ -203,31 +203,31 @@ void File::append(std::istream& data,uintmax_t n){
 }
 
 // Returns the line string from an existing File, T
-// Throw ex::Error, ex::End, ex::file::NotThere
+// Throw ex::Error, ex::End, ex::filesystem::NotThere
 std::string File::readLine() {
     if (!exists())
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
     if(m_mode == BINARY)
         Throw(ex::Error,"Reading binary file line by line.");
     open(READ);
     std::string name;
     if( !std::getline(m_stream,name) )
-        Throw(ex::file::End,m_name.string());
+        Throw(ex::filesystem::End,m_name.string());
     return name;
 }
 
 // Returns a word string from an existing File, T
-// Throw ex::Error, ex::End, ex::file::NotThere
+// Throw ex::Error, ex::End, ex::filesystem::NotThere
 std::string File::readWord() {
     if (!exists())
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
     if(m_mode == BINARY)
         Throw(ex::Error,"Reading binary file word by word.");
     open(READ);
     std::string name;
     m_stream >> name;
     if(name.length() == 0)
-        Throw(ex::file::End,m_name.string());
+        Throw(ex::filesystem::End,m_name.string());
     return name;
 }
 

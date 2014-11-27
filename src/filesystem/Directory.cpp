@@ -23,10 +23,10 @@ Directory::Directory(const fs::path& name) : Node(name) {
 }
 
 // Lists files and returns the vector of string
-// Throws fs::filesystem_error, ex::file::NotThere
+// Throws fs::filesystem_error, ex::filesystem::NotThere
 std::vector<std::string> Directory::list(Type type, bool onlyfilename){
     if (!exists())
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
     std::vector<std::string> myList;
     for ( fs::directory_iterator end, dir(m_name); dir != end; ++dir ) {
         Node node(dir->path());
@@ -40,10 +40,10 @@ std::vector<std::string> Directory::list(Type type, bool onlyfilename){
 }
 
 // Lists files and returns the vector of string
-// Throws fs::filesystem_error, ex::file::NotThere
+// Throws fs::filesystem_error, ex::filesystem::NotThere
 std::vector<std::string> Directory::listrecursive(Type type, bool onlyfilename){
     if (!exists())
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
     std::vector<std::string> myList;
     for ( fs::recursive_directory_iterator end, dir(m_name); dir != end; ++dir ) {
         Node node(dir->path());
@@ -83,14 +83,14 @@ int Directory::remove(Conflict c){
 }
 
 // Copies Directories
-// Throws fs::filesystem_error, ex::file::AlreadyThere,
-// ex::file::NotThere, ex::Invalid
+// Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+// ex::filesystem::NotThere, ex::Invalid
 void Directory::copy(const fs::path& tos,Conflict c){
     Directory to(tos);
     if (!exists())
-        Throw(ex::file::NotThere,path().string());
+        Throw(ex::filesystem::NotThere,path().string());
     if ( to.exists() && !to.isEmpty() && c==LEAVE)
-        Throw(ex::file::AlreadyThere,to.path().string());
+        Throw(ex::filesystem::AlreadyThere,to.path().string());
     // To consider paths like "hari/shiva/"
     if( to.filename() == "." || to.filename() == "..")
         to.path( to.path() / filename());
@@ -112,14 +112,14 @@ void Directory::copy(const fs::path& tos,Conflict c){
 }
 
 // Moves a Directory
-// Throws fs::filesystem_error, ex::file::AlreadyThere,
-// and ex::file::NotThere
+// Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+// and ex::filesystem::NotThere
 void Directory::move(const fs::path& tos, Conflict c){
     Directory to(tos);
     if (!exists())
-        Throw(ex::file::NotThere,path().string());
+        Throw(ex::filesystem::NotThere,path().string());
     if ( to.exists() && !to.isEmpty() && c==LEAVE)
-        Throw(ex::file::AlreadyThere,to.path().string());
+        Throw(ex::filesystem::AlreadyThere,to.path().string());
     // To consider paths like "hari/shiva/"
     if( to.filename() == "." || to.filename() == "..")
         to.path( to.path() / filename());
@@ -130,10 +130,10 @@ void Directory::move(const fs::path& tos, Conflict c){
 }
 
 // Returns content size of Directories
-// Throws fs::file::NotThere, ex::Invalid
+// Throws fs::filesystem::NotThere, ex::Invalid
 uintmax_t Directory::size(){
     if (!exists())
-        Throw(ex::file::NotThere,m_name.string());
+        Throw(ex::filesystem::NotThere,m_name.string());
 
     uintmax_t si = 0;
     std::vector<std::string> filelist = listrecursive(FILE);

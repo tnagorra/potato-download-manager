@@ -72,25 +72,25 @@ class File : public Node {
         int remove();
 
         // Copies a File to another file
-        // Throws fs::filesystem_error, ex::file::AlreadyThere,
-        // ex::file::NotThere
+        // Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+        // ex::filesystem::NotThere
         void copy(const fs::path& tos,Conflict c = LEAVE);
 
         // Moves a file
-        // Throws fs::filesystem_error, ex::file::AlreadyThere,
-        // ex::file::NotThere
+        // Throws fs::filesystem_error, ex::filesystem::AlreadyThere,
+        // ex::filesystem::NotThere
         void move(const fs::path& to,Conflict c = LEAVE);
 
         // Writes an empty File
-        // Throws ex::file::AlreadyThere
+        // Throws ex::filesystem::AlreadyThere
         void write(Conflict c = LEAVE);
 
         // Writes a File with content data, B+T
-        // Throws ex::file::AlreadyThere
+        // Throws ex::filesystem::AlreadyThere
         void write(const std::string& data,Conflict c = LEAVE);
 
         // Writes a File with content data, B+T ??
-        // Throws ex::file::AlreadyThere
+        // Throws ex::filesystem::AlreadyThere
         void write(std::istream& data,Conflict c=LEAVE,uintmax_t n=0);
 
         // Appends to a existing File, B+T
@@ -103,11 +103,11 @@ class File : public Node {
         void append(std::istream& data,uintmax_t n=0);
 
         // Returns the line string from an existing File, T
-        // Throw ex::Error, ex::End, ex::file::NotThere
+        // Throw ex::Error, ex::End, ex::filesystem::NotThere
         std::string readLine();
 
         // Returns a word string from an existing File, T
-        // Throw ex::Error, ex::End, ex::file::NotThere
+        // Throw ex::Error, ex::End, ex::filesystem::NotThere
         std::string readWord();
 };
 
