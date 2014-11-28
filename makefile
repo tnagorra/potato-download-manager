@@ -10,9 +10,9 @@ CFLAGS=-c -I$(INCDIR)/ --std=c++11
 all: filesystem transaction
 
 ## Variables and rules for FILE
-SOURCES_FILE:= Node.cpp File.cpp Directory.cpp ../filesystem.cpp
+SOURCES_FILE:= Node.cpp File.cpp Directory.cpp ../filesystem.cpp ../common/helper.cpp
 FSOURCES_FILE:=$(addprefix $(SRCDIR)/filesystem/,$(SOURCES_FILE))
-HEADERS_FILE:=Node.h File.h Directory.h
+HEADERS_FILE:=Node.h File.h Directory.h ../common/helper.h
 FHEADERS_FILE:=$(addprefix $(INCDIR)/filesystem/,$(HEADERS_FILE))
 OBJECTS_FILE:=$(SOURCES_FILE:.cpp=.o)
 FOBJECTS_FILE:=$(addprefix $(OBJDIR)/filesystem/,$(OBJECTS_FILE))
@@ -48,7 +48,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR) $(BINDIR)
 	$(CC) -o $@ $< $(CFLAGS)
 
 $(OBJDIR): | $(BINDIR)
-	mkdir $(OBJDIR) $(OBJDIR)/filesystem $(OBJDIR)/transaction
+	mkdir $(OBJDIR) $(OBJDIR)/filesystem $(OBJDIR)/transaction $(OBJDIR)/common
 
 $(BINDIR):
 	mkdir $(BINDIR)
