@@ -19,6 +19,10 @@ typedef tcp::socket PlainSock;
 // A traits struct for the Sock classes.
 template <typename SocketType> struct SockTraits;
 
+// TODO TODO
+// separate the socket-creation and management code from
+// the traits structure.
+
 template <>
 struct SockTraits<SSLSock> {
     typedef PlainSock antiSock;

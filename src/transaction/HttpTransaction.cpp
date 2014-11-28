@@ -37,7 +37,7 @@ void HttpTransaction<SocketType>::stop() {
 }
 
 template <typename SocketType>
-void HttpTransaction<SocketType>::fuckyou() {
+void HttpTransaction<SocketType>::readToSink() {
     boost::asio::streambuf dumie;
     if (mptr_socket->available())
         boost::asio::read(*mptr_socket, dumie,
@@ -46,7 +46,7 @@ void HttpTransaction<SocketType>::fuckyou() {
 }
 
 template <>
-void HttpTransaction<SSLSock>::fuckyou() {
+void HttpTransaction<SSLSock>::readToSink() {
     boost::asio::streambuf dumie;
     if (mptr_socket->lowest_layer().available())
         boost::asio::read(*mptr_socket, dumie,
@@ -56,7 +56,7 @@ void HttpTransaction<SSLSock>::fuckyou() {
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::createAndSendRequest() {
-    fuckyou();
+    readToSink();
     // A streambuf for buffering the request
     boost::asio::streambuf request;
     // And a stream to write to it
@@ -189,12 +189,23 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
         // Redirect
         std::string location = m_respHeaders["location"];
         RemoteData* rd = RemoteData::factory(location);
-        fuckyou();
+        readToSink();
 
         clearProgress();
         if (rd->scheme()==mptr_rdata->scheme()) {
+            // We need the old servername, to find out if a new
+            // connection needs to be made.
+            std::string oldServer = mptr_rdata->server();
+            // Set fullUrl to the new location
             mptr_rdata->fullUrl(location);
-
+            // If we have been redirected to a different server,
+            // everything needs to be restarted
+            if (oldServer!=mptr_rdata->server()) {
+                delete mptr_socket;
+                mptr_socket = SockTraits<SocketType>::transform(NULL);
+            }
+            // Throwout, to restart our workerMain
+            throw this;
         } else {
             RemoteDataHttp* rdx = dynamic_cast<RemoteDataHttp*>(rd);
 
@@ -258,7 +269,10 @@ void HttpTransaction<SocketType>::workerMain() try {
     writeOut();
 } catch (HttpTransaction<antiSockType>* radar) {
     radar->workerMain();
+} catch (HttpTransaction<SocketType>* self) {
+    self->workerMain();
 }
+
 //} catch (boost::thread_interrupted& dummy) { std::cout<<";)\n"; }
 
 // End file HttpTransaction.cpp

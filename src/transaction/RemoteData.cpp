@@ -88,6 +88,7 @@ RemoteData::Protocol RemoteData::schemeFromString(const std::string&
 // a lot of work, like checking the validity of the url, separating
 // the components and url-encoding special characters.
 // TODO This method has become very dense! Separate it to a class?
+// TODO TODO decide what to do for scheme://ip:port/ type urls
 void RemoteData::fullUrl(const std::string& fUrl) {
     m_fullUrl = fUrl;
     m_scheme = Protocol::none;
@@ -160,7 +161,7 @@ void RemoteData::fullUrl(const std::string& fUrl) {
     // Check if a disallowed character is in m_server.
     for (std::string::iterator it=m_server.begin(); it!=m_server.end();
             it++)
-        if (!(isalnum(*it) || (*it)=='.' || (*it)=='-'))
+        if (!(isalnum(*it) || (*it)=='.' || (*it)=='-' || (*it)==':'))
             Throw(ex::Invalid,"Server",m_server);
 
     // Percent-encode any special characters in the path string.

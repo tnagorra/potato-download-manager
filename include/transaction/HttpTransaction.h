@@ -38,7 +38,7 @@ class HttpTransaction : public Transaction<SocketType> {
         // these are smaller functions that do specific actions
         // inside the worker thread
         void createAndSendRequest();
-        void fuckyou();
+        void readToSink();
         void waitData();
         void receiveHeaders();
         void handleStatusCode(unsigned int code);
