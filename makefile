@@ -10,19 +10,18 @@ CFLAGS=-c -I$(INCDIR)/ --std=c++11
 all: filesystem transaction
 
 ## Variables and rules for FILE
-SOURCES_FILE:=filesystem.cpp filesystem/Node.cpp filesystem/File.cpp filesystem/Directory.cpp
-FSOURCES_FILE:=$(addprefix $(SRCDIR)/,$(SOURCES_FILE))
-HEADERS_FILE:=common/ex.h filesystem/ex.h filesystem/Node.h filesystem/File.h filesystem/Directory.h
-FHEADERS_FILE:=$(addprefix $(INCDIR)/,$(HEADERS_FILE))
+SOURCES_FILE:= Node.cpp File.cpp Directory.cpp ../filesystem.cpp
+FSOURCES_FILE:=$(addprefix $(SRCDIR)/filesystem/,$(SOURCES_FILE))
+HEADERS_FILE:=Node.h File.h Directory.h
+FHEADERS_FILE:=$(addprefix $(INCDIR)/filesystem/,$(HEADERS_FILE))
 OBJECTS_FILE:=$(SOURCES_FILE:.cpp=.o)
-FOBJECTS_FILE:=$(addprefix $(OBJDIR)/,$(OBJECTS_FILE))
+FOBJECTS_FILE:=$(addprefix $(OBJDIR)/filesystem/,$(OBJECTS_FILE))
 EXECFILE:=$(BINDIR)/filesystem
 LDFLAGS_FILE=-lboost_system -lboost_filesystem
 
 filesystem: $(EXECFILE) $(FHEADERS_FILE)
-
 $(EXECFILE): $(FOBJECTS_FILE)
-	$(CC) $(FOBJECTS_FILE) -o $@ $(LDFLAGS_FILE)
+	$(CC) $(FOBJECTS_FILE) -g -o $@ $(LDFLAGS_FILE)
 
 ## Variables and rules for DOWN
 SOURCES_DOWN:=HttpTransaction.cpp Transaction.cpp BasicTransaction.cpp\
