@@ -19,11 +19,11 @@ HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
     : Transaction<SocketType>(rdata,sock,range)
 { }
 
-template <typename SocketType>
+/*template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
         antiSockType* sock, const Range& range)
     : Transaction<SocketType>(rdata,sock,range)
-{ }
+{ }*/
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::start() {
@@ -124,12 +124,6 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     // Wait for the headers to arrive
     waitData();
 
-    if (SockTraits<SocketType>().ssl)
-        std::cout<<"\n\nWe have ssl\n\n";
-    else
-        std::cout<<"\n\nWe D0N'T have ssl\n\n";
-
-
     m_state = State::ready;
     // Once bytes are available, read some (the status line)
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n");
@@ -138,11 +132,6 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     // Extract parts from the status line
     std::istream resp_strm(mptr_response);
     std::string http_version;
-    if (false ) {
-        std::getline(resp_strm, http_version);
-        std::cout<<"hereyougo\n"<<http_version<<std::endl;
-        Throw(ex::download::BadResponse);
-    }
     resp_strm>>http_version;
     unsigned int status_code;
     resp_strm>>status_code;
@@ -159,7 +148,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     m_statusLine = http_version+" "+
         boost::lexical_cast<std::string>(status_code)+status_message;
-    print(m_statusLine);
+    //print(m_statusLine);
 
     // Read of all the headers to the buffer
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n\r\n");
@@ -167,7 +156,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     std::string header; size_t colon;
     while(std::getline(resp_strm, header) && header!="\r") {
-        print(header);
+        //print(header);
         if ((colon = header.find(':'))!=std::string::npos) {
             m_respHeaders[boost::to_lower_copy(header.substr(0,colon))]
                 = header.substr(colon+2,header.size()-colon-3);
@@ -212,7 +201,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
             HttpTransaction<SocketType> old = *this;
             HttpTransaction<antiSockType>* antiSock =
                 new(this) HttpTransaction<antiSockType>(
-                        rdx, mptr_socket, m_range);
+                        rdx, NULL, m_range);
 
             *dynamic_cast<Transaction<antiSockType>*>(antiSock) =
                 *dynamic_cast<Transaction<SocketType>*>(&old);

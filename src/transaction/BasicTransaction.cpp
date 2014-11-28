@@ -1,4 +1,6 @@
 #include "transaction/BasicTransaction.h"
+// The factory method needs our children to be fully defined
+#include "transaction/HttpTransaction.h"
 
 BasicTransaction::BasicTransaction(RemoteData* rdata,
         const Range& range)
@@ -9,11 +11,31 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
     m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0) { mptr_response = new boost::asio::streambuf; }
 
-/*static Basictransaction* BasicTransaction::factory(RemoteData* rdata,
-        const Range& range = Range(0,0)) {
-    return new BasicTransaction;
+BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
+        const Range& range) {
+    if (!rdata)
+        return NULL;
+    BasicTransaction* product;
+    switch (rdata->scheme()) {
+        case RemoteData::Protocol::http:
+            product = new HttpTransaction<PlainSock>(
+                    dynamic_cast<RemoteDataHttp*>(rdata),NULL,range);
+            break;
+        case RemoteData::Protocol::https:
+            product = new HttpTransaction<SSLSock>(
+                    dynamic_cast<RemoteDataHttp*>(rdata),NULL,range);
+            break;
+        default:
+            product = NULL;
+    }
+    return product;
+}
 
-}*/
+BasicTransaction* BasicTransaction::factory(std::string url,
+        const Range& range) {
+    RemoteData* rdata_url = RemoteData::factory(url);
+    return factory(rdata_url, range);
+}
 
 void BasicTransaction::registerReader(
         boost::function<void (boost::asio::streambuf&)>& bytereader) {

@@ -12,7 +12,20 @@ void reader(boost::asio::streambuf& buf) {
 }
 
 int main(int argc, char* argv[]) try {
-    RemoteData* rd = RemoteData::factory(argv[1]);
+    boost::function<void (boost::asio::streambuf&)> rdr;
+    rdr = reader;
+
+    BasicTransaction* bTrans = BasicTransaction::factory(url);
+    bTrans->registerReader(rdr);
+    bTrans->start();
+    while (!bTrans->complete());
+    return 0;
+
+} catch (ex::Error& ex) {
+    std::cout<<ex.what()<<std::endl;
+}
+
+    /*RemoteData* rd = RemoteData::factory(argv[1]);
     boost::function<void (boost::asio::streambuf&)> rdr;
     rdr = reader;
     RemoteDataHttp* fku = static_cast<RemoteDataHttp*>(rd);
@@ -37,7 +50,5 @@ int main(int argc, char* argv[]) try {
             return 1;
             break;
     }
-    return 0;
-} catch (ex::Error& ex) {
-    std::cout<<ex.what()<<std::endl;
-}
+    return 0;*/
+

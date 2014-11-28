@@ -49,8 +49,8 @@ class Transaction : public BasicTransaction {
                 const Range& range = Range(0,0));
 
         // Overload in case a different socket type is provided
-        Transaction(RemoteData* rdata, antiSockType* asock,
-                const Range& range = Range(0,0));
+        //Transaction(RemoteData* rdata, antiSockType* asock,
+        //        const Range& range = Range(0,0));
 
         // Destructor
         virtual ~Transaction() {}

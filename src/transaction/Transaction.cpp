@@ -14,12 +14,14 @@ Transaction<SocketType>::Transaction(RemoteData* rdata,
         mptr_socket = SockTraits<SocketType>::transform(NULL);
 }
 
-template <typename SocketType>
+// Dont think we really need this. And things are simple for the
+// factory without it.
+/*template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata,
         antiSockType* sock, const Range& range)
     : BasicTransaction(rdata,range) {
     mptr_socket = SockTraits<SocketType>::transform(sock);
-}
+}*/
 
 template <typename SocketType>
 void Transaction<SocketType>::resolveHost() {
@@ -38,9 +40,9 @@ void Transaction<SSLSock>::resolveHost() {
     // Return, if we already have an endpoint (meaning we are already
     // connected).
     if (mptr_socket->lowest_layer().remote_endpoint(ec)!=
-            tcp::endpoint()) return;
-    else
-        resolveHostMain();
+            tcp::endpoint()) {
+        return;
+    } else resolveHostMain();
 }
 
 template <typename SocketType>
@@ -129,15 +131,10 @@ void Transaction<SSLSock>::connectHost() {
     mptr_socket->lowest_layer().set_option(tcp::no_delay(true));
 
     // Perform SSL handshake and verify the remote host's certificate
-    try {
     mptr_socket->set_verify_mode(ssl::verify_peer);
     mptr_socket->set_verify_callback(
             ssl::rfc2818_verification(mptr_rdata->server()));
     mptr_socket->handshake(SSLSock::client);
-    } catch (boost::system::system_error& se) {
-        std::cout<<"Error on handshake\n";
-        std::cout<<se.what()<<std::endl;
-    }
 
     boost::this_thread::interruption_point();
 }

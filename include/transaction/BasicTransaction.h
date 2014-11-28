@@ -61,6 +61,9 @@ class BasicTransaction {
         static BasicTransaction* factory(RemoteData* rdata,
                 const Range& range = Range(0,0));
 
+        static BasicTransaction* factory(std::string url,
+                const Range& range = Range(0,0));
+
         // Destructor
         virtual ~BasicTransaction() {}
 
