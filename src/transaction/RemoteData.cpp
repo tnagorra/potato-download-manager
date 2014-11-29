@@ -22,7 +22,8 @@ RemoteData* RemoteData::factory(const std::string& fUrl) {
 }
 
 // Constructor
-RemoteData::RemoteData(const std::string& fUrl) {
+RemoteData::RemoteData(const std::string& fUrl)
+    : m_canPartial(Partial::unknown) {
     fullUrl(fUrl);
 }
 
@@ -68,6 +69,11 @@ std::string RemoteData::prettyName() const {
     return m_prettyName;
 }
 
+// Returns whether partial downloads are allowed
+RemoteData::Partial RemoteData::canPartial() const {
+    return m_canPartial;
+}
+
 // Return the Protocol:: enum from a string
 RemoteData::Protocol RemoteData::schemeFromString(const std::string&
         sch) const {
@@ -83,6 +89,11 @@ RemoteData::Protocol RemoteData::schemeFromString(const std::string&
 }
 
 // Setters
+
+// Sets whether partial downloads are allowed
+void RemoteData::canPartial(Partial can_partial) {
+    m_canPartial = can_partial;
+}
 
 // Set the Full Url of the resource. This method needs to do
 // a lot of work, like checking the validity of the url, separating

@@ -1,8 +1,6 @@
 #include <iostream>
 #include <algorithm>
 #include <functional>
-#include <cctype>
-#include <locale>
 
 #include <boost/lexical_cast.hpp>
 #include <boost/chrono.hpp>
@@ -208,18 +206,8 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
 
             *dynamic_cast<Transaction<antiSockType>*>(antiSock) =
                 *dynamic_cast<Transaction<SocketType>*>(&old);
+
             throw antiSock;
-            //Transaction<antiSockType>* btths =
-            //    reinterpret_cast<Transaction<antiSockType>*>(this);
-            //Transaction<SocketType>* btold =
-            //    reinterpret_cast<Transaction<SocketType>*>(&old);
-            //BasicTransaction* btths = this;
-            //BasicTransaction* btoth = antiSock;
-            //*btths = *btold;
-            //*this=old;
-        // dafuq?
-        // TODO
-        // Things are risky here
         }
         m_state = State::requesting;
     }

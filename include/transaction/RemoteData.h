@@ -20,6 +20,7 @@ class RemoteData {
 
     public:
         enum class Protocol { http, https, ftp, none };
+        enum class Partial { yes, no, unknown };
 
     protected:
         // Full URI of the Resource
@@ -32,6 +33,8 @@ class RemoteData {
         std::string m_path;
         // Pretty name
         std::string m_prettyName;
+        // Are partial requests allowed?
+        Partial m_canPartial;
 
     public:
         // The factory method. It takes in a fullUrl and returns a
@@ -56,7 +59,8 @@ class RemoteData {
         std::string path() const;
         // Returns the prettyName
         std::string prettyName() const;
-        // Returns the method
+        // Returns whether partial downloads are allowed
+        Partial canPartial() const;
 
         // Return the Protocol:: enum from a string
         Protocol schemeFromString(const std::string& sch) const;
@@ -64,6 +68,8 @@ class RemoteData {
         // Setters
         // Sets the fullUrl (and does a lot else)
         void fullUrl(const std::string& fUrl);
+        // Sets whether partial downloads are allowed
+        void canPartial(Partial can_partial);
 };
 
 #endif
