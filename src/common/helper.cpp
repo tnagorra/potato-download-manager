@@ -2,7 +2,7 @@
 
 std::string formatTime(uintmax_t sec) {
     if(sec == UINT_MAX)
-        return "DAFUQ";
+        return "dafuq!";
     std::string s;
     s = std::to_string(sec%60) + "s";
     sec /= 60;
@@ -47,7 +47,7 @@ std::string formatByte(uintmax_t byte){
         case 6: out << "EiB";break;
         case 7: out << "ZiB";break;
         case 8: out << "YiB";break;
-        default : out << "DAFUQ";
+        default : out << "dafuq!";
     }
     return out.str();
 }
@@ -65,4 +65,19 @@ std::string randomString(uintmax_t len) {
     for (int i = 0; i < len; ++i)
         s += alphanum[rand() % max];
     return s;
+}
+
+std::string md5(std::string text) {
+    // Hashing
+    unsigned char digest[MD5_DIGEST_LENGTH];
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+    MD5_Update(&ctx, text.c_str(), text.length());
+    MD5_Final(digest, &ctx);
+    // Converting the integer into hex
+    std::ostringstream out;
+    out << std::hex << std::setfill('0');
+    for (int i = 0; i < MD5_DIGEST_LENGTH; i++)
+        out << std::setw(2)  << (unsigned)digest[i];
+    return out.str();
 }
