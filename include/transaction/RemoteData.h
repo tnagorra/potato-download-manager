@@ -33,6 +33,7 @@ class RemoteData {
         std::string m_path;
         // Pretty name
         std::string m_prettyName;
+    private:
         // Are partial requests allowed?
         Partial m_canPartial;
 
