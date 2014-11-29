@@ -14,6 +14,7 @@ int main() try {
         std::cout << b.size() << std::endl;
         b.remove();
     }
+    std::cout << md5("hari") << std::endl;
 
     /*
     // Some Helper functions

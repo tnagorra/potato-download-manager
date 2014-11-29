@@ -17,7 +17,7 @@ FHEADERS_FILE:=$(addprefix $(INCDIR)/filesystem/,$(HEADERS_FILE))
 OBJECTS_FILE:=$(SOURCES_FILE:.cpp=.o)
 FOBJECTS_FILE:=$(addprefix $(OBJDIR)/filesystem/,$(OBJECTS_FILE))
 EXECFILE:=$(BINDIR)/filesystem
-LDFLAGS_FILE=-lboost_system -lboost_filesystem
+LDFLAGS_FILE=-lboost_system -lboost_filesystem -lcrypto
 
 filesystem: $(EXECFILE) $(FHEADERS_FILE)
 $(EXECFILE): $(FOBJECTS_FILE)

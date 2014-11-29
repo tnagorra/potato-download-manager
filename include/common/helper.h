@@ -3,6 +3,9 @@
 
 #ifndef __CO_HELPER__
 #define __CO_HELPER__
+extern "C" {
+#include <openssl/md5.h>
+}
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -28,11 +31,14 @@ inline double round(double num,uintmax_t n){
     return std::round(num*tmp)/tmp;
 }
 
+// Returns the md5 hashing of a text
+std::string md5(std::string text);
+
 // Helper to sort filenames according to numerical value
 /*
    inline bool numerically(std::string const & a, std::string const & b){
    return stoi(a) < stoi(b);
    }
-*/
+   */
 
 #endif
