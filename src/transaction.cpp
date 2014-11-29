@@ -1,6 +1,7 @@
 #include <typeinfo>
 #include <iostream>
 #include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 #include "common/ex.h"
 #include "transaction/ex.h"
 #include "transaction/Range.h"
@@ -15,13 +16,16 @@ int main(int argc, char* argv[]) try {
     boost::function<void (boost::asio::streambuf&)> rdr;
     rdr = reader;
 
-    BasicTransaction* bTrans = BasicTransaction::factory(url);
+    Range r;
+    if (argc==3)
+        r.update(boost::lexical_cast<int>(argv[2]),0);
+    BasicTransaction* bTrans = BasicTransaction::factory(argv[1],r);
     bTrans->registerReader(rdr);
     bTrans->start();
     while (!bTrans->complete());
     return 0;
 
-} catch (ex::Error& ex) {
+} catch (std::exception& ex) {
     std::cout<<ex.what()<<std::endl;
 }
 
