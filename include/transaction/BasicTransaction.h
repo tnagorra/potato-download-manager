@@ -26,7 +26,6 @@ class BasicTransaction {
     public:
         enum class State { idle, resolving, connecting, requesting,
             waiting, ready, downloading, complete, failed };
-        enum class Partial { yes, no, unknown };
 
     // Protected data members
     protected:

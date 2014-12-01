@@ -18,11 +18,13 @@ int main(int argc, char* argv[]) try {
 
     Range r;
     if (argc==3)
-        r.update(boost::lexical_cast<int>(argv[2]),0);
+        r.update(boost::lexical_cast<uintmax_t>(argv[2]),0);
     BasicTransaction* bTrans = BasicTransaction::factory(argv[1],r);
     bTrans->registerReader(rdr);
     bTrans->start();
     while (!bTrans->complete());
+
+    RemoteData* rd = bTrans->p_remoteData();
     return 0;
 
 } catch (std::exception& ex) {

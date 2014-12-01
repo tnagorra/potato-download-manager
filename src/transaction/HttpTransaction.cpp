@@ -74,7 +74,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     if(dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Accept")=="")
         rqstream<<"Accept: */*\r\n";
     //if (dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Connection")=="")
-    //    rqstream<<"Connection: close\r\n";
+    rqstream<<"Connection: keep-alive\r\n";
     if (!m_range.uninitialized())
         rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()
             <<"\r\n";
@@ -157,12 +157,36 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     std::string header; size_t colon;
     while(std::getline(resp_strm, header) && header!="\r") {
-        //print(header);
+        print(header);
         if ((colon = header.find(':'))!=std::string::npos) {
             m_respHeaders[boost::to_lower_copy(header.substr(0,colon))]
                 = header.substr(colon+2,header.size()-colon-3);
         }
     }
+
+    // Determine the size of the response body
+    if (m_respHeaders.count("content-length")>0)
+        m_bytesTotal = boost::lexical_cast<uintmax_t>(
+                m_respHeaders["content-length"]);
+
+    // Find out whether byterange requests are supported
+    if (m_respHeaders.count("accept-ranges")>0) {
+        mptr_rdata->canPartial(
+                (m_respHeaders["accept-ranges"]=="bytes")?
+                RemoteData::Partial::yes : RemoteData::Partial::no);
+    } else if (!m_range.uninitialized()) {
+        if (m_respHeaders.count("content-length")>0)
+            mptr_rdata->canPartial(
+                (m_bytesTotal==m_range.size())?
+                RemoteData::Partial::yes : RemoteData::Partial::no);
+        else if (status_code==206)
+            mptr_rdata->canPartial(RemoteData::Partial::yes);
+    }
+
+    // As a last resort, if the size of the incoming stream cannot
+    // be determined, we set it to the largest possible value
+    if (m_respHeaders.count("content-length")==0 && m_range.uninitialized())
+        m_bytesTotal = std::numeric_limits<uintmax_t>::max();
 
     handleStatusCode(status_code);
 }
@@ -191,6 +215,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
             // If we have been redirected to a different server,
             // everything needs to be restarted
             if (oldServer!=mptr_rdata->server()) {
+                mptr_rdata->canPartial(RemoteData::Partial::unknown);
                 delete mptr_socket;
                 mptr_socket = SockTraits<SocketType>::transform(NULL);
             }
@@ -215,9 +240,11 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::clearProgress() {
+    m_state = State::idle;
+    m_bytesDone = 0;
     m_statusLine = "";
     m_respHeaders = std::map<std::string,std::string>();
-    mptr_response = new boost::asio::streambuf;
+    delete mptr_response; mptr_response = new boost::asio::streambuf;
 }
 
 template <typename SocketType>
@@ -232,6 +259,10 @@ void HttpTransaction<SocketType>::writeOut() {
                 boost::asio::transfer_at_least(1), error)) {
         m_reader(*mptr_response);
         m_bytesDone += bufBytes;
+        if (m_bytesDone==m_bytesTotal) {
+            error=boost::asio::error::eof;
+            break;
+        }
         boost::this_thread::interruption_point();
     }
     if (error!=boost::asio::error::eof) {
@@ -252,7 +283,5 @@ void HttpTransaction<SocketType>::workerMain() try {
 } catch (HttpTransaction<SocketType>* self) {
     self->workerMain();
 }
-
-//} catch (boost::thread_interrupted& dummy) { std::cout<<";)\n"; }
 
 // End file HttpTransaction.cpp

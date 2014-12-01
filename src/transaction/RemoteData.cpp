@@ -22,9 +22,9 @@ RemoteData* RemoteData::factory(const std::string& fUrl) {
 }
 
 // Constructor
-RemoteData::RemoteData(const std::string& fUrl)
-    : m_canPartial(Partial::unknown) {
+RemoteData::RemoteData(const std::string& fUrl) {
     fullUrl(fUrl);
+    m_canPartial = Partial::unknown;
 }
 
 // Getters
@@ -91,7 +91,7 @@ RemoteData::Protocol RemoteData::schemeFromString(const std::string&
 // Setters
 
 // Sets whether partial downloads are allowed
-void RemoteData::canPartial(Partial can_partial) {
+void RemoteData::canPartial(RemoteData::Partial can_partial) {
     m_canPartial = can_partial;
 }
 
