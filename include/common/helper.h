@@ -13,6 +13,7 @@ extern "C" {
 #include <climits>
 #include <cmath>
 #include <ctime>
+#include <cctype>
 
 // Infinity ∞ unicode
 
@@ -33,6 +34,15 @@ inline double round(double num,uintmax_t n){
 
 // Returns the md5 hashing of a text
 std::string md5(std::string text);
+
+// Returns a pretty name from a url
+std::string prettify(std::string url);
+
+// Returns a decoded url
+std::string decodeUrl(std::string url);
+
+// Return conversion of char to hex
+int charToHex(char x);
 
 // Helper to sort filenames according to numerical value
 /*
