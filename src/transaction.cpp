@@ -1,6 +1,8 @@
 #include <typeinfo>
 #include <iostream>
+#include <istream>
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
 #include "common/ex.h"
 #include "transaction/ex.h"
@@ -8,13 +10,17 @@
 #include "transaction/RemoteDataHttp.h"
 #include "transaction/HttpTransaction.h"
 
-void reader(boost::asio::streambuf& buf) {
-    std::cout<<&buf;
+#include "filesystem/File.h"
+#include "filesystem/Directory.h"
+
+void reader(std::istream& instream, uintmax_t n) {
+    std::cout<<instream.rdbuf();
 }
 
 int main(int argc, char* argv[]) try {
-    boost::function<void (boost::asio::streambuf&)> rdr;
-    rdr = reader;
+    File potato("shyam/harisadu");
+    boost::function<void (std::istream&, uintmax_t)> rdr;
+    rdr = boost::bind(static_cast<void(File::*)(std::istream&,uintmax_t)>(&File::append), &potato, _1, _2);
 
     Range r;
     if (argc==3)
@@ -24,7 +30,6 @@ int main(int argc, char* argv[]) try {
     bTrans->start();
     while (!bTrans->complete());
 
-    RemoteData* rd = bTrans->p_remoteData();
     return 0;
 
 } catch (std::exception& ex) {

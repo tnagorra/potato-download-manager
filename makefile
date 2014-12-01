@@ -10,7 +10,7 @@ CFLAGS=-c -I$(INCDIR)/ --std=c++11
 all: filesystem transaction
 
 ## Variables and rules for FILE
-SOURCES_FILE:= Node.cpp File.cpp Directory.cpp ../filesystem.cpp ../common/helper.cpp
+SOURCES_FILE:= Node.cpp File.cpp Directory.cpp ../common/helper.cpp
 FSOURCES_FILE:=$(addprefix $(SRCDIR)/filesystem/,$(SOURCES_FILE))
 HEADERS_FILE:=Node.h File.h Directory.h ../common/helper.h
 FHEADERS_FILE:=$(addprefix $(INCDIR)/filesystem/,$(HEADERS_FILE))
@@ -19,7 +19,7 @@ FOBJECTS_FILE:=$(addprefix $(OBJDIR)/filesystem/,$(OBJECTS_FILE))
 EXECFILE:=$(BINDIR)/filesystem
 LDFLAGS_FILE=-lboost_system -lboost_filesystem -lcrypto
 
-filesystem: $(EXECFILE) $(FHEADERS_FILE)
+filesystem: $(FHEADERS_FILE)
 $(EXECFILE): $(FOBJECTS_FILE)
 	$(CC) $(FOBJECTS_FILE) -g -o $@ $(LDFLAGS_FILE)
 
@@ -37,8 +37,8 @@ LDFLAGS_DOWN=-lboost_system -lboost_filesystem -lboost_thread\
 	-lssl -lcrypto -pthread
 
 transaction: $(EXECDOWN) $(FHEADERS_DOWN)
-$(EXECDOWN): $(FOBJECTS_DOWN)
-	$(CC) $(FOBJECTS_DOWN) -g -o $@ $(LDFLAGS_DOWN)
+$(EXECDOWN): $(FOBJECTS_DOWN) $(FOBJECTS_FILE)
+	$(CC) $(FOBJECTS_DOWN) $(FOBJECTS_FILE) -g -o $@ $(LDFLAGS_DOWN) $(LDFLAGS_FILE)
 
 clean:
 	-rm -rf bin/*

@@ -5,6 +5,7 @@
 #define __CO_BASICTRANSACTION__
 
 #include <string>
+#include <istream>
 
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>
@@ -40,7 +41,7 @@ class BasicTransaction {
         // Streambuf for buffering the response
         boost::asio::streambuf* mptr_response;
         // function object for writing out the received bytes
-        boost::function<void (boost::asio::streambuf&)> m_reader;
+        boost::function<void (std::istream&, uintmax_t)> m_reader;
         // Endpoint iterator for hostname resolution
         tcp::resolver::iterator m_endpIterator;
 
@@ -78,7 +79,7 @@ class BasicTransaction {
 
         // Register the byte-Reader function
         void registerReader(boost::function<void
-                (boost::asio::streambuf&)>&);
+                (std::istream&, uintmax_t)>&);
 
         // Returns the current state as state
         State state() const;
@@ -92,7 +93,7 @@ class BasicTransaction {
 
         boost::thread* p_thread() const;
 
-        boost::function<void (boost::asio::streambuf&)> reader() const;
+        boost::function<void (std::istream&,uintmax_t)> reader() const;
 
         tcp::resolver::iterator endpIterator() const;
 

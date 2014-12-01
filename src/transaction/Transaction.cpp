@@ -54,7 +54,7 @@ void Transaction<SocketType>::resolveHostMain() {
 
     tcp::resolver resolver(mptr_socket->get_io_service());
     tcp::resolver::query query(mptr_rdata->server(),
-            mptr_rdata->schemeCStr());
+            mptr_rdata->schemeCStr(), tcp::resolver::query::passive);
     tcp::resolver::iterator err_itr, temp_itr;
 
     // Lets try to resolve our hostname

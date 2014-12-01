@@ -38,7 +38,7 @@ BasicTransaction* BasicTransaction::factory(std::string url,
 }
 
 void BasicTransaction::registerReader(
-        boost::function<void (boost::asio::streambuf&)>& bytereader) {
+        boost::function<void (std::istream&, uintmax_t)>& bytereader) {
     m_reader = bytereader;
 }
 
@@ -94,7 +94,7 @@ boost::thread* BasicTransaction::p_thread() const {
     return mptr_thread;
 }
 
-boost::function<void (boost::asio::streambuf&)>
+boost::function<void (std::istream&, uintmax_t)>
 BasicTransaction::reader() const {
     return m_reader;
 }
