@@ -45,7 +45,7 @@ class Aggregate{
         void start();
 
         // Total data downloaded; includes already saved file
-        uintmax_t bytesDown() const;
+        uintmax_t bytesDone() const;
 
         // Returns name of the Chunk with starting byte num
         std::string chunkName(uintmax_t num) const;

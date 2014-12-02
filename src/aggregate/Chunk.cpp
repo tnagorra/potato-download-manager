@@ -28,18 +28,18 @@ Chunk::~Chunk() {
         delete *mptr_file;
 }
 
-// Return pointer to transaction
 Transaction* const Chunk::txn() {
     return m_txn;
 }
 
-// Return pointer to file
 File* const Chunk::file() {
     return m_file;
 }
 
-// Return total downloaded bytes of a Chunk
-// Includes data bytes saved + data bytes downloaded
-uintmax_t Chunk::bytesDown() const {
-    return m_fileSize + mptr_txn->bytesDown();
+uintmax_t Chunk::bytesDone() const {
+    return m_fileSize + mptr_txn->bytesDone();
+}
+
+uintmax_t Chunk::bytesTotal() const {
+    return m_fileSize + mptr_txn->bytesTotal();
 }
