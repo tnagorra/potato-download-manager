@@ -81,3 +81,33 @@ std::string md5(std::string text) {
         out << std::setw(2)  << (unsigned)digest[i];
     return out.str();
 }
+
+std::string prettify(std::string url){
+    // TODO only get name and blah blah
+    return decodeUrl(url);
+}
+
+int charToHex(char x){
+    if (x>='a')
+        x -= 'a'-'A';
+    if (x >= 'A')
+        x -= 'A'-10;
+    else
+        x -= '0';
+    return x;
+}
+
+std::string decodeUrl(std::string url){
+    std::string lru;
+    char a,b;
+    unsigned c = 0;
+    for(c=0;c < url.length();c++){
+        if( url[c]=='%' && ((a=url[c+1]) && (b=url[c+2])) && (std::isxdigit(a) && std::isxdigit(b)) ) {
+            lru +=16*charToHex(a)+charToHex(b);
+            c+=2;   // Two extra char are read
+        } else {
+            lru += url[c];
+        }
+    }
+    return lru;
+}

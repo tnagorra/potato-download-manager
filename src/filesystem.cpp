@@ -5,6 +5,8 @@
 #include"common/helper.h"
 
 int main() try {
+
+    return 0;
     File b(".temporary");
     b.write("My name is\b",Node::FORCE);
     b.append(" hari.\b");
@@ -22,6 +24,7 @@ int main() try {
     std::cout << formatByte(1024*1024+343234)<<std::endl;
     std::cout << round(1243.234222343,3) << std::endl;
     std::cout << randomString()<<std::endl;
+    std::cout << decodeUrl("Why%20the%20f**ck%20does%20%26%20not%20work")<<std::endl;
     */
 
  }
