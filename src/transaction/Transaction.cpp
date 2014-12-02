@@ -9,10 +9,7 @@ template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata,
         SocketType* sock, const Range& range)
     : mptr_socket(sock),
-    BasicTransaction(rdata,range) {
-    if (mptr_socket==NULL)
-        mptr_socket = SockTraits<SocketType>::transform(NULL);
-}
+    BasicTransaction(rdata,range) { }
 
 // Dont think we really need this. And things are simple for the
 // factory without it.
@@ -142,6 +139,16 @@ void Transaction<SSLSock>::connectHost() {
 template <typename SocketType>
 SocketType* Transaction<SocketType>::p_socket() const {
     return mptr_socket;
+}
+
+template <typename SocketType>
+void Transaction<SocketType>::injectSocket(SSLSock* sock) {
+    mptr_socket = SockTraits<SocketType>::transform(sock);
+}
+
+template <typename SocketType>
+void Transaction<SocketType>::injectSocket(PlainSock* sock) {
+    mptr_socket = SockTraits<SocketType>::transform(sock);
 }
 
 // An assignment operator for converting from a transaction of one

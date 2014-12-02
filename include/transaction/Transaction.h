@@ -59,6 +59,9 @@ class Transaction : public BasicTransaction {
 
         SocketType* p_socket() const;
 
+        void injectSocket(SSLSock* sock);
+
+        void injectSocket(PlainSock* sock);
 };
 
 typedef Transaction<PlainSock> PlainTransaction;

@@ -27,6 +27,8 @@ template <typename SocketType>
 void HttpTransaction<SocketType>::start() {
     if (m_state!= State::idle)
         return;
+    if (mptr_socket==NULL)
+        mptr_socket = SockTraits<SocketType>::transform();
     this->mptr_thread = new boost::thread(
             &HttpTransaction<SocketType>::workerMain, this);
 }
@@ -218,7 +220,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
             if (oldServer!=mptr_rdata->server()) {
                 mptr_rdata->canPartial(RemoteData::Partial::unknown);
                 delete mptr_socket;
-                mptr_socket = SockTraits<SocketType>::transform(NULL);
+                mptr_socket = SockTraits<SocketType>::transform();
             }
             // Throwout, to restart our workerMain
             throw this;

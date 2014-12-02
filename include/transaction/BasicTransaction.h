@@ -15,6 +15,7 @@
 #include "transaction/ex.h"
 #include "transaction/RemoteData.h"
 #include "transaction/Range.h"
+#include "transaction/SocketTypes.h"
 
 using boost::asio::ip::tcp;
 
@@ -112,6 +113,14 @@ class BasicTransaction {
         bool isPaused() const;
 
         void play();
+
+        virtual void injectSocket(SSLSock* sock)=0;
+
+        virtual void injectSocket(PlainSock* sock)=0;
+
+        BasicTransaction* clone(Range& r, PlainSock* sock=NULL);
+
+        BasicTransaction* clone(Range& r, SSLSock* sock);
 
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);

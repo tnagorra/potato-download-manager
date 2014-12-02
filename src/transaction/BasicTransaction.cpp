@@ -124,6 +124,16 @@ void BasicTransaction::play() {
     m_beenPaused = false;
 }
 
+BasicTransaction* BasicTransaction::clone(Range& r, PlainSock* sock) {
+    BasicTransaction* bt = factory(mptr_rdata,r);
+    bt->injectSocket(sock);
+}
+
+BasicTransaction* BasicTransaction::clone(Range& r, SSLSock* sock) {
+    BasicTransaction* bt = factory(mptr_rdata,r);
+    bt->injectSocket(sock);
+}
+
 void BasicTransaction::updateRange(uintmax_t u) {
     if (!m_range.uninitialized()) {
         if (u>m_range.ub())

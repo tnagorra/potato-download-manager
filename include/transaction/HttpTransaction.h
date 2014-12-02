@@ -82,8 +82,6 @@ class HttpTransaction : public Transaction<SocketType> {
 
         void start();
         void stop();
-        void pause();
-        void play();
 };
 
 typedef HttpTransaction<PlainSock> HttppTransaction;
