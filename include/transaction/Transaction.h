@@ -25,7 +25,6 @@ class Transaction : public BasicTransaction {
         // A Socket for the connection
         SocketType* mptr_socket;
 
-        bool socketAlive();
 
         void createSocket();
         void resolveHost();
@@ -59,6 +58,7 @@ class Transaction : public BasicTransaction {
         void operator=(const Transaction<antiSockType>& i);
 
         SocketType* p_socket() const;
+
 };
 
 typedef Transaction<PlainSock> PlainTransaction;

@@ -20,7 +20,7 @@ FOBJECTS_FILE:=$(addprefix $(OBJDIR)/filesystem/,$(OBJECTS_FILE))
 EXECFILE:=$(BINDIR)/filesystem
 LDFLAGS_FILE=-lboost_system -lboost_filesystem -lcrypto
 
-filesystem: $(EXECFILE) $(FHEADERS_FILE)
+filesystem: $(FHEADERS_FILE)
 $(EXECFILE): $(FOBJECTS_FILE)
 	$(CC) $(FOBJECTS_FILE) -g -o $@ $(LDFLAGS_FILE)
 
@@ -38,8 +38,8 @@ LDFLAGS_DOWN=-lboost_system -lboost_filesystem -lboost_thread\
 	-lssl -lcrypto -pthread
 
 transaction: $(EXECDOWN) $(FHEADERS_DOWN)
-$(EXECDOWN): $(FOBJECTS_DOWN)
-	$(CC) $(FOBJECTS_DOWN) -g -o $@ $(LDFLAGS_DOWN)
+$(EXECDOWN): $(FOBJECTS_DOWN) $(FOBJECTS_FILE)
+	$(CC) $(FOBJECTS_DOWN) $(FOBJECTS_FILE) -g -o $@ $(LDFLAGS_DOWN) $(LDFLAGS_FILE)
 
 
 ## Variables and rules for AGGREGATE

@@ -50,7 +50,6 @@ class HttpTransaction : public Transaction<SocketType> {
 
         // we will USE these base class members
         using typename Transaction<SocketType>::State;
-        using typename Transaction<SocketType>::Partial;
         using Transaction<SocketType>::m_state;
         using Transaction<SocketType>::m_range;
         using Transaction<SocketType>::mptr_thread;
