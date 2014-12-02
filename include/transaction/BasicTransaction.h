@@ -103,6 +103,8 @@ class BasicTransaction {
 
         uintmax_t bytesDone() const;
 
+        bool isRunning() const;
+
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);
 };

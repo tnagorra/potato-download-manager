@@ -108,6 +108,10 @@ tcp::resolver::iterator BasicTransaction::endpIterator() const {
     return m_endpIterator;
 }
 
+bool BasicTransaction::isRunning() const {
+    return (m_state!=State::idle && !complete());
+}
+
 void BasicTransaction::updateRange(uintmax_t u) {
     if (!m_range.uninitialized()) {
         if (u>m_range.ub())
