@@ -116,7 +116,7 @@ void BasicTransaction::updateRange(uintmax_t u) {
         if (u>m_bytesTotal)
             m_beenSplit = true;
     }
-    m_range.update(u,m_range.ub());
+    m_range.update(u,m_range.lb());
     m_bytesTotal = m_range.size();
 }
 

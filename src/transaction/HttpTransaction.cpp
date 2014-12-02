@@ -25,7 +25,7 @@ HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::start() {
-    if (m_state==State::complete || m_state==State::failed)
+    if (m_state!= State::idle)
         return;
     this->mptr_thread = new boost::thread(
             &HttpTransaction<SocketType>::workerMain, this);
@@ -76,7 +76,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     if(dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Accept")=="")
         rqstream<<"Accept: */*\r\n";
     //if (dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Connection")=="")
-    rqstream<<"Connection: close\r\n";
+    //rqstream<<"Connection: \r\n";
     if (!m_range.uninitialized())
         rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()-1
             <<"\r\n";
