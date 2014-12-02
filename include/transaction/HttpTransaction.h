@@ -62,6 +62,7 @@ class HttpTransaction : public Transaction<SocketType> {
         using Transaction<SocketType>::resolveHost;
         using Transaction<SocketType>::connectHost;
         using Transaction<SocketType>::m_beenSplit;
+        using Transaction<SocketType>::m_beenPaused;
 
     public:
         typedef typename SockTraits<SocketType>::antiSock antiSockType;
@@ -81,6 +82,8 @@ class HttpTransaction : public Transaction<SocketType> {
 
         void start();
         void stop();
+        void pause();
+        void play();
 };
 
 typedef HttpTransaction<PlainSock> HttppTransaction;

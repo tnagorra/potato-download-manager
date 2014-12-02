@@ -112,6 +112,18 @@ bool BasicTransaction::isRunning() const {
     return (m_state!=State::idle && !complete());
 }
 
+void BasicTransaction::pause() {
+    m_beenPaused = true;
+}
+
+bool BasicTransaction::isPaused() const {
+    return m_beenPaused;
+}
+
+void BasicTransaction::play() {
+    m_beenPaused = false;
+}
+
 void BasicTransaction::updateRange(uintmax_t u) {
     if (!m_range.uninitialized()) {
         if (u>m_range.ub())

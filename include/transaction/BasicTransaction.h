@@ -46,6 +46,8 @@ class BasicTransaction {
         tcp::resolver::iterator m_endpIterator;
         // Has the transaction been split externally?
         bool m_beenSplit;
+        // Has the transaction just been paused?
+        bool m_beenPaused;
 
         // Total number of bytes to be downloaded
         uintmax_t m_bytesTotal;
@@ -104,6 +106,12 @@ class BasicTransaction {
         uintmax_t bytesDone() const;
 
         bool isRunning() const;
+
+        void pause();
+
+        bool isPaused() const;
+
+        void play();
 
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);

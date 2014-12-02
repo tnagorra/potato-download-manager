@@ -107,8 +107,8 @@ void HttpTransaction<SocketType>::waitData() {
     // While there are no bytes to read, just hang around
     while (!mptr_socket->available()) {
         // a sleep_for call is also an interruption point.
-        boost::this_thread::sleep_for(
-                boost::chrono::milliseconds(100));
+        boost::this_thread::sleep(
+                boost::posix_time::milliseconds(100));
     }
 }
 
@@ -117,8 +117,8 @@ void HttpTransaction<SSLSock>::waitData() {
     // While there are no bytes to read, just hang around
     while (!mptr_socket->lowest_layer().available()) {
         // a sleep_for call is also an interruption point.
-        boost::this_thread::sleep_for(
-                boost::chrono::milliseconds(100));
+        boost::this_thread::sleep(
+                boost::posix_time::milliseconds(100));
     }
 }
 
@@ -257,6 +257,7 @@ void HttpTransaction<SocketType>::writeOut() {
         m_reader(writeStream,bufBytes);
     m_bytesDone = bufBytes;
     m_state = State::downloading;
+
     boost::system::error_code error;
     while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
                 boost::asio::transfer_at_least(1), error)) {
@@ -266,6 +267,12 @@ void HttpTransaction<SocketType>::writeOut() {
             error=boost::asio::error::eof;
             break;
         }
+
+        while (m_beenPaused) {
+            boost::this_thread::sleep(
+                    boost::posix_time::milliseconds(200));
+        }
+
         boost::this_thread::interruption_point();
     }
     if (error!=boost::asio::error::eof) {
