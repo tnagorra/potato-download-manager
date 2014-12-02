@@ -43,10 +43,10 @@ void Aggregate::start() {
     m_thread = boost::thread(&Chunk::worker,this);
 }
 
-uintmax_t Aggregate::bytesDown() const {
+uintmax_t Aggregate::bytesDone() const {
     uintmax_t bytes = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
-        bytes += it->size();
+        bytes += it->bytesDone();
     return bytes;
 }
 
@@ -222,20 +222,64 @@ void Aggregate::starter() {
     Directory session(m_hasedUrl);
     if ( session.exist() && !session.isEmpty() ) {
 
-        // Get the list of files, exclude the last one
-        // Iterate over them to find the first chunk
-        // which isn't complete yet
-        // Start it and save the name
-        // After downlaod starts
-        //
-        // We have information about the type
-        // Now clone from it and update appropriate
-        // values to start all
+        // TODO some case for files other than
+        // numeric in nature
+        std::vector<std::string> files = session.list();
+        sort(files.begin(),file.end(),numerically);
 
-        // TODO maybe create an empty file to save the
-        // total size of the downloading file but don't
-        // don't push it in the Chunk for download
+        // Last element name holds the total size of the download file
+        m_filesize = std::atoi(files[files.size()-1]);
 
+        // "starter" indicates the first Chunk usable
+        // from the list of sorted Chunks
+        // A complete Transaction isn't started again
+        unsigned istarter=0;
+        Chunk* researcher = NULL;
+        for(unsigned i=0;i<files.size()-1;i++){
+            File* f = new File(chunkName(i));
+            uintmax_t s1 = f->size();
+            uintmax_t s2 = atoi(files[i+1]);
+            if (s1 == s2) {
+                // If complete, do nothing
+                // TODO We could push these files in a
+                // queue, and not delete it because we
+                // need it later
+                delete *f;
+            } else if (s1 < s2) {
+                // If not complete, it is the reseacher
+                istarter = i;
+                Transaction* t = BasicTransaction::factory(url,Range(atoi(files[i+1]),atoi(files[i])));
+                researcher = new Chunk(t,f);
+                researcher->txn()->start();
+                break;
+            } else {
+                delete *f
+                // This is a weird case
+                throw "Some weird error";
+            }
+        }
+        if(researcher == NULL){
+            // Maybe join them all
+            throw "Download was already complete!";
+        }
+
+        // Wait for researcher until downloading starts,
+        // Now we get the proper information about the file
+        // and further process can be started
+        while (reasearcher->txn->state() != BasicTransaction::State::downloading)
+            boost::this_thread::sleep(boost::posix_time::millisec(100));
+
+        for(unsigned i=0; i < files.size()-1; i++){
+            if(i==istarter){
+                m_chunk.push(researcher);
+            } else {
+                File* f = new File(chunkName(i));
+                Transaction* t = researcher->clone(Range(atoi(files[i+1]),atoi(files[i])));
+                Chunk* c(t,f);
+                m_chunk.push(c);
+                c->txn()->start();
+            }
+        }
 
         // Set m_filesize by looking at the last thing
     } else {

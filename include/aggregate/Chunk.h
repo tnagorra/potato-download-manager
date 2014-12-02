@@ -4,6 +4,7 @@
 #include <iostream>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include "common/ex.h"
 #include "filesystem/File.h"
 #include "filesystem/Directory.h"
 #include "transaction/Transaction.h"
@@ -31,8 +32,10 @@ class Chunk {
 
         // Return total downloaded bytes of a Chunk
         // Includes data bytes saved + data bytes downloaded
-        uintmax_t bytesDown() const;
+        uintmax_t bytesDone() const;
 
+        // Return total bytes of a Chunk
+        uintmax_t bytesTotal() const;
 };
 
 #endif
