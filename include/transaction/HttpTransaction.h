@@ -61,6 +61,7 @@ class HttpTransaction : public Transaction<SocketType> {
         using Transaction<SocketType>::m_reader;
         using Transaction<SocketType>::resolveHost;
         using Transaction<SocketType>::connectHost;
+        using Transaction<SocketType>::m_beenSplit;
 
     public:
         typedef typename SockTraits<SocketType>::antiSock antiSockType;

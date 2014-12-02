@@ -21,8 +21,7 @@ void Range::update(uintmax_t ub,uintmax_t lb){
 
 // Returns the size of the range
 uintmax_t Range::size() const {
-    // A +1 is needed because the byte values are inclusive
-    return m_ub-m_lb+1;
+    return m_ub-m_lb;
 }
 
 // Returns the lower bound of the range

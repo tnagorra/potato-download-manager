@@ -25,6 +25,8 @@ HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::start() {
+    if (m_state==State::complete || m_state==State::failed)
+        return;
     this->mptr_thread = new boost::thread(
             &HttpTransaction<SocketType>::workerMain, this);
 }
@@ -76,7 +78,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     //if (dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Connection")=="")
     rqstream<<"Connection: close\r\n";
     if (!m_range.uninitialized())
-        rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()
+        rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()-1
             <<"\r\n";
 
     // Now spew the given headers
@@ -242,6 +244,7 @@ void HttpTransaction<SocketType>::clearProgress() {
     m_state = State::idle;
     m_bytesDone = 0;
     m_statusLine = "";
+    m_beenSplit = false;
     m_respHeaders = std::map<std::string,std::string>();
     delete mptr_response; mptr_response = new boost::asio::streambuf;
 }
@@ -259,7 +262,7 @@ void HttpTransaction<SocketType>::writeOut() {
                 boost::asio::transfer_at_least(1), error)) {
         m_reader(writeStream,bufBytes);
         m_bytesDone += bufBytes;
-        if (m_bytesDone==m_bytesTotal) {
+        if (m_bytesDone>=m_bytesTotal) {
             error=boost::asio::error::eof;
             break;
         }

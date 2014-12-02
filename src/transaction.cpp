@@ -18,16 +18,23 @@ void reader(std::istream& instream, uintmax_t n) {
 }
 
 int main(int argc, char* argv[]) try {
-    File potato("shyam/harisadu");
-    boost::function<void (std::istream&, uintmax_t)> rdr;
-    rdr = boost::bind(static_cast<void(File::*)(std::istream&,uintmax_t)>(&File::append), &potato, _1, _2);
-
     Range r;
-    if (argc==3)
-        r.update(boost::lexical_cast<uintmax_t>(argv[2]),0);
+    std::string filename="fuck";
+    if (argc>2)
+        filename = argv[1];
+    if (argc>3)
+        r.update(boost::lexical_cast<uintmax_t>(argv[3]),0);
     BasicTransaction* bTrans = BasicTransaction::factory(argv[1],r);
+
+    File potato(filename);
+    boost::function<void (std::istream&, uintmax_t)> rdr;
+    rdr = boost::bind(static_cast<void(File::*)(std::istream&,
+                uintmax_t)>(&File::append), &potato, _1, _2);
     bTrans->registerReader(rdr);
+
     bTrans->start();
+    boost::this_thread::sleep(boost::posix_time::milliseconds(5000));
+    bTrans->updateRange(1024*1024);
     while (!bTrans->complete());
 
     return 0;

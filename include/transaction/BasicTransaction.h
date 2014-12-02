@@ -44,6 +44,8 @@ class BasicTransaction {
         boost::function<void (std::istream&, uintmax_t)> m_reader;
         // Endpoint iterator for hostname resolution
         tcp::resolver::iterator m_endpIterator;
+        // Has the transaction been split externally?
+        bool m_beenSplit;
 
         // Total number of bytes to be downloaded
         uintmax_t m_bytesTotal;
@@ -100,6 +102,9 @@ class BasicTransaction {
         uintmax_t bytesTotal() const;
 
         uintmax_t bytesDone() const;
+
+        // Update the upper byte of the byte range
+        void updateRange(uintmax_t u);
 };
 #endif
 // End File BasicTransaction.h
