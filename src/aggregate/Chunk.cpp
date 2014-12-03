@@ -1,18 +1,18 @@
 #include"aggregate/Chunk.h"
 
-Chunk::Chunk(Transaction* txn, File* file):
+Chunk::Chunk(BasicTransaction* txn, File* file):
     mptr_txn(txn), mptr_file(file)
 {
     if(mptr_file == NULL)
         Throw(ex::Invalid,"File");
     if(mptr_txn == NULL)
-        Throw(ex::Invalid,"Transaction");
+        Throw(ex::Invalid,"BasicTransaction");
 
     // Initialize m_fileSize with size of file
-    m_fileSize = m_file->size();
+    m_fileSize = mptr_file->size();
 
     // Bind and inject the append function of File
-    // inside the Transaction
+    // inside the BasicTransaction
     boost::function<void (std::istream&,uintmax_t)> reader = boost::bind(
             static_cast<void(File::*)(std::istream&,uintmax_t)>(&File::append),
             mptr_file,_1,_2);
@@ -23,17 +23,17 @@ Chunk::~Chunk() {
     // Delete the file and transaction
     // assosicated with it
     if(mptr_txn)
-        delete *mptr_txn;
+        delete mptr_txn;
     if(mptr_file)
-        delete *mptr_file;
+        delete mptr_file;
 }
 
-Transaction* const Chunk::txn() {
-    return m_txn;
+BasicTransaction* const Chunk::txn() {
+    return mptr_txn;
 }
 
 File* const Chunk::file() {
-    return m_file;
+    return mptr_file;
 }
 
 uintmax_t Chunk::bytesDone() const {

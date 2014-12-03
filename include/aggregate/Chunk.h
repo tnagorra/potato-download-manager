@@ -7,25 +7,25 @@
 #include "common/ex.h"
 #include "filesystem/File.h"
 #include "filesystem/Directory.h"
-#include "transaction/Transaction.h"
+#include "transaction/BasicTransaction.h"
 
-// Chunk is wrapper of a Transaction and a File associated with it
+// Chunk is wrapper of a BasicTransaction and a File associated with it
 class Chunk {
     private:
         // Initial filesize when opening
         uintmax_t m_fileSize;
-        Transaction* mptr_txn;
+        BasicTransaction* mptr_txn;
         File* mptr_file;
 
     public:
         // Constructor with injection
-        Chunk(Transaction* txn, File* file);
+        Chunk(BasicTransaction* txn, File* file);
 
         // Destructor
         ~Chunk();
 
-        // Returns pointer of Transaction
-        Transaction* const txn();
+        // Returns pointer of BasicTransaction
+        BasicTransaction* const txn();
 
         // Returns pointer to File
         File* const file();
