@@ -4,10 +4,10 @@
    TODO 1
    Join transaction thread somewhere
 
-   When Txn is complete, push those to m_socket
-   When Txn is started and m_socket isn't empty,
+   When BasicTransaction is complete, push those to m_socket
+   When BasicTransaction is started and m_socket isn't empty,
    take it from m_socket and pop it
-   if it is empty, create new inside the Txn
+   if it is empty, create new inside the BasicTransaction
 */
 
 Aggregate::Aggregate(const std::string url, unsigned txns,uintmax_t split):
@@ -20,15 +20,17 @@ Aggregate::Aggregate(const std::string url, unsigned txns,uintmax_t split):
 Aggregate::~Aggregate(){
     // Delete all Chunk and Socket
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
-        delete *it;
+        delete (*it);
+    /*
     for (auto it = m_free_socket.begin(); it != m_free_socket.end(); ++it)
         delete *it;
+        */
 }
 
 void Aggregate::joinAll(){
     // Join all Chunks
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
-        it->txn()->join();
+        (*it)->txn()->join();
 }
 
 void Aggregate::join(){
@@ -44,13 +46,13 @@ void Aggregate::stop(){
 }
 
 void Aggregate::start() {
-    m_thread = boost::thread(&Chunk::worker,this);
+    m_thread = boost::thread(&Aggregate::worker,this);
 }
 
 uintmax_t Aggregate::bytesDone() const {
     uintmax_t bytes = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
-        bytes += it->bytesDone();
+        bytes += (*it)->bytesDone();
     return bytes;
 }
 
@@ -66,34 +68,34 @@ std::string Aggregate::prettyName() const {
 unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if (it->txn()->isRunning())
+        if ((*it)->txn()->isRunning())
             count++;
     }
     return count;
 }
 
-bool Aggregate::isComplete() const {
+bool Aggregate::complete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!it->txn()->isComplete())
+        if(!(*it)->txn()->complete())
             return false;
     }
     return true;
 }
 
-bool Aggregate::isSplittable() const {
+bool Aggregate::splittable() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!it->txn()->bytesRemaining() > m_splittable_size)
+        if(!(*it)->txn()->bytesRemaining() > m_splittable_size)
             return true;
     }
     return false;
 }
 
-bool Aggregate::isSplitReady() const {
+bool Aggregate::splitReady() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         // TODO 0 Insert some really good algorithm
         // Maybe wait for download to get to stable state
         // Waiting for a while may be benificial in long run
-        if (it->txn()->speed() <= 100 && !it->tx()->isComplete())
+        if ((*it)->txn()->speed() <= 100 && !(*it)->txn()->complete())
             return false;
     }
     return true;
@@ -118,8 +120,10 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     }
 
     // If there is no bottleneck Chunk then throw exception
+    // TODO
     if( it == m_chunk.size() )
-        Throw(ex::chunk::NoBottleNecK());
+        throw "no bottle neck";
+        //Throw(ex::chunk::NoBottleNecK());
 
     // Now just get the real bottle neck
     for (; it < m_chunk.size(); ++it){
@@ -140,7 +144,7 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     // TODO could stop worrying about pausing this shit
     // Get the Chunk to be splitted
-    // Pause the Txn
+    // Pause the BasicTransaction
     // Wait until it is paused
     Chunk* cell = m_chunk[split_index];
 
@@ -150,22 +154,23 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     // Calculate the split point ie midpoint
     // Note: Range is exclusive of previous session
-    uintmax_t downloaded = cell->txn()->downBytes();
-    uintmax_t lower = cell->txn()->range()->lower();
-    uintmax_t upper = cell->txn()->range()->upper();
+    uintmax_t downloaded = cell->txn()->bytesDone();
+    uintmax_t lower = cell->txn()->range().lb();
+    uintmax_t upper = cell->txn()->range().ub();
     uintmax_t midpoint = (upper+(lower+downloaded))/2;
 
-    // Create a new cloned Txn instance and update values
+    // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
     cell->txn()->updateRange(midpoint);
     File* newfile = new File(chunkName(midpoint));
-    Txn* newtxn = cell->txn()->clone(upper,midpoint);
+    Range newrange(upper,midpoint);
+    BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
 
-    // Insert newly created Chunk in the vector
-    m_chunk.insert(++splint_index, newcell);
+    // Insert newly created Chunk in the vector after
+    m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
-    // Start those Txns
+    // Start those BasicTransactions
     cell->txn()->start();
     newcell->txn()->start();
 }
@@ -173,25 +178,28 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 void Aggregate::worker(){
     starter();
     splitter();
-    blocker();
-    merger()
+    joinAll();
+    merger();
 }
 
 void Aggregate::merger() {
-    // TODO maybe add isComplete()
+    // TODO maybe add complete()
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
+
+    /*
     if( size() != m_filesize )
         throw(ex::Invalid,"filesize");
+        */
 
     // Create a file where chunk files are merged
     File merged(prettyName());
     // Append the content to "merged" and remove
     // the chunk files
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        merged.append(it->file());
-        it->file()->remove();
+        merged.append(*(*it)->file());
+        (*it)->file()->remove();
     }
     // Remove the old directory
     Directory(m_hasedUrl).remove();
@@ -205,24 +213,20 @@ void Aggregate::splitter() {
 
         // Get the bottle neck and split
         // NOTE: There may be some problem here
-        if(activeChunks() < m_chunks && isSplitReady()){
-            try
-                std::vector<Chunk*>::size_type bneck = bottleNeck();
-            catch (ex::chunk::NoBottleNeck)
-                break;
+        if(activeChunks() < m_chunks && splitReady()){
+            std::vector<Chunk*>::size_type bneck;
+            // TODO catch the exception around bneck
+            /*
+               try {
+               bneck = bottleNeck();
+               } catch (ex::chunk::NoBottleNeck) {
+               break;
+               }
+               */
+            bneck = bottleNeck();
             split(bneck);
         }
     }
-}
-
-void Aggregate::blocker() {
-    /* TODO not sure about anything here
-    // loop while every chunk is complete
-    while (!isComplete()){
-        boost::this_thread::sleep(boost::posix_time::millisec(100));
-    }
-    */
-    joinAll();
 }
 
 void Aggregate::starter() {
@@ -230,15 +234,15 @@ void Aggregate::starter() {
     // Directory session is used to find out about
     // previous downloads
     Directory session(m_hasedUrl);
-    if ( session.exist() && !session.isEmpty() ) {
+    if ( session.exists() && !session.isEmpty() ) {
 
         // TODO some case for files other than
         // numeric in nature
         std::vector<std::string> files = session.list();
-        sort(files.begin(),file.end(),numerically);
+        sort(files.begin(),files.end(),numerically);
 
         // Last element name holds the total size of the download file
-        m_filesize = std::atoi(files[files.size()-1]);
+        m_filesize = std::atoi(files[files.size()-1].c_str());
 
         // "starter" indicates the first Chunk usable
         // from the list of sorted Chunks
@@ -248,22 +252,23 @@ void Aggregate::starter() {
         for(unsigned i=0;i<files.size()-1;i++){
             File* f = new File(chunkName(i));
             uintmax_t s1 = f->size();
-            uintmax_t s2 = atoi(files[i+1]);
+            uintmax_t s2 = std::atoi(files[i+1].c_str());
             if (s1 == s2) {
                 // If complete, do nothing
                 // TODO We could push these files in a
                 // queue, and not delete it because we
                 // need it later
-                delete *f;
+                delete f;
             } else if (s1 < s2) {
                 // If not complete, it is the reseacher
                 istarter = i;
-                Transaction* t = BasicTransaction::factory(url,Range(atoi(files[i+1]),atoi(files[i])));
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str()));
+                BasicTransaction* t = BasicTransaction::factory(m_url,r);
                 researcher = new Chunk(t,f);
                 researcher->txn()->start();
                 break;
             } else {
-                delete *f
+                delete f;
                 // This is a weird case
                 throw "Some weird error";
             }
@@ -276,17 +281,18 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        while (reasearcher->txn->state() != BasicTransaction::State::downloading)
+        while (researcher->txn()->state() != BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         for(unsigned i=0; i < files.size()-1; i++){
             if(i==istarter){
-                m_chunk.push(researcher);
+                m_chunk.push_back(researcher);
             } else {
                 File* f = new File(chunkName(i));
-                Transaction* t = researcher->clone(Range(atoi(files[i+1]),atoi(files[i])));
-                Chunk* c(t,f);
-                m_chunk.push(c);
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str()));
+                BasicTransaction* t= researcher->txn()->clone(r);
+                Chunk* c = new Chunk(t,f);
+                m_chunk.push_back(c);
                 c->txn()->start();
             }
         }
@@ -295,17 +301,17 @@ void Aggregate::starter() {
     } else {
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
-        // NOTE: No range is sent to the Txn
+        // NOTE: No range is sent to the BasicTransaction
         File* newfile = new File(chunkName(0));
-        Txn* newtxn = TxnFactory::getInstance(url);
+        BasicTransaction* newtxn = BasicTransaction::factory(m_url);
         Chunk* researcher = new Chunk(newtxn,newfile);
-        m_chunk.push(researcher);
-        researcher->txn->start();
+        m_chunk.push_back(researcher);
+        researcher->txn()->start();
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        while (reasearcher->txn->state() != BasicTransaction::State::downloading)
+        while (researcher->txn()->state() != BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Initialize m_filesize
