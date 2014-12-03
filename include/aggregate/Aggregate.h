@@ -36,6 +36,9 @@ class Aggregate{
         ~Aggregate();
 
         // Join all the Txn threads of Chunks in vector
+        void joinAll();
+
+        // Join it's thread
         void join();
 
         // Stop the downloads

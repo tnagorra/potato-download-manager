@@ -25,10 +25,14 @@ Aggregate::~Aggregate(){
         delete *it;
 }
 
-void Aggregate::join(){
+void Aggregate::joinAll(){
     // Join all Chunks
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         it->txn()->join();
+}
+
+void Aggregate::join(){
+    m_thread.join();
 }
 
 void Aggregate::stop(){
@@ -134,10 +138,12 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 
 // Split a Chunk and insert new Chunk after it
 void Aggregate::split(std::vector<Chunk*>::size_type split_index){
+    // TODO could stop worrying about pausing this shit
     // Get the Chunk to be splitted
     // Pause the Txn
     // Wait until it is paused
     Chunk* cell = m_chunk[split_index];
+
     cell->txn()->pause();
     while(!cell->txn()->isPaused())
         boost::this_thread::sleep(boost::posix_time::millisec(100));
@@ -151,8 +157,8 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     // Create a new cloned Txn instance and update values
     // Create a new File and Chunk objects
+    cell->txn()->updateRange(midpoint);
     File* newfile = new File(chunkName(midpoint));
-    cell->txn()->range()->update(midpoint,lower);
     Txn* newtxn = cell->txn()->clone(upper,midpoint);
     Chunk* newcell = new Chunk(newtxn,newfile);
 
@@ -172,6 +178,7 @@ void Aggregate::worker(){
 }
 
 void Aggregate::merger() {
+    // TODO maybe add isComplete()
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
@@ -209,10 +216,13 @@ void Aggregate::splitter() {
 }
 
 void Aggregate::blocker() {
+    /* TODO not sure about anything here
     // loop while every chunk is complete
     while (!isComplete()){
         boost::this_thread::sleep(boost::posix_time::millisec(100));
     }
+    */
+    joinAll();
 }
 
 void Aggregate::starter() {
