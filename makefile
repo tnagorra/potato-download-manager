@@ -71,7 +71,7 @@ $(EXEC_AGGREGATE): $(FOBJECTS_AGGREGATE) $(MAINO_AGGREGATE) $(FOBJECTS_FILE) $(F
 	-g -o $@ $(LDFLAGS_AGGREGATE) $(LDFLAGS_FILE) $(LDFLAGS_DOWN)
 
 ### Common parts to both
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp $(INCDIR)/%.h | $(OBJDIR) $(BINDIR)
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR) $(BINDIR)
 	$(CC) -o $@ $< $(CFLAGS)
 
 $(OBJDIR): | $(BINDIR)

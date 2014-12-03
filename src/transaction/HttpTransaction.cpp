@@ -263,7 +263,9 @@ void HttpTransaction<SocketType>::writeOut() {
     boost::system::error_code error;
     while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
                 boost::asio::transfer_at_least(1), error)) {
+
         m_reader(writeStream,bufBytes);
+
         m_bytesDone += bufBytes;
         if (m_bytesDone>=m_bytesTotal) {
             error=boost::asio::error::eof;
@@ -280,6 +282,7 @@ void HttpTransaction<SocketType>::writeOut() {
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;
     }
+
     m_state = State::complete;
 }
 

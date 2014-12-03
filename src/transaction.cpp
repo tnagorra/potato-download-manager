@@ -29,8 +29,7 @@ int main(int argc, char* argv[]) try {
     bTrans->registerReader(rdr);
 
     bTrans->start();
-    bTrans->updateRange(1024);
-    while (!bTrans->complete());
+    bTrans->join();
 
     return 0;
 

@@ -8,7 +8,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
     mptr_rdata(rdata),
     mptr_thread(NULL),
     m_state(State::idle),
-    m_bytesTotal(range.ub()-range.lb()),_t bytesRemaining() const;
+    m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
     m_beenSplit(false) {
     mptr_response = new boost::asio::streambuf;
@@ -149,5 +149,12 @@ void BasicTransaction::updateRange(uintmax_t u) {
     m_range.update(u,m_range.lb());
     m_bytesTotal = m_range.size();
 }
+
+void BasicTransaction::join() const {
+    while (!isComplete())
+        boost::this_thread::sleep(
+                boost::posix_time::milliseconds(250));
+}
+
 
 // End file BasicTransaction.cpp

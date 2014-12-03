@@ -124,6 +124,7 @@ class BasicTransaction {
 
         BasicTransaction* clone(Range r, SSLSock* sock);
 
+        void join() const;
 
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);
