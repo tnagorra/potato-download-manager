@@ -3,7 +3,8 @@ SRCDIR:=src
 OBJDIR:=bin/obj
 BINDIR:=bin
 
-CC=g++
+# CC=g++
+CC=clang++-3.5
 CFLAGS=-c -I$(INCDIR)/ --std=c++11
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 
@@ -47,8 +48,8 @@ $(EXECDOWN): $(FOBJECTS_DOWN) $(MAINO_DOWN) $(FOBJECTS_FILE)
 
 ## Variables and rules for AGGREGATE
 
-SOURCES_AGGREGATE:= aggregate/Chunk.cpp
-HEADERS_AGGREGATE:= aggregate/Chunk.h
+SOURCES_AGGREGATE:= aggregate/Chunk.cpp aggregate/Aggregate.cpp
+HEADERS_AGGREGATE:= aggregate/Chunk.h aggregate/Aggregate.h
 MAINO_AGGREGATE:=$(OBJDIR)/transaction.o
 OBJECTS_AGGREGATE:=$(SOURCES_AGGREGATE:.cpp=.o)
 EXECAGGREGATE:=$(BINDIR)/aggregate

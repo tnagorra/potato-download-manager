@@ -111,3 +111,7 @@ std::string decodeUrl(std::string url){
     }
     return lru;
 }
+
+bool numerically(std::string const & a, std::string const & b){
+    return stoi(a) < stoi(b);
+}

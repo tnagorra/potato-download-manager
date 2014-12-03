@@ -4,24 +4,26 @@
 #include<iostream>
 #include<vector>
 #include<boost/date_time/posix_time/posix_time.hpp>
-#include<boost/thread.h>
+#include<boost/thread.hpp>
 #include"transaction/Transaction.h"
 #include"filesystem/File.h"
 #include"filesystem/Directory.h"
 #include"aggregate/Chunk.h"
+#include"common/helper.h"
+#include<string>
 
 
 class Aggregate{
     private:
         boost::thread m_thread;
-        std::vector<Socket*> m_free_socket;
+        //std::vector<Socket*> m_free_socket;
         std::vector<Chunk*> m_chunk;
         // the url of the file
-        string m_url;
+        std::string m_url;
         // the hash of url
-        string m_hasedUrl;
+        std::string m_hasedUrl;
         // the proper filename from url
-        string m_prettyUrl;
+        std::string m_prettyUrl;
         // maximum number of Chunks
         unsigned m_chunks;
         // Minimum size to be splittable
@@ -35,7 +37,7 @@ class Aggregate{
         // Destructor
         ~Aggregate();
 
-        // Join all the Txn threads of Chunks in vector
+        // Join all the BasicTransaction threads of Chunks in vector
         void joinAll();
 
         // Join it's thread
@@ -56,18 +58,18 @@ class Aggregate{
         // Returns a pretty name
         std::string prettyName() const;
 
-        // Returns the number of active Txns in the vector
+        // Returns the number of active BasicTransactions in the vector
         // active implies it has been started but isn't complete yet
         unsigned activeChunks() const;
 
         // Returns if all the Chunk in the vector are complete
-        bool isComplete() const;
+        bool complete() const;
 
         // Returns if any of the Chunk is splittable
-        bool isSplittable() const;
+        bool splittable() const;
 
-        // Returns if all the Txns are downloading something
-        bool isSplitReady() const;
+        // Returns if all the BasicTransactions are downloading something
+        bool splitReady() const;
 
         // Returns the index of bottleneck Chunk
         std::vector<Chunk*>::size_type bottleNeck() const;
@@ -84,9 +86,6 @@ class Aggregate{
 
         // Monitors chunk for splitting
         void splitter();
-
-        // Blocks the flow until all Chunks are complete
-        void blocker();
 
         // Starts the process, finds about previous sessions
         void starter();
