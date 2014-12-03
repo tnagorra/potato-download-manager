@@ -77,6 +77,13 @@ class ErrorReadingResponse : public Error {
     o) { }
 };
 
+// Class ex::download::BadProtocolScheme
+// Says that the Protocol Scheme provided was not understood.
+class BadProtocolScheme : public Error {
+    public:
+    BadProtocolScheme(const std::string& o)
+        : Error("The specified protocol scheme is not supported",o) {}
+};
 }; // end Namespace ex::download
 }; // end Namespace ex
 

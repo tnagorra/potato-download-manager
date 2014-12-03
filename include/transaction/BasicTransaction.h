@@ -15,6 +15,7 @@
 #include "transaction/ex.h"
 #include "transaction/RemoteData.h"
 #include "transaction/Range.h"
+#include "transaction/SocketTypes.h"
 
 using boost::asio::ip::tcp;
 
@@ -44,6 +45,10 @@ class BasicTransaction {
         boost::function<void (std::istream&, uintmax_t)> m_reader;
         // Endpoint iterator for hostname resolution
         tcp::resolver::iterator m_endpIterator;
+        // Has the transaction been split externally?
+        bool m_beenSplit;
+        // Has the transaction just been paused?
+        bool m_beenPaused;
 
         // Total number of bytes to be downloaded
         uintmax_t m_bytesTotal;
@@ -100,6 +105,25 @@ class BasicTransaction {
         uintmax_t bytesTotal() const;
 
         uintmax_t bytesDone() const;
+
+        bool isRunning() const;
+
+        void pause();
+
+        bool isPaused() const;
+
+        void play();
+
+        virtual void injectSocket(SSLSock* sock)=0;
+
+        virtual void injectSocket(PlainSock* sock)=0;
+
+        BasicTransaction* clone(Range& r, PlainSock* sock=NULL);
+
+        BasicTransaction* clone(Range& r, SSLSock* sock);
+
+        // Update the upper byte of the byte range
+        void updateRange(uintmax_t u);
 };
 #endif
 // End File BasicTransaction.h

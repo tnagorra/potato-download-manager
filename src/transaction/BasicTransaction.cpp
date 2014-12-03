@@ -9,7 +9,12 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
     mptr_thread(NULL),
     m_state(State::idle),
     m_bytesTotal(range.ub()-range.lb()),
-    m_bytesDone(0) { mptr_response = new boost::asio::streambuf; }
+    m_bytesDone(0),
+    m_beenSplit(false) {
+    mptr_response = new boost::asio::streambuf;
+    if (!m_range.uninitialized() && m_range.size()==0)
+        m_state = State::complete;
+}
 
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
         const Range& range) {
@@ -26,7 +31,7 @@ BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
                     dynamic_cast<RemoteDataHttp*>(rdata),NULL,range);
             break;
         default:
-            product = NULL;
+            Throw(ex::download::BadProtocolScheme);
     }
     return product;
 }
@@ -101,6 +106,44 @@ BasicTransaction::reader() const {
 
 tcp::resolver::iterator BasicTransaction::endpIterator() const {
     return m_endpIterator;
+}
+
+bool BasicTransaction::isRunning() const {
+    return (m_state!=State::idle && !complete());
+}
+
+void BasicTransaction::pause() {
+    m_beenPaused = true;
+}
+
+bool BasicTransaction::isPaused() const {
+    return m_beenPaused;
+}
+
+void BasicTransaction::play() {
+    m_beenPaused = false;
+}
+
+BasicTransaction* BasicTransaction::clone(Range& r, PlainSock* sock) {
+    BasicTransaction* bt = factory(mptr_rdata,r);
+    bt->injectSocket(sock);
+}
+
+BasicTransaction* BasicTransaction::clone(Range& r, SSLSock* sock) {
+    BasicTransaction* bt = factory(mptr_rdata,r);
+    bt->injectSocket(sock);
+}
+
+void BasicTransaction::updateRange(uintmax_t u) {
+    if (!m_range.uninitialized()) {
+        if (u>m_range.ub())
+            m_beenSplit = true;
+    } else {
+        if (u>m_bytesTotal)
+            m_beenSplit = true;
+    }
+    m_range.update(u,m_range.lb());
+    m_bytesTotal = m_range.size();
 }
 
 // End file BasicTransaction.cpp

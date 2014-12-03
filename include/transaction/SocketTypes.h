@@ -31,7 +31,7 @@ struct SockTraits<SSLSock> {
 
     SockTraits() : ssl(true) {}
 
-    static SSLSock* transform(PlainSock* psock) {
+    static SSLSock* transform(PlainSock* psock=NULL) {
         boost::asio::io_service* ios;
         if (false && psock!=NULL)
             ios = &psock->get_io_service();
@@ -42,6 +42,10 @@ struct SockTraits<SSLSock> {
         ctx.set_default_verify_paths();
 
         SSLSock* ssock = new SSLSock(*ios,ctx);
+        return ssock;
+    }
+
+    static SSLSock* transform(SSLSock* ssock) {
         return ssock;
     }
 };
@@ -56,7 +60,7 @@ struct SockTraits<PlainSock> {
 
     SockTraits() : ssl(false) {}
 
-    static PlainSock* transform(SSLSock* ssock) {
+    static PlainSock* transform(SSLSock* ssock=NULL) {
         boost::asio::io_service* ios;
         if (ssock!=NULL)
             ios = &ssock->get_io_service();
@@ -66,6 +70,11 @@ struct SockTraits<PlainSock> {
         PlainSock* psock = new PlainSock(*ios);
         return psock;
     }
+
+    static PlainSock* transform(PlainSock* psock) {
+        return psock;
+    }
+
 };
 
 #endif

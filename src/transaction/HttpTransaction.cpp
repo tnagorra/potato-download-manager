@@ -25,6 +25,10 @@ HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::start() {
+    if (m_state!= State::idle)
+        return;
+    if (mptr_socket==NULL)
+        mptr_socket = SockTraits<SocketType>::transform();
     this->mptr_thread = new boost::thread(
             &HttpTransaction<SocketType>::workerMain, this);
 }
@@ -74,9 +78,9 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     if(dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Accept")=="")
         rqstream<<"Accept: */*\r\n";
     //if (dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Connection")=="")
-    rqstream<<"Connection: close\r\n";
+    //rqstream<<"Connection: \r\n";
     if (!m_range.uninitialized())
-        rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()
+        rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()-1
             <<"\r\n";
 
     // Now spew the given headers
@@ -105,8 +109,8 @@ void HttpTransaction<SocketType>::waitData() {
     // While there are no bytes to read, just hang around
     while (!mptr_socket->available()) {
         // a sleep_for call is also an interruption point.
-        boost::this_thread::sleep_for(
-                boost::chrono::milliseconds(100));
+        boost::this_thread::sleep(
+                boost::posix_time::milliseconds(100));
     }
 }
 
@@ -115,8 +119,8 @@ void HttpTransaction<SSLSock>::waitData() {
     // While there are no bytes to read, just hang around
     while (!mptr_socket->lowest_layer().available()) {
         // a sleep_for call is also an interruption point.
-        boost::this_thread::sleep_for(
-                boost::chrono::milliseconds(100));
+        boost::this_thread::sleep(
+                boost::posix_time::milliseconds(100));
     }
 }
 
@@ -216,7 +220,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
             if (oldServer!=mptr_rdata->server()) {
                 mptr_rdata->canPartial(RemoteData::Partial::unknown);
                 delete mptr_socket;
-                mptr_socket = SockTraits<SocketType>::transform(NULL);
+                mptr_socket = SockTraits<SocketType>::transform();
             }
             // Throwout, to restart our workerMain
             throw this;
@@ -242,6 +246,7 @@ void HttpTransaction<SocketType>::clearProgress() {
     m_state = State::idle;
     m_bytesDone = 0;
     m_statusLine = "";
+    m_beenSplit = false;
     m_respHeaders = std::map<std::string,std::string>();
     delete mptr_response; mptr_response = new boost::asio::streambuf;
 }
@@ -254,15 +259,22 @@ void HttpTransaction<SocketType>::writeOut() {
         m_reader(writeStream,bufBytes);
     m_bytesDone = bufBytes;
     m_state = State::downloading;
+
     boost::system::error_code error;
     while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
                 boost::asio::transfer_at_least(1), error)) {
         m_reader(writeStream,bufBytes);
         m_bytesDone += bufBytes;
-        if (m_bytesDone==m_bytesTotal) {
+        if (m_bytesDone>=m_bytesTotal) {
             error=boost::asio::error::eof;
             break;
         }
+
+        while (m_beenPaused) {
+            boost::this_thread::sleep(
+                    boost::posix_time::milliseconds(200));
+        }
+
         boost::this_thread::interruption_point();
     }
     if (error!=boost::asio::error::eof) {
