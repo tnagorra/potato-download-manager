@@ -7,7 +7,7 @@ template class Transaction<SSLSock>;
 
 template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata,
-        SocketType* sock, const Range& range)
+        SocketType* sock, const Range range)
     : mptr_socket(sock),
     BasicTransaction(rdata,range) { }
 
@@ -15,7 +15,7 @@ Transaction<SocketType>::Transaction(RemoteData* rdata,
 // factory without it.
 /*template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata,
-        antiSockType* sock, const Range& range)
+        antiSockType* sock, const Range range)
     : BasicTransaction(rdata,range) {
     mptr_socket = SockTraits<SocketType>::transform(sock);
 }*/

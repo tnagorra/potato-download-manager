@@ -73,12 +73,12 @@ class HttpTransaction : public Transaction<SocketType> {
         // Constructor. Default Range argument (0,0) means the
         // entire resource
         HttpTransaction(RemoteDataHttp* rdata, SocketType* sock = NULL,
-                const Range& range = Range(0,0));
+                const Range range = Range(0,0));
 
         // This has been deemed unnecessary for now
         // Overload in case a different socket type is provided
         //HttpTransaction(RemoteDataHttp* rdata, antiSockType* asock,
-        //        const Range& range = Range(0,0));
+        //        const Range range = Range(0,0));
 
         void start();
         void stop();

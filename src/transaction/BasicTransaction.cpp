@@ -3,12 +3,12 @@
 #include "transaction/HttpTransaction.h"
 
 BasicTransaction::BasicTransaction(RemoteData* rdata,
-        const Range& range)
+        const Range range)
     : m_range(range),
     mptr_rdata(rdata),
     mptr_thread(NULL),
     m_state(State::idle),
-    m_bytesTotal(range.ub()-range.lb()),
+    m_bytesTotal(range.ub()-range.lb()),_t bytesRemaining() const;
     m_bytesDone(0),
     m_beenSplit(false) {
     mptr_response = new boost::asio::streambuf;
@@ -17,7 +17,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
 }
 
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
-        const Range& range) {
+        const Range range) {
     if (!rdata)
         return NULL;
     BasicTransaction* product;
@@ -37,7 +37,7 @@ BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
 }
 
 BasicTransaction* BasicTransaction::factory(std::string url,
-        const Range& range) {
+        const Range range) {
     RemoteData* rdata_url = RemoteData::factory(url);
     return factory(rdata_url, range);
 }
@@ -80,10 +80,14 @@ uintmax_t BasicTransaction::bytesDone() const {
 }
 
 uintmax_t BasicTransaction::bytesTotal() const {
-    return m_range.size();
+    return m_bytesTotal;
 }
 
-bool BasicTransaction::complete() const {
+uintmax_t BasicTransaction::bytesRemaining() const {
+    return m_bytesTotal-m_bytesDone;
+}
+
+bool BasicTransaction::isComplete() const {
     return state()==State::complete || state()==State::failed;
 }
 
@@ -109,7 +113,7 @@ tcp::resolver::iterator BasicTransaction::endpIterator() const {
 }
 
 bool BasicTransaction::isRunning() const {
-    return (m_state!=State::idle && !complete());
+    return (m_state!=State::idle && !isComplete());
 }
 
 void BasicTransaction::pause() {
@@ -124,12 +128,12 @@ void BasicTransaction::play() {
     m_beenPaused = false;
 }
 
-BasicTransaction* BasicTransaction::clone(Range& r, PlainSock* sock) {
+BasicTransaction* BasicTransaction::clone(Range r, PlainSock* sock) {
     BasicTransaction* bt = factory(mptr_rdata,r);
     bt->injectSocket(sock);
 }
 
-BasicTransaction* BasicTransaction::clone(Range& r, SSLSock* sock) {
+BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
     BasicTransaction* bt = factory(mptr_rdata,r);
     bt->injectSocket(sock);
 }

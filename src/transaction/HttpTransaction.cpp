@@ -13,13 +13,13 @@ template class HttpTransaction<SSLSock>;
 
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        SocketType* sock, const Range& range)
+        SocketType* sock, const Range range)
     : Transaction<SocketType>(rdata,sock,range)
 { }
 
 /*template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        antiSockType* sock, const Range& range)
+        antiSockType* sock, const Range range)
     : Transaction<SocketType>(rdata,sock,range)
 { }*/
 

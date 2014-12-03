@@ -59,22 +59,22 @@ class BasicTransaction {
         // Constructor. Default Range argument (0,0) means the
         // entire resource
         BasicTransaction(RemoteData* rdata,
-                const Range& range = Range(0,0));
+                const Range range = Range(0,0));
 
         // Static factory method for generating objects of this
         // type.
         // TODO should we encapsulate the factory in another class?
         static BasicTransaction* factory(RemoteData* rdata,
-                const Range& range = Range(0,0));
+                const Range range = Range(0,0));
 
         static BasicTransaction* factory(std::string url,
-                const Range& range = Range(0,0));
+                const Range range = Range(0,0));
 
         // Destructor
         virtual ~BasicTransaction() {}
 
         // Returns if complete
-        bool complete() const;
+        bool isComplete() const;
 
         // Start the download
         virtual void start()=0;
@@ -106,6 +106,8 @@ class BasicTransaction {
 
         uintmax_t bytesDone() const;
 
+        uintmax_t bytesRemaining() const;
+
         bool isRunning() const;
 
         void pause();
@@ -118,9 +120,10 @@ class BasicTransaction {
 
         virtual void injectSocket(PlainSock* sock)=0;
 
-        BasicTransaction* clone(Range& r, PlainSock* sock=NULL);
+        BasicTransaction* clone(Range r, PlainSock* sock=NULL);
 
-        BasicTransaction* clone(Range& r, SSLSock* sock);
+        BasicTransaction* clone(Range r, SSLSock* sock);
+
 
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);
