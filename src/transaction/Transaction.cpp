@@ -7,7 +7,7 @@ template class Transaction<SSLSock>;
 
 template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata,
-        SocketType* sock, const Range range)
+        SocketType* sock, Range range)
     : mptr_socket(sock),
     BasicTransaction(rdata,range) { }
 

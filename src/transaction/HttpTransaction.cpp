@@ -13,7 +13,7 @@ template class HttpTransaction<SSLSock>;
 
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        SocketType* sock, const Range range)
+        SocketType* sock, Range range)
     : Transaction<SocketType>(rdata,sock,range)
 { }
 
@@ -31,6 +31,7 @@ void HttpTransaction<SocketType>::start() {
         mptr_socket = SockTraits<SocketType>::transform();
     this->mptr_thread = new boost::thread(
             &HttpTransaction<SocketType>::workerMain, this);
+    this->mptr_speedThread = new boost::thread();
 }
 
 template <typename SocketType>

@@ -45,7 +45,7 @@ class Transaction : public BasicTransaction {
         // Constructor. Default Range argument (0,0) means the
         // entire resource
         Transaction(RemoteData* rdata, SocketType* sock = NULL,
-                const Range range = Range(0,0));
+                Range range = Range(0,0));
 
         // Overload in case a different socket type is provided
         //Transaction(RemoteData* rdata, antiSockType* asock,

@@ -3,7 +3,7 @@
 #include "transaction/HttpTransaction.h"
 
 BasicTransaction::BasicTransaction(RemoteData* rdata,
-        const Range range)
+        Range range)
     : m_range(range),
     mptr_rdata(rdata),
     mptr_thread(NULL),
@@ -17,7 +17,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
 }
 
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
-        const Range range) {
+        Range range) {
     if (!rdata)
         return NULL;
     BasicTransaction* product;
@@ -37,7 +37,7 @@ BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
 }
 
 BasicTransaction* BasicTransaction::factory(std::string url,
-        const Range range) {
+        Range range) {
     RemoteData* rdata_url = RemoteData::factory(url);
     return factory(rdata_url, range);
 }
@@ -136,6 +136,7 @@ BasicTransaction* BasicTransaction::clone(Range r, PlainSock* sock) {
 BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
     BasicTransaction* bt = factory(mptr_rdata,r);
     bt->injectSocket(sock);
+    return bt;
 }
 
 void BasicTransaction::updateRange(uintmax_t u) {
@@ -151,10 +152,13 @@ void BasicTransaction::updateRange(uintmax_t u) {
 }
 
 void BasicTransaction::join() const {
-    while (!isComplete())
-        boost::this_thread::sleep(
-                boost::posix_time::milliseconds(250));
+    mptr_thread->join();
 }
 
+void BasicTransaction::speedWorker() try {
+
+} catch (std::exception& ex) {
+    print(ex.what());
+}
 
 // End file BasicTransaction.cpp

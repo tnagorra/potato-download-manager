@@ -39,6 +39,8 @@ class BasicTransaction {
         RemoteData* mptr_rdata;
         // The thread in which the download will run
         boost::thread* mptr_thread;
+        // The thread which will do the speed observation work
+        boost::thread* mptr_speedThread;
         // Streambuf for buffering the response
         boost::asio::streambuf* mptr_response;
         // function object for writing out the received bytes
@@ -59,16 +61,16 @@ class BasicTransaction {
         // Constructor. Default Range argument (0,0) means the
         // entire resource
         BasicTransaction(RemoteData* rdata,
-                const Range range = Range(0,0));
+                Range range = Range(0,0));
 
         // Static factory method for generating objects of this
         // type.
         // TODO should we encapsulate the factory in another class?
         static BasicTransaction* factory(RemoteData* rdata,
-                const Range range = Range(0,0));
+                Range range = Range(0,0));
 
         static BasicTransaction* factory(std::string url,
-                const Range range = Range(0,0));
+                Range range = Range(0,0));
 
         // Destructor
         virtual ~BasicTransaction() {}
@@ -128,6 +130,9 @@ class BasicTransaction {
 
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);
+
+    private:
+        void speedWorker();
 };
 #endif
 // End File BasicTransaction.h

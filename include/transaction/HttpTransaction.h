@@ -53,6 +53,7 @@ class HttpTransaction : public Transaction<SocketType> {
         using Transaction<SocketType>::m_state;
         using Transaction<SocketType>::m_range;
         using Transaction<SocketType>::mptr_thread;
+        using Transaction<SocketType>::mptr_speedThread;
         using Transaction<SocketType>::mptr_socket;
         using Transaction<SocketType>::mptr_response;
         using Transaction<SocketType>::mptr_rdata;
@@ -73,7 +74,7 @@ class HttpTransaction : public Transaction<SocketType> {
         // Constructor. Default Range argument (0,0) means the
         // entire resource
         HttpTransaction(RemoteDataHttp* rdata, SocketType* sock = NULL,
-                const Range range = Range(0,0));
+                Range range = Range(0,0));
 
         // This has been deemed unnecessary for now
         // Overload in case a different socket type is provided
