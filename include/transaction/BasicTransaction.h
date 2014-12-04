@@ -57,6 +57,11 @@ class BasicTransaction {
         // Total number of bytes downloaded
         uintmax_t m_bytesDone;
 
+        // Timer thread variables. These are only to be mutated by
+        // the timer thread.
+        double m_avgSpeed;
+        double m_instSpeed;
+        double m_hifiSpeed;
     public:
         // Constructor. Default Range argument (0,0) means the
         // entire resource
@@ -131,6 +136,12 @@ class BasicTransaction {
         // Update the upper byte of the byte range
         void updateRange(uintmax_t u);
 
+        // Getters for getting speed related values
+        double avgSpeed() const;
+        double instSpeed() const;
+        double hifiSpeed() const;
+        double speed() const;
+        uintmax_t timeRemaining() const;
     private:
         void speedWorker();
 };

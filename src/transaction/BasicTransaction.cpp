@@ -156,9 +156,42 @@ void BasicTransaction::join() const {
 }
 
 void BasicTransaction::speedWorker() try {
+    uintmax_t tick=0;
+    uintmax_t oldBytes,delta;
 
+    while (!isComplete()) {
+        oldBytes = bytesDone();
+        boost::this_thread::sleep(
+                boost::posix_time::milliseconds(100));
+        delta = bytesDone()-oldBytes;
+        tick++;
+        m_avgSpeed = 1.0*bytesDone()/(10*tick);
+        m_instSpeed = 1.0*delta/10;
+    }
 } catch (std::exception& ex) {
     print(ex.what());
+}
+
+double BasicTransaction::avgSpeed() const {
+    return m_avgSpeed;
+}
+
+double BasicTransaction::instSpeed() const {
+    return m_instSpeed;
+}
+
+double BasicTransaction::hifiSpeed() const {
+    return m_hifiSpeed;
+}
+
+double BasicTransaction::speed() const {
+    return avgSpeed();
+}
+
+uintmax_t BasicTransaction::timeRemaining() const {
+    if (speed()==0)
+        return UINT_MAX;
+    return bytesRemaining()/speed();
 }
 
 // End file BasicTransaction.cpp

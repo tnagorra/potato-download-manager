@@ -76,7 +76,7 @@ unsigned Aggregate::activeChunks() const {
 
 bool Aggregate::complete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->complete())
+        if(!(*it)->txn()->isComplete())
             return false;
     }
     return true;
@@ -95,7 +95,7 @@ bool Aggregate::splitReady() const {
         // TODO 0 Insert some really good algorithm
         // Maybe wait for download to get to stable state
         // Waiting for a while may be benificial in long run
-        if ((*it)->txn()->speed() <= 100 && !(*it)->txn()->complete())
+        if ((*it)->txn()->speed()<=100 && !(*it)->txn()->isComplete())
             return false;
     }
     return true;
