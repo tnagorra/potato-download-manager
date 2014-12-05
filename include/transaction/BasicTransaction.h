@@ -105,6 +105,8 @@ class BasicTransaction {
 
         boost::thread* p_thread() const;
 
+        boost::thread* p_speedThread() const;
+
         boost::function<void (std::istream&,uintmax_t)> reader() const;
 
         tcp::resolver::iterator endpIterator() const;

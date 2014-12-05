@@ -161,6 +161,7 @@ void Transaction<SocketType>::operator=(
     m_range = i.range();
     //mptr_rdata = i.p_remoteData();
     mptr_thread = i.p_thread();
+    mptr_speedThread = i.p_speedThread();
     //m_response = i.m_response;
     m_reader = i.reader();
     //m_endpIterator = i.endpIterator();

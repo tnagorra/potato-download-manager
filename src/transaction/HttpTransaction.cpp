@@ -31,12 +31,14 @@ void HttpTransaction<SocketType>::start() {
         mptr_socket = SockTraits<SocketType>::transform();
     this->mptr_thread = new boost::thread(
             &HttpTransaction<SocketType>::workerMain, this);
-    this->mptr_speedThread = new boost::thread();
+    this->mptr_speedThread = new boost::thread(
+            &BasicTransaction::speedWorker, this);
 }
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::stop() {
     this->mptr_thread->interrupt();
+    this->mptr_speedThread->interrupt();
 }
 
 template <typename SocketType>
@@ -166,12 +168,16 @@ void HttpTransaction<SocketType>::receiveHeaders() {
             m_respHeaders[boost::to_lower_copy(header.substr(0,colon))]
                 = header.substr(colon+2,header.size()-colon-3);
         }
+        print(header);
     }
 
     // Determine the size of the response body
-    if (m_respHeaders.count("content-length")>0)
+    if (m_respHeaders.count("content-length")>0) {
+        print("third");
         m_bytesTotal = boost::lexical_cast<uintmax_t>(
                 m_respHeaders["content-length"]);
+        m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
+    }
 
     // Find out whether byterange requests are supported
     if (m_respHeaders.count("accept-ranges")>0) {
@@ -189,9 +195,11 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     // As a last resort, if the size of the incoming stream cannot
     // be determined, we set it to the largest possible value
-    if (m_respHeaders.count("content-length")==0 && m_range.uninitialized())
-        m_bytesTotal = std::numeric_limits<uintmax_t>::max();
-
+    /*if (m_respHeaders.count("content-length")==0 && m_range.uninitialized()) {
+        print("fourth");
+        m_bytesTotal = std::numeric_limits<uintmax_t>::max()/4);
+        m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
+    }*/
     handleStatusCode(status_code);
 }
 
@@ -280,10 +288,10 @@ void HttpTransaction<SocketType>::writeOut() {
 
         boost::this_thread::interruption_point();
     }
+
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;
     }
-
     m_state = State::complete;
 }
 

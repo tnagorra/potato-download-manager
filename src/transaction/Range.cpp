@@ -14,7 +14,7 @@ Range::Range(uintmax_t ub, uintmax_t lb) {
 // Throws ex::Invalid
 void Range::update(uintmax_t ub,uintmax_t lb){
     if( ub < lb)
-        Throw(ex::Invalid, "Range", "("+std::to_string(lb)+","+std::to_string(ub)+")" );
+        Throw(ex::Invalid, "Range", "("+std::to_string(ub)+","+std::to_string(lb)+")" );
     m_lb = lb;
     m_ub = ub;
 }

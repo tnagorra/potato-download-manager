@@ -121,8 +121,10 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 
     // If there is no bottleneck Chunk then throw exception
     // TODO
-    if( it == m_chunk.size() )
-        throw "no bottle neck";
+    if( it == m_chunk.size() ) {
+        print("no bottle neck");
+        throw "a";
+    }
         //Throw(ex::chunk::NoBottleNecK());
 
     // Now just get the real bottle neck
@@ -161,8 +163,10 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
+    print("first");
     cell->txn()->updateRange(midpoint);
     File* newfile = new File(chunkName(midpoint));
+    print("second");
     Range newrange(upper,midpoint);
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
@@ -176,9 +180,13 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker(){
+    print("starter");
     starter();
+    print("splitter");
     splitter();
+    print("joinALl");
     joinAll();
+    print("merger");
     merger();
 }
 
@@ -270,20 +278,25 @@ void Aggregate::starter() {
             } else {
                 delete f;
                 // This is a weird case
+                print("Some weird error");
                 throw "Some weird error";
             }
         }
         if(researcher == NULL){
             // Maybe join them all
+            print("Download was already complete!");
             throw "Download was already complete!";
+
         }
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
+        print("gookha");
         while (researcher->txn()->state() != BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
+        print("gookhayo");
         for(unsigned i=0; i < files.size()-1; i++){
             if(i==istarter){
                 m_chunk.push_back(researcher);
@@ -311,10 +324,13 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        while (researcher->txn()->state() != BasicTransaction::State::downloading)
+        print("gookhanchu");
+        while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
+
+        print("2girls1cup");
     }
 }

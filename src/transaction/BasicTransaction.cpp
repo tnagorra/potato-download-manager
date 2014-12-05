@@ -10,7 +10,8 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
     m_state(State::idle),
     m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
-    m_beenSplit(false) {
+    m_beenSplit(false),
+    m_beenPaused(false) {
     mptr_response = new boost::asio::streambuf;
     if (!m_range.uninitialized() && m_range.size()==0)
         m_state = State::complete;
@@ -103,6 +104,10 @@ boost::thread* BasicTransaction::p_thread() const {
     return mptr_thread;
 }
 
+boost::thread* BasicTransaction::p_speedThread() const {
+    return mptr_speedThread;
+}
+
 boost::function<void (std::istream&, uintmax_t)>
 BasicTransaction::reader() const {
     return m_reader;
@@ -140,11 +145,13 @@ BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
 }
 
 void BasicTransaction::updateRange(uintmax_t u) {
+    print(m_range.ub()<<" "<<m_range.lb());
+    print("uR "<<u);
     if (!m_range.uninitialized()) {
-        if (u>m_range.ub())
+        if (u<m_range.ub())
             m_beenSplit = true;
     } else {
-        if (u>m_bytesTotal)
+        if (u<m_bytesTotal)
             m_beenSplit = true;
     }
     m_range.update(u,m_range.lb());
@@ -158,6 +165,10 @@ void BasicTransaction::join() const {
 void BasicTransaction::speedWorker() try {
     uintmax_t tick=0;
     uintmax_t oldBytes,delta;
+
+    while (state()!=State::downloading)
+        boost::this_thread::sleep(
+            boost::posix_time::milliseconds(100));
 
     while (!isComplete()) {
         oldBytes = bytesDone();
