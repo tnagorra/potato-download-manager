@@ -1,9 +1,6 @@
 #include"aggregate/Aggregate.h"
 
 /*
-   TODO 1
-   Join transaction thread somewhere
-
    When BasicTransaction is complete, push those to m_socket
    When BasicTransaction is started and m_socket isn't empty,
    take it from m_socket and pop it
@@ -120,27 +117,20 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     }
 
     // If there is no bottleneck Chunk then throw exception
-    // TODO
     if( it == m_chunk.size() ) {
         Throw(ex::aggregate::NoBottleneck);
     }
 
     // Now just get the real bottle neck
     for (; it < m_chunk.size(); ++it){
-        std::cout << it << std::endl;
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
-        std::cout << it << std::endl;
         if( ibr <= m_splittable_size)
             continue;
-        std::cout << it << std::endl;
         uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
-        std::cout << it << std::endl;
         if((btr < itr) || (btr==itr && bbr<ibr)){
             bneck = it;
-            std::cout << bneck << std::endl;
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
             btr = m_chunk[bneck]->txn()->timeRemaining();
-            std::cout << bneck << std::endl;
         }
     }
 
@@ -166,12 +156,18 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     uintmax_t upper = cell->txn()->range().ub();
     uintmax_t midpoint = (upper+(lower+downloaded))/2;
 
+    if( midpoint > upper || midpoint < lower)
+        Throw(ex::Invalid,"Range","Midpoint");
+
+    std::cout << "U " << upper << " L " << lower <<std::endl;
+    std::cout << "D " << downloaded << " M " << midpoint << std::endl;
+
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
-    print("first");
+    print("Update myself");
     cell->txn()->updateRange(midpoint);
     File* newfile = new File(chunkName(midpoint));
-    print("second");
+    print("Create newself");
     Range newrange(upper,midpoint);
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);

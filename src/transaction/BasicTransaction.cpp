@@ -145,8 +145,6 @@ BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
 }
 
 void BasicTransaction::updateRange(uintmax_t u) {
-    print(m_range.ub()<<" "<<m_range.lb());
-    print("uR "<<u);
     if (!m_range.uninitialized()) {
         if (u<m_range.ub())
             m_beenSplit = true;
