@@ -17,17 +17,24 @@ namespace ex{
     namespace aggregate{
 
         // Class ex::aggregate::NoBottleneck
-        // Derives from Error and says that the end of a file has
-        // been reached unexpectedly.
+        // Derives from Error and says that there is no bottleneck
         class NoBottleneck: public Error {
             public:
-                // construct the error object, saying that the end of
-                // file 'name' has been reached.
-                NoBottleneck(const std::string& name, const std::string& o)
-                    : Error("Bottleneck "+name+" not found.", o) {
+                // construct the error object
+                NoBottleneck(const std::string& o)
+                    : Error("Bottleneck not found.", o) {
+                    }
+        };
+        // Class ex::aggregate::AlreadyComplete
+        // Derives from Error and says that download was already complete
+        class AlreadyComplete: public Error {
+            public:
+                // construct the error object
+                AlreadyComplete(const std::string& o)
+                    : Error("Donwnload is Already Complete", o) {
                     }
         };
     };
 };
 #endif
-    // End File exAggregate.h
+// End File exAggregate.h

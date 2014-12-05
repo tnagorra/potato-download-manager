@@ -84,7 +84,7 @@ bool Aggregate::complete() const {
 
 bool Aggregate::splittable() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->bytesRemaining() > m_splittable_size)
+        if((*it)->txn()->bytesRemaining() > m_splittable_size)
             return true;
     }
     return false;
@@ -122,9 +122,8 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     // If there is no bottleneck Chunk then throw exception
     // TODO
     if( it == m_chunk.size() ) {
-        Throw(ex::aggregate::NoBottleneck,"Hari");
+        Throw(ex::aggregate::NoBottleneck);
     }
-        //Throw(ex::chunk::NoBottleNecK());
 
     // Now just get the real bottle neck
     for (; it < m_chunk.size(); ++it){
@@ -248,6 +247,7 @@ void Aggregate::starter() {
 
         // TODO some case for files other than
         // numeric in nature
+        // solution: use folders
         std::vector<std::string> files = session.list();
         sort(files.begin(),files.end(),numerically);
 
@@ -286,9 +286,7 @@ void Aggregate::starter() {
         }
         if(researcher == NULL){
             // Maybe join them all
-            print("Download was already complete!");
-            throw "Download was already complete!";
-
+            //Throw(ex::aggregate::AlreadyComplete);
         }
 
         // Wait for researcher until downloading starts,
