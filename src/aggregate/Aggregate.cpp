@@ -122,23 +122,29 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     // If there is no bottleneck Chunk then throw exception
     // TODO
     if( it == m_chunk.size() ) {
-        print("no bottle neck");
-        throw "a";
+        Throw(ex::aggregate::NoBottleneck,"Hari");
     }
         //Throw(ex::chunk::NoBottleNecK());
 
     // Now just get the real bottle neck
     for (; it < m_chunk.size(); ++it){
+        std::cout << it << std::endl;
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
+        std::cout << it << std::endl;
         if( ibr <= m_splittable_size)
             continue;
+        std::cout << it << std::endl;
         uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
+        std::cout << it << std::endl;
         if((btr < itr) || (btr==itr && bbr<ibr)){
-            bneck = itr;
+            bneck = it;
+            std::cout << bneck << std::endl;
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
             btr = m_chunk[bneck]->txn()->timeRemaining();
+            std::cout << bneck << std::endl;
         }
     }
+
     return bneck;
 }
 
@@ -175,7 +181,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
     // Start those BasicTransactions
-    cell->txn()->start();
+    cell->txn()->play();
     newcell->txn()->start();
 }
 
@@ -223,15 +229,11 @@ void Aggregate::splitter() {
         // NOTE: There may be some problem here
         if(activeChunks() < m_chunks && splitReady()){
             std::vector<Chunk*>::size_type bneck;
-            // TODO catch the exception around bneck
-            /*
-               try {
-               bneck = bottleNeck();
-               } catch (ex::chunk::NoBottleNeck) {
-               break;
-               }
-               */
-            bneck = bottleNeck();
+            try {
+                bneck = bottleNeck();
+            } catch (ex::aggregate::NoBottleneck) {
+                break;
+            }
             split(bneck);
         }
     }
@@ -292,11 +294,9 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        print("gookha");
         while (researcher->txn()->state() != BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
-        print("gookhayo");
         for(unsigned i=0; i < files.size()-1; i++){
             if(i==istarter){
                 m_chunk.push_back(researcher);
@@ -324,13 +324,10 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        print("gookhanchu");
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
-
-        print("2girls1cup");
     }
 }

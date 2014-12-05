@@ -10,6 +10,7 @@
 #include"filesystem/Directory.h"
 #include"aggregate/Chunk.h"
 #include"common/helper.h"
+#include"aggregate/ex.h"
 #include<string>
 
 
