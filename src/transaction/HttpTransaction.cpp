@@ -270,9 +270,13 @@ void HttpTransaction<SocketType>::writeOut() {
     m_state = State::downloading;
 
     boost::system::error_code error;
-    while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
-                boost::asio::transfer_at_least(1), error)) {
+    while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
+                boost::asio::transfer_at_least(1), error))) {
 
+        // TODO: tnagorra: Here it seems that you didn't understand
+        //      what i said, this line is the source of range problem
+        //      change bufBytes to approporiate value to truncate the
+        //      excess data.
         m_reader(writeStream,bufBytes);
 
         m_bytesDone += bufBytes;

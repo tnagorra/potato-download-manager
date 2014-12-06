@@ -136,6 +136,7 @@ void BasicTransaction::play() {
 BasicTransaction* BasicTransaction::clone(Range r, PlainSock* sock) {
     BasicTransaction* bt = factory(mptr_rdata,r);
     bt->injectSocket(sock);
+    return bt;
 }
 
 BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {

@@ -79,7 +79,7 @@ void File::copy(const fs::path& tos,Conflict c) {
         Throw(ex::filesystem::NotThere,path().string());
     // To consider paths like "hari/shiva/"
     Node to(tos);
-    if( to.exists() && to.what() == DIRECTORY || (to.filename() == "." || to.filename() == ".."))
+    if( (to.exists() && to.what() == DIRECTORY) || (to.filename() == "." || to.filename() == ".."))
         toss /= filename();
     File too(toss);
     if( too.exists() && c==LEAVE)
@@ -98,7 +98,7 @@ void File::move(const fs::path& tos,Conflict c) {
     if (!exists())
         Throw(ex::filesystem::NotThere,m_name.string());
     Node to(tos);
-    if( to.exists() && to.what() == DIRECTORY || (to.filename() == "." || to.filename() == ".."))
+    if( (to.exists() && to.what() == DIRECTORY) || (to.filename() == "." || to.filename() == ".."))
         toss /= filename();
     File too(toss);
     if( too.exists() && c==LEAVE)
