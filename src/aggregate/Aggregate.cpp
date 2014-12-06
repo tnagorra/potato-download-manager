@@ -12,7 +12,7 @@ Aggregate::Aggregate(const std::string url, const std::string savefolder,
     m_chunks(txns), m_url(url), m_splittable_size(split),
     m_filesize(0), m_savefolder(savefolder)
 {
-    m_hasedUrl = md5(m_url);
+    m_hasedUrl = m_savefolder+"/"+md5(m_url);
     m_prettyUrl = m_savefolder+"/"+prettify(m_url);
 }
 
