@@ -26,8 +26,11 @@ Aggregate::~Aggregate(){
 
 void Aggregate::joinAll(){
     // Join all Chunks
-    for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
+    print("here");
+    for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         (*it)->txn()->join();
+    }
+    print("nothere");
 }
 
 void Aggregate::join(){
@@ -53,6 +56,10 @@ uintmax_t Aggregate::bytesDone() const {
     return bytes;
 }
 
+uintmax_t Aggregate::bytesTotal() const {
+    return m_filesize;
+}
+
 std::string Aggregate::chunkName(uintmax_t num) const {
     // NOTE: "/" or "\" doesn't matter
     return m_hasedUrl+"/"+std::to_string(num);
@@ -70,10 +77,35 @@ unsigned Aggregate::activeChunks() const {
     }
     return count;
 }
+unsigned Aggregate::totalChunks() const {
+    return m_chunk.size();
+}
+
+double Aggregate::speed() const {
+    double s = 0;
+    for(auto i = m_chunk.begin();i != m_chunk.end();++i)
+        s += (*i)->txn()->speed();
+    return s;
+}
+
+double Aggregate::progress() const {
+    if( m_filesize == 0 ) return 0;
+    return 1.0*bytesDone()/m_filesize*100;
+}
+
+uintmax_t Aggregate::timeRemaining() const {
+    uintmax_t max=0;
+     for(auto i = m_chunk.begin();i != m_chunk.end();++i){
+       uintmax_t t = (*i)->txn()->timeRemaining();
+        if(t>max)
+            max = t;
+    }
+    return max;
+}
 
 bool Aggregate::complete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->isComplete())
+        if( (*it)->txn()->isComplete() == false )
             return false;
     }
     return true;
@@ -159,15 +191,13 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     if( midpoint > upper || midpoint < lower)
         Throw(ex::Invalid,"Range","Midpoint");
 
-    std::cout << "U " << upper << " L " << lower <<std::endl;
-    std::cout << "D " << downloaded << " M " << midpoint << std::endl;
+    //std::cout << "U " << upper << " L " << lower <<std::endl;
+    //std::cout << "D " << downloaded << " M " << midpoint << std::endl;
 
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
-    print("Update myself");
     cell->txn()->updateRange(midpoint);
     File* newfile = new File(chunkName(midpoint));
-    print("Create newself");
     Range newrange(upper,midpoint);
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
@@ -182,10 +212,16 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
 void Aggregate::worker(){
     print("starter");
+    try {
     starter();
+    } catch (ex::aggregate::AlreadyComplete) {
+        print("merger2");
+        merger();
+        return;
+    }
     print("splitter");
     splitter();
-    print("joinAll");
+    print("joinall");
     joinAll();
     print("merger");
     merger();
@@ -235,23 +271,22 @@ void Aggregate::splitter() {
 }
 
 void Aggregate::starter() {
-//  TODO for temporary use
-        std::string str;
-
     // Directory session is used to find out about
     // previous downloads
     Directory session(m_hasedUrl);
     if ( session.exists() && !session.isEmpty() ) {
 
+        print("a");
         // TODO some case for files other than
         // numeric in nature
         // solution: use folders
         std::vector<std::string> files = session.list(Node::FILE,true);
         sort(files.begin(),files.end(),numerically);
 
-
+        print("b");
         // Last element name holds the total size of the download file
         m_filesize = std::atoi(files[files.size()-1].c_str());
+        print("c");
 
         // "starter" indicates the first Chunk usable
         // from the list of sorted Chunks
@@ -266,7 +301,6 @@ void Aggregate::starter() {
                 // If not complete, it is the reseacher
                 istarter = i;
                 Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-                print(std::atoi(files[i+1].c_str()) << ", " << std::atoi(files[i].c_str())+f->size());
                 BasicTransaction* t = BasicTransaction::factory(m_url,r);
                 researcher = new Chunk(t,f);
                 researcher->txn()->start();
@@ -281,31 +315,47 @@ void Aggregate::starter() {
                 Throw(ex::Invalid,"Filesize",", exceeds acceptable value, ");
             }
         }
-        if(researcher == NULL)
+
+        print("d");
+        // No need to start the download
+        // It is already complete
+        if(researcher == NULL) {
+
+        print("d1");
+            for(unsigned i=0; i < files.size()-1; i++){
+                File* f = new File(chunkName(std::atoi(files[i].c_str())));
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+                BasicTransaction* t= BasicTransaction::factory(m_url,r);
+                Chunk* c = new Chunk(t,f);
+                m_chunk.push_back(c);
+            }
+        print("d2");
             Throw(ex::aggregate::AlreadyComplete);
+        }
+        print("e");
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        while (researcher->txn()->state() != BasicTransaction::State::downloading)
+        while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
+
+        print("f");
+
 
         for(unsigned i=0; i < files.size()-1; i++){
             if(i==istarter){
-                print("range of starter");
-                std::cin >> str;
                 m_chunk.push_back(researcher);
             } else {
                 File* f = new File(chunkName(std::atoi(files[i].c_str())));
                 Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-                print(std::atoi(files[i+1].c_str()) << ", " << std::atoi(files[i].c_str())+f->size());
-                std::cin >> str;
                 BasicTransaction* t= researcher->txn()->clone(r);
                 Chunk* c = new Chunk(t,f);
                 m_chunk.push_back(c);
                 c->txn()->start();
             }
         }
+        print("g");
 
         // Set m_filesize by looking at the last thing
     } else {

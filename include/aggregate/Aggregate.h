@@ -53,6 +53,8 @@ class Aggregate{
         // Total data downloaded; includes already saved file
         uintmax_t bytesDone() const;
 
+        uintmax_t bytesTotal() const;
+
         // Returns name of the Chunk with starting byte num
         std::string chunkName(uintmax_t num) const;
 
@@ -62,6 +64,9 @@ class Aggregate{
         // Returns the number of active BasicTransactions in the vector
         // active implies it has been started but isn't complete yet
         unsigned activeChunks() const;
+
+        // Returns the number of total BasicTransactions in the vector
+        unsigned totalChunks() const;
 
         // Returns if all the Chunk in the vector are complete
         bool complete() const;
@@ -78,6 +83,11 @@ class Aggregate{
         // Split a Chunk and insert new Chunk after it
         void split(std::vector<Chunk*>::size_type split_index);
 
+        double speed() const;
+
+        uintmax_t timeRemaining() const;
+
+        double progress() const;
     private:
         // Runs after start() in a thread
         void worker();
