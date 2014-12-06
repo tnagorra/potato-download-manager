@@ -6,6 +6,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
     : m_range(range),
     mptr_rdata(rdata),
     mptr_thread(NULL),
+    mptr_speedThread(NULL),
     m_state(State::idle),
     m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
@@ -159,7 +160,9 @@ void BasicTransaction::updateRange(uintmax_t u) {
 }
 
 void BasicTransaction::join() const {
-    if (m_state==State::idle)
+    if (m_state==State::idle || isComplete())
+        return;
+    if (mptr_thread==NULL || mptr_speedThread==NULL)
         return;
     mptr_thread->join();
     mptr_speedThread->join();
