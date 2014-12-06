@@ -159,7 +159,10 @@ void BasicTransaction::updateRange(uintmax_t u) {
 }
 
 void BasicTransaction::join() const {
+    if (m_state==State::idle)
+        return;
     mptr_thread->join();
+    mptr_speedThread->join();
 }
 
 void BasicTransaction::speedWorker() try {
