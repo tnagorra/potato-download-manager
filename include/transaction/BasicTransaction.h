@@ -6,6 +6,7 @@
 
 #include <string>
 #include <istream>
+#include <limits>
 
 #include <boost/thread.hpp>
 #include <boost/asio.hpp>

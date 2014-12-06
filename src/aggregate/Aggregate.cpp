@@ -13,7 +13,7 @@ Aggregate::Aggregate(const std::string url, const std::string savefolder,
     m_filesize(0), m_savefolder(savefolder)
 {
     m_hasedUrl = md5(m_url);
-    m_prettyUrl = prettify(m_url);
+    m_prettyUrl = m_savefolder+"/"+prettify(m_url);
 }
 
 Aggregate::~Aggregate(){
@@ -215,7 +215,6 @@ void Aggregate::worker(){
     try {
         starter();
     } catch (ex::aggregate::AlreadyComplete) {
-        print("merger2");
         merger();
         return;
     }
@@ -239,7 +238,8 @@ void Aggregate::merger() {
        */
 
     // Create a file where chunk files are merged
-    std::string filename = m_savefolder+ "/" + prettyName();
+    std::string filename = prettyName();
+
     if( Node(filename).exists() ){
         unsigned n = 1;
         while( Node(filename+"."+std::to_string(n)).exists() ){
