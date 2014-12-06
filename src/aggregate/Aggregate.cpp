@@ -1,9 +1,6 @@
 #include"aggregate/Aggregate.h"
 
 /*
-   TODO 1
-   Join transaction thread somewhere
-
    When BasicTransaction is complete, push those to m_socket
    When BasicTransaction is started and m_socket isn't empty,
    take it from m_socket and pop it
@@ -84,7 +81,7 @@ bool Aggregate::complete() const {
 
 bool Aggregate::splittable() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->bytesRemaining() > m_splittable_size)
+        if((*it)->txn()->bytesRemaining() > m_splittable_size)
             return true;
     }
     return false;
@@ -120,12 +117,9 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     }
 
     // If there is no bottleneck Chunk then throw exception
-    // TODO
     if( it == m_chunk.size() ) {
-        print("no bottle neck");
-        throw "a";
+        Throw(ex::aggregate::NoBottleneck);
     }
-        //Throw(ex::chunk::NoBottleNecK());
 
     // Now just get the real bottle neck
     for (; it < m_chunk.size(); ++it){
@@ -134,11 +128,12 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
             continue;
         uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
         if((btr < itr) || (btr==itr && bbr<ibr)){
-            bneck = itr;
+            bneck = it;
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
             btr = m_chunk[bneck]->txn()->timeRemaining();
         }
     }
+
     return bneck;
 }
 
@@ -161,12 +156,18 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     uintmax_t upper = cell->txn()->range().ub();
     uintmax_t midpoint = (upper+(lower+downloaded))/2;
 
+    if( midpoint > upper || midpoint < lower)
+        Throw(ex::Invalid,"Range","Midpoint");
+
+    std::cout << "U " << upper << " L " << lower <<std::endl;
+    std::cout << "D " << downloaded << " M " << midpoint << std::endl;
+
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
-    print("first");
+    print("Update myself");
     cell->txn()->updateRange(midpoint);
     File* newfile = new File(chunkName(midpoint));
-    print("second");
+    print("Create newself");
     Range newrange(upper,midpoint);
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
@@ -175,7 +176,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
     // Start those BasicTransactions
-    cell->txn()->start();
+    cell->txn()->play();
     newcell->txn()->start();
 }
 
@@ -184,7 +185,7 @@ void Aggregate::worker(){
     starter();
     print("splitter");
     splitter();
-    print("joinALl");
+    print("joinAll");
     joinAll();
     print("merger");
     merger();
@@ -210,7 +211,7 @@ void Aggregate::merger() {
         (*it)->file()->remove();
     }
     // Remove the old directory
-    Directory(m_hasedUrl).remove();
+    Directory(m_hasedUrl).remove(Node::FORCE);
 }
 
 void Aggregate::splitter() {
@@ -223,21 +224,19 @@ void Aggregate::splitter() {
         // NOTE: There may be some problem here
         if(activeChunks() < m_chunks && splitReady()){
             std::vector<Chunk*>::size_type bneck;
-            // TODO catch the exception around bneck
-            /*
-               try {
-               bneck = bottleNeck();
-               } catch (ex::chunk::NoBottleNeck) {
-               break;
-               }
-               */
-            bneck = bottleNeck();
+            try {
+                bneck = bottleNeck();
+            } catch (ex::aggregate::NoBottleneck) {
+                break;
+            }
             split(bneck);
         }
     }
 }
 
 void Aggregate::starter() {
+//  TODO for temporary use
+        std::string str;
 
     // Directory session is used to find out about
     // previous downloads
@@ -246,8 +245,10 @@ void Aggregate::starter() {
 
         // TODO some case for files other than
         // numeric in nature
-        std::vector<std::string> files = session.list();
+        // solution: use folders
+        std::vector<std::string> files = session.list(Node::FILE,true);
         sort(files.begin(),files.end(),numerically);
+
 
         // Last element name holds the total size of the download file
         m_filesize = std::atoi(files[files.size()-1].c_str());
@@ -258,51 +259,47 @@ void Aggregate::starter() {
         unsigned istarter=0;
         Chunk* researcher = NULL;
         for(unsigned i=0;i<files.size()-1;i++){
-            File* f = new File(chunkName(i));
+            File* f = new File(chunkName(std::atoi(files[i].c_str())));
             uintmax_t s1 = f->size();
-            uintmax_t s2 = std::atoi(files[i+1].c_str());
-            if (s1 == s2) {
-                // If complete, do nothing
-                // TODO We could push these files in a
-                // queue, and not delete it because we
-                // need it later
-                delete f;
-            } else if (s1 < s2) {
+            uintmax_t s2 = std::atoi(files[i+1].c_str()) - std::atoi(files[i].c_str());
+            if(s1 < s2) {
                 // If not complete, it is the reseacher
                 istarter = i;
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str()));
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+                print(std::atoi(files[i+1].c_str()) << ", " << std::atoi(files[i].c_str())+f->size());
                 BasicTransaction* t = BasicTransaction::factory(m_url,r);
                 researcher = new Chunk(t,f);
                 researcher->txn()->start();
                 break;
+            } else if (s1 == s2){
+                delete f;
+                // TODO We could push these files in a
+                // queue, and not delete it because we
+                // need it later
             } else {
                 delete f;
-                // This is a weird case
-                print("Some weird error");
-                throw "Some weird error";
+                Throw(ex::Invalid,"Filesize",", exceeds acceptable value, ");
             }
         }
-        if(researcher == NULL){
-            // Maybe join them all
-            print("Download was already complete!");
-            throw "Download was already complete!";
-
-        }
+        if(researcher == NULL)
+            Throw(ex::aggregate::AlreadyComplete);
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        print("gookha");
         while (researcher->txn()->state() != BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
-        print("gookhayo");
         for(unsigned i=0; i < files.size()-1; i++){
             if(i==istarter){
+                print("range of starter");
+                std::cin >> str;
                 m_chunk.push_back(researcher);
             } else {
-                File* f = new File(chunkName(i));
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str()));
+                File* f = new File(chunkName(std::atoi(files[i].c_str())));
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+                print(std::atoi(files[i+1].c_str()) << ", " << std::atoi(files[i].c_str())+f->size());
+                std::cin >> str;
                 BasicTransaction* t= researcher->txn()->clone(r);
                 Chunk* c = new Chunk(t,f);
                 m_chunk.push_back(c);
@@ -324,13 +321,14 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        print("gookhanchu");
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
 
-        print("2girls1cup");
+        // Create a limiter file
+        File limiter(chunkName(m_filesize));
+        limiter.write();
     }
 }
