@@ -21,7 +21,7 @@ class Transaction : public BasicTransaction {
     typedef typename SockTraits<SocketType>::antiSock antiSockType;
 
     // Protected data members
-    protected:
+    public:
         // A Socket for the connection
         SocketType* mptr_socket;
 

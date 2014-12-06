@@ -30,12 +30,13 @@ std::vector<std::string> Directory::list(Type type, bool onlyfilename){
     std::vector<std::string> myList;
     for ( fs::directory_iterator end, dir(m_name); dir != end; ++dir ) {
         Node node(dir->path());
-        if( node.what() == type)
+        if( node.what() == type) {
             if( onlyfilename ) {
                 myList.push_back( node.path().filename().string());
             } else {
                 myList.push_back( node.path().string());
             }
+        }
     }
     return myList;
 }
@@ -48,12 +49,13 @@ std::vector<std::string> Directory::listrecursive(Type type, bool onlyfilename){
     std::vector<std::string> myList;
     for ( fs::recursive_directory_iterator end, dir(m_name); dir != end; ++dir ) {
         Node node(dir->path());
-        if( node.what() == type)
+        if( node.what() == type) {
             if( onlyfilename ) {
                 myList.push_back( node.path().filename().string());
             } else {
                 myList.push_back( node.path().string());
             }
+        }
     }
     return myList;
 }

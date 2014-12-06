@@ -10,7 +10,7 @@ extern "C" {
 #include <sstream>
 #include <iostream>
 #include <iomanip>
-#include <climits>
+#include <limits>
 #include <cmath>
 #include <ctime>
 #include <cctype>

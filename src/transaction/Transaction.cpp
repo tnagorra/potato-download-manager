@@ -2,9 +2,6 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 
-template class Transaction<PlainSock>;
-template class Transaction<SSLSock>;
-
 template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata, Range range)
     : BasicTransaction(rdata,range), mptr_socket(NULL) { }
@@ -175,5 +172,9 @@ void Transaction<SocketType>::operator=(
     //m_bytesDone = i.bytesDone();
     mptr_socket = SockTraits<SocketType>::transform(i.p_socket());
 }
+
+
+template class Transaction<PlainSock>;
+template class Transaction<SSLSock>;
 
 // End file Transaction.cpp

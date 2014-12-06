@@ -1,7 +1,7 @@
 #include"common/helper.h"
 
 std::string formatTime(uintmax_t sec) {
-    if(sec == UINT_MAX)
+    if(sec == std::numeric_limits<uintmax_t>::max())
         return "dafuq!";
     std::string s;
     s = std::to_string(sec%60) + "s";

@@ -8,8 +8,6 @@
 #include "transaction/HttpTransaction.h"
 
 using boost::asio::ip::tcp;
-template class HttpTransaction<PlainSock>;
-template class HttpTransaction<SSLSock>;
 
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
@@ -266,8 +264,8 @@ void HttpTransaction<SocketType>::writeOut() {
     m_state = State::downloading;
 
     boost::system::error_code error;
-    while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
-                boost::asio::transfer_at_least(1), error)) {
+    while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
+                boost::asio::transfer_at_least(1), error))) {
 
         if (bufBytes+m_bytesDone>=m_bytesTotal) {
             if (m_bytesDone>m_bytesTotal)
@@ -307,5 +305,9 @@ void HttpTransaction<SocketType>::workerMain() try {
 } catch (HttpTransaction<SocketType>* self) {
     self->workerMain();
 }
+
+
+template class HttpTransaction<PlainSock>;
+template class HttpTransaction<SSLSock>;
 
 // End file HttpTransaction.cpp
