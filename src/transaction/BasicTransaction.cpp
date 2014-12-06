@@ -168,25 +168,41 @@ void BasicTransaction::join() const {
     mptr_speedThread->join();
 }
 
-void BasicTransaction::speedWorker() try {
-    uintmax_t tick=0;
-    uintmax_t oldBytes,delta;
+void BasicTransaction::speedWorker() {
+    /*
+       uintmax_t tick=0;
+       uintmax_t oldBytes,delta;
 
-    while (state()!=State::downloading)
-        boost::this_thread::sleep(
-            boost::posix_time::milliseconds(100));
+       while (state()!=State::downloading)
+       boost::this_thread::sleep(
+       boost::posix_time::milliseconds(100));
 
-    while (!isComplete()) {
-        oldBytes = bytesDone();
-        boost::this_thread::sleep(
-                boost::posix_time::milliseconds(500));
-        delta = bytesDone()-oldBytes;
-        tick++;
-        m_avgSpeed = (1.0*bytesDone())/(10*tick);
-        m_instSpeed = (1.0*delta)/10;
+       while (!isComplete()) {
+       oldBytes = bytesDone();
+       boost::this_thread::sleep(
+       boost::posix_time::milliseconds(500));
+       delta = bytesDone()-oldBytes;
+       tick++;
+       m_avgSpeed = (1.0*bytesDone())/(10*tick);
+       m_instSpeed = (1.0*delta)/10;
+       }
+       */
+    const double refresh = 0.01;
+    const unsigned persistance = 2/refresh;
+    uintmax_t no = 0;
+    while( state() != State::downloading && state() !=State::complete)
+        boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
+    while (state() != State::complete) {
+        uintmax_t bytes_downloaded = bytesDone();
+        boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
+        uintmax_t delta = bytesDone() - bytes_downloaded;
+
+        m_instSpeed = delta/refresh;
+        m_avgSpeed= (m_avgSpeed*no+m_instSpeed)/(no+1);
+        int per = (no < persistance)?no:persistance;
+        m_hifiSpeed= (m_hifiSpeed*per+m_instSpeed)/(per+1);
+        no++;
     }
-} catch (std::exception& ex) {
-    print(ex.what());
 }
 
 double BasicTransaction::avgSpeed() const {
@@ -207,7 +223,7 @@ double BasicTransaction::speed() const {
 
 uintmax_t BasicTransaction::timeRemaining() const {
     if (speed()==0)
-        return UINT_MAX;
+        return std::numeric_limits<uintmax_t>::max();
     return bytesRemaining()/speed();
 }
 

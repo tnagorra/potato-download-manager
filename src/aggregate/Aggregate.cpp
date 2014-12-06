@@ -96,13 +96,11 @@ double Aggregate::progress() const {
 }
 
 uintmax_t Aggregate::timeRemaining() const {
-    uintmax_t max=0;
-    for(auto i = m_chunk.begin();i != m_chunk.end();++i){
-        uintmax_t t = (*i)->txn()->timeRemaining();
-        if(t>max)
-            max = t;
-    }
-    return max;
+    // TODO check if bytesTotal is less than bytesDone
+    double spd = speed();
+    if(spd == 0)
+        return std::numeric_limits<uintmax_t>::max();
+    return (bytesTotal()-bytesDone())/spd;
 }
 
 bool Aggregate::complete() const {
