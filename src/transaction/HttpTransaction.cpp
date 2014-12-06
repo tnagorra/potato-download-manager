@@ -262,21 +262,30 @@ void HttpTransaction<SocketType>::clearProgress() {
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::writeOut() {
+    boost::system::error_code error;
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
-    if (bufBytes)
+    if (bufBytes) {
+        if( bufBytes > BasicTransaction::bytesRemaining())
+            bufBytes = BasicTransaction::bytesRemaining();
         m_reader(writeStream,bufBytes);
-    m_bytesDone = bufBytes;
+
+
+        m_bytesDone = bufBytes;
+
+        if (m_bytesDone>=m_bytesTotal) {
+            error=boost::asio::error::eof;
+            // DO something here
+        }
+    }
     m_state = State::downloading;
 
-    boost::system::error_code error;
     while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
-                boost::asio::transfer_at_least(1), error))) {
+                    boost::asio::transfer_at_least(1), error))) {
 
-        // TODO: tnagorra: Here it seems that you didn't understand
-        //      what i said, this line is the source of range problem
-        //      change bufBytes to approporiate value to truncate the
-        //      excess data.
+        if( bufBytes > BasicTransaction::bytesRemaining())
+            bufBytes = BasicTransaction::bytesRemaining();
+
         m_reader(writeStream,bufBytes);
 
         m_bytesDone += bufBytes;
