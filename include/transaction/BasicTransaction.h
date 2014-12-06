@@ -144,7 +144,7 @@ class BasicTransaction {
         double hifiSpeed() const;
         double speed() const;
         uintmax_t timeRemaining() const;
-    private:
+    protected:
         void speedWorker();
 };
 #endif

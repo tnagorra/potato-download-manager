@@ -73,7 +73,7 @@ class HttpTransaction : public Transaction<SocketType> {
 
         // Constructor. Default Range argument (0,0) means the
         // entire resource
-        HttpTransaction(RemoteDataHttp* rdata, SocketType* sock = NULL,
+        HttpTransaction(RemoteDataHttp* rdata,
                 Range range = Range(0,0));
 
         // This has been deemed unnecessary for now

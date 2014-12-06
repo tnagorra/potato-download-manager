@@ -13,8 +13,7 @@ template class HttpTransaction<SSLSock>;
 
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        SocketType* sock, Range range)
-    : Transaction<SocketType>(rdata,sock,range)
+        Range range) : Transaction<SocketType>(rdata,range)
 { }
 
 /*template <typename SocketType>
@@ -173,7 +172,6 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     // Determine the size of the response body
     if (m_respHeaders.count("content-length")>0) {
-        print("third");
         m_bytesTotal = boost::lexical_cast<uintmax_t>(
                 m_respHeaders["content-length"]);
         m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
@@ -196,7 +194,6 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     // As a last resort, if the size of the incoming stream cannot
     // be determined, we set it to the largest possible value
     /*if (m_respHeaders.count("content-length")==0 && m_range.uninitialized()) {
-        print("fourth");
         m_bytesTotal = std::numeric_limits<uintmax_t>::max()/4);
         m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
     }*/
@@ -238,8 +235,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
 
             HttpTransaction<SocketType> old = *this;
             HttpTransaction<antiSockType>* antiSock =
-                new(this) HttpTransaction<antiSockType>(
-                        rdx, NULL, m_range);
+                new(this) HttpTransaction<antiSockType>(rdx, m_range);
 
             *dynamic_cast<Transaction<antiSockType>*>(antiSock) =
                 *dynamic_cast<Transaction<SocketType>*>(&old);
@@ -273,13 +269,17 @@ void HttpTransaction<SocketType>::writeOut() {
     while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
                 boost::asio::transfer_at_least(1), error)) {
 
-        m_reader(writeStream,bufBytes);
-
-        m_bytesDone += bufBytes;
-        if (m_bytesDone>=m_bytesTotal) {
+        if (bufBytes+m_bytesDone>=m_bytesTotal) {
+            if (m_bytesDone>m_bytesTotal)
+                Throw(ex::Not, "recoverable situation");
+            m_reader(writeStream,m_bytesTotal-m_bytesDone);
+            m_bytesDone = m_bytesTotal;
             error=boost::asio::error::eof;
             break;
-        }
+        } else
+            m_reader(writeStream,bufBytes);
+
+        m_bytesDone += bufBytes;
 
         while (m_beenPaused) {
             boost::this_thread::sleep(

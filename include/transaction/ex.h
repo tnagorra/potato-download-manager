@@ -83,6 +83,9 @@ class BadProtocolScheme : public Error {
     public:
     BadProtocolScheme(const std::string& o)
         : Error("The specified protocol scheme is not supported",o) {}
+    BadProtocolScheme(const std::string& o, const std::string& scheme)
+        : Error("The protocol scheme "+scheme+" is not supported",o) {}
+
 };
 }; // end Namespace ex::download
 }; // end Namespace ex

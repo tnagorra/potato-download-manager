@@ -32,11 +32,11 @@ struct SockTraits<SSLSock> {
     SockTraits() : ssl(true) {}
 
     static SSLSock* transform(PlainSock* psock=NULL) {
+        if (psock!=NULL)
+            delete psock;
+
         boost::asio::io_service* ios;
-        if (false && psock!=NULL)
-            ios = &psock->get_io_service();
-        else
-            ios = new boost::asio::io_service;
+        ios = new boost::asio::io_service;
 
         ssl::context ctx(ssl::context::sslv23);
         ctx.set_default_verify_paths();
@@ -61,11 +61,11 @@ struct SockTraits<PlainSock> {
     SockTraits() : ssl(false) {}
 
     static PlainSock* transform(SSLSock* ssock=NULL) {
-        boost::asio::io_service* ios;
         if (ssock!=NULL)
-            ios = &ssock->get_io_service();
-        else
-            ios = new boost::asio::io_service;
+            delete ssock;
+        boost::asio::io_service* ios;
+        //ios = &ssock->get_io_service();
+        ios = new boost::asio::io_service;
 
         PlainSock* psock = new PlainSock(*ios);
         return psock;

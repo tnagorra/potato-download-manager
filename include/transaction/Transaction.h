@@ -44,8 +44,7 @@ class Transaction : public BasicTransaction {
     public:
         // Constructor. Default Range argument (0,0) means the
         // entire resource
-        Transaction(RemoteData* rdata, SocketType* sock = NULL,
-                Range range = Range(0,0));
+        Transaction(RemoteData* rdata, Range range = Range(0,0));
 
         // Overload in case a different socket type is provided
         //Transaction(RemoteData* rdata, antiSockType* asock,
@@ -62,6 +61,8 @@ class Transaction : public BasicTransaction {
         void injectSocket(SSLSock* sock);
 
         void injectSocket(PlainSock* sock);
+
+        void checkSocket();
 };
 
 typedef Transaction<PlainSock> PlainTransaction;

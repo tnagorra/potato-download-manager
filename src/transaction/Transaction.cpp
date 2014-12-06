@@ -6,10 +6,8 @@ template class Transaction<PlainSock>;
 template class Transaction<SSLSock>;
 
 template <typename SocketType>
-Transaction<SocketType>::Transaction(RemoteData* rdata,
-        SocketType* sock, Range range)
-    : mptr_socket(sock),
-    BasicTransaction(rdata,range) { }
+Transaction<SocketType>::Transaction(RemoteData* rdata, Range range)
+    : BasicTransaction(rdata,range), mptr_socket(NULL) { }
 
 // Dont think we really need this. And things are simple for the
 // factory without it.
@@ -22,6 +20,7 @@ Transaction<SocketType>::Transaction(RemoteData* rdata,
 
 template <typename SocketType>
 void Transaction<SocketType>::resolveHost() {
+    checkSocket();
     boost::system::error_code ec;
     // Return, if we already have an endpoint (meaning we are already
     // connected).
@@ -33,6 +32,7 @@ void Transaction<SocketType>::resolveHost() {
 
 template <>
 void Transaction<SSLSock>::resolveHost() {
+    checkSocket();
     boost::system::error_code ec;
     // Return, if we already have an endpoint (meaning we are already
     // connected).
@@ -149,6 +149,12 @@ void Transaction<SocketType>::injectSocket(SSLSock* sock) {
 template <typename SocketType>
 void Transaction<SocketType>::injectSocket(PlainSock* sock) {
     mptr_socket = SockTraits<SocketType>::transform(sock);
+}
+
+template <typename SocketType>
+void Transaction<SocketType>::checkSocket() {
+    if (mptr_socket==NULL)
+        mptr_socket = SockTraits<SocketType>::transform();
 }
 
 // An assignment operator for converting from a transaction of one

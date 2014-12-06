@@ -2,8 +2,7 @@
 // The factory method needs our children to be fully defined
 #include "transaction/HttpTransaction.h"
 
-BasicTransaction::BasicTransaction(RemoteData* rdata,
-        Range range)
+BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
     : m_range(range),
     mptr_rdata(rdata),
     mptr_thread(NULL),
@@ -13,6 +12,8 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
     m_beenSplit(false),
     m_beenPaused(false) {
     mptr_response = new boost::asio::streambuf;
+    // If the range has a zero size but is not an unitialized range,
+    // the download is immediately complete
     if (!m_range.uninitialized() && m_range.size()==0)
         m_state = State::complete;
 }
@@ -20,19 +21,19 @@ BasicTransaction::BasicTransaction(RemoteData* rdata,
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
         Range range) {
     if (!rdata)
-        return NULL;
+        Throw(ex::Invalid, "The RemoteData pointer passed");
     BasicTransaction* product;
     switch (rdata->scheme()) {
         case RemoteData::Protocol::http:
             product = new HttpTransaction<PlainSock>(
-                    dynamic_cast<RemoteDataHttp*>(rdata),NULL,range);
+                    dynamic_cast<RemoteDataHttp*>(rdata),range);
             break;
         case RemoteData::Protocol::https:
             product = new HttpTransaction<SSLSock>(
-                    dynamic_cast<RemoteDataHttp*>(rdata),NULL,range);
+                    dynamic_cast<RemoteDataHttp*>(rdata),range);
             break;
         default:
-            Throw(ex::download::BadProtocolScheme);
+            Throw(ex::download::BadProtocolScheme,rdata->schemeCStr());
     }
     return product;
 }
@@ -145,8 +146,6 @@ BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
 }
 
 void BasicTransaction::updateRange(uintmax_t u) {
-    print(m_range.ub()<<" "<<m_range.lb());
-    print("uR "<<u);
     if (!m_range.uninitialized()) {
         if (u<m_range.ub())
             m_beenSplit = true;
@@ -173,11 +172,11 @@ void BasicTransaction::speedWorker() try {
     while (!isComplete()) {
         oldBytes = bytesDone();
         boost::this_thread::sleep(
-                boost::posix_time::milliseconds(100));
+                boost::posix_time::milliseconds(500));
         delta = bytesDone()-oldBytes;
         tick++;
-        m_avgSpeed = 1.0*bytesDone()/(10*tick);
-        m_instSpeed = 1.0*delta/10;
+        m_avgSpeed = (1.0*bytesDone())/(10*tick);
+        m_instSpeed = (1.0*delta)/10;
     }
 } catch (std::exception& ex) {
     print(ex.what());

@@ -29,8 +29,10 @@ int main(int argc, char* argv[]) try {
     bTrans->registerReader(rdr);
 
     bTrans->start();
-    bTrans->join();
-
+    while (!bTrans->isComplete()) {
+        print(bTrans->timeRemaining());
+        boost::this_thread::sleep(boost::posix_time::millisec(500));
+    }
     return 0;
 
 } catch (std::exception& ex) {
