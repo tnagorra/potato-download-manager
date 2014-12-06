@@ -168,12 +168,12 @@ void HttpTransaction<SocketType>::receiveHeaders() {
             m_respHeaders[boost::to_lower_copy(header.substr(0,colon))]
                 = header.substr(colon+2,header.size()-colon-3);
         }
-        print(header);
+        //print(header);
     }
 
     // Determine the size of the response body
     if (m_respHeaders.count("content-length")>0) {
-        print("third");
+        //print("third");
         m_bytesTotal = boost::lexical_cast<uintmax_t>(
                 m_respHeaders["content-length"]);
         m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
@@ -262,6 +262,7 @@ void HttpTransaction<SocketType>::clearProgress() {
 
 template <typename SocketType>
 void HttpTransaction<SocketType>::writeOut() {
+    m_state = State::downloading;
     boost::system::error_code error;
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
@@ -278,28 +279,28 @@ void HttpTransaction<SocketType>::writeOut() {
             // DO something here
         }
     }
-    m_state = State::downloading;
+    if( error != boost::asio::error::eof){
+        while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
+                        boost::asio::transfer_at_least(1), error))) {
 
-    while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
-                    boost::asio::transfer_at_least(1), error))) {
+            if( bufBytes > BasicTransaction::bytesRemaining())
+                bufBytes = BasicTransaction::bytesRemaining();
 
-        if( bufBytes > BasicTransaction::bytesRemaining())
-            bufBytes = BasicTransaction::bytesRemaining();
+            m_reader(writeStream,bufBytes);
 
-        m_reader(writeStream,bufBytes);
+            m_bytesDone += bufBytes;
+            if (m_bytesDone>=m_bytesTotal) {
+                error=boost::asio::error::eof;
+                break;
+            }
 
-        m_bytesDone += bufBytes;
-        if (m_bytesDone>=m_bytesTotal) {
-            error=boost::asio::error::eof;
-            break;
+            while (m_beenPaused) {
+                boost::this_thread::sleep(
+                        boost::posix_time::milliseconds(200));
+            }
+
+            boost::this_thread::interruption_point();
         }
-
-        while (m_beenPaused) {
-            boost::this_thread::sleep(
-                    boost::posix_time::milliseconds(200));
-        }
-
-        boost::this_thread::interruption_point();
     }
 
     if (error!=boost::asio::error::eof) {

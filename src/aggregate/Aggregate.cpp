@@ -185,7 +185,7 @@ void Aggregate::worker(){
     starter();
     print("splitter");
     splitter();
-    print("joinALl");
+    print("joinAll");
     joinAll();
     print("merger");
     merger();
@@ -211,7 +211,7 @@ void Aggregate::merger() {
         (*it)->file()->remove();
     }
     // Remove the old directory
-    Directory(m_hasedUrl).remove();
+    Directory(m_hasedUrl).remove(Node::FORCE);
 }
 
 void Aggregate::splitter() {
@@ -235,6 +235,8 @@ void Aggregate::splitter() {
 }
 
 void Aggregate::starter() {
+//  TODO for temporary use
+        std::string str;
 
     // Directory session is used to find out about
     // previous downloads
@@ -244,8 +246,9 @@ void Aggregate::starter() {
         // TODO some case for files other than
         // numeric in nature
         // solution: use folders
-        std::vector<std::string> files = session.list();
+        std::vector<std::string> files = session.list(Node::FILE,true);
         sort(files.begin(),files.end(),numerically);
+
 
         // Last element name holds the total size of the download file
         m_filesize = std::atoi(files[files.size()-1].c_str());
@@ -256,34 +259,30 @@ void Aggregate::starter() {
         unsigned istarter=0;
         Chunk* researcher = NULL;
         for(unsigned i=0;i<files.size()-1;i++){
-            File* f = new File(chunkName(i));
+            File* f = new File(chunkName(std::atoi(files[i].c_str())));
             uintmax_t s1 = f->size();
-            uintmax_t s2 = std::atoi(files[i+1].c_str());
-            if (s1 == s2) {
-                // If complete, do nothing
-                // TODO We could push these files in a
-                // queue, and not delete it because we
-                // need it later
-                delete f;
-            } else if (s1 < s2) {
+            uintmax_t s2 = std::atoi(files[i+1].c_str()) - std::atoi(files[i].c_str());
+            if(s1 < s2) {
                 // If not complete, it is the reseacher
                 istarter = i;
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str()));
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+                print(std::atoi(files[i+1].c_str()) << ", " << std::atoi(files[i].c_str())+f->size());
                 BasicTransaction* t = BasicTransaction::factory(m_url,r);
                 researcher = new Chunk(t,f);
                 researcher->txn()->start();
                 break;
+            } else if (s1 == s2){
+                delete f;
+                // TODO We could push these files in a
+                // queue, and not delete it because we
+                // need it later
             } else {
                 delete f;
-                // This is a weird case
-                print("Some weird error");
-                throw "Some weird error";
+                Throw(ex::Invalid,"Filesize",", exceeds acceptable value, ");
             }
         }
-        if(researcher == NULL){
-            // Maybe join them all
-            //Throw(ex::aggregate::AlreadyComplete);
-        }
+        if(researcher == NULL)
+            Throw(ex::aggregate::AlreadyComplete);
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
@@ -293,10 +292,14 @@ void Aggregate::starter() {
 
         for(unsigned i=0; i < files.size()-1; i++){
             if(i==istarter){
+                print("range of starter");
+                std::cin >> str;
                 m_chunk.push_back(researcher);
             } else {
-                File* f = new File(chunkName(i));
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str()));
+                File* f = new File(chunkName(std::atoi(files[i].c_str())));
+                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+                print(std::atoi(files[i+1].c_str()) << ", " << std::atoi(files[i].c_str())+f->size());
+                std::cin >> str;
                 BasicTransaction* t= researcher->txn()->clone(r);
                 Chunk* c = new Chunk(t,f);
                 m_chunk.push_back(c);
@@ -323,5 +326,9 @@ void Aggregate::starter() {
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
+
+        // Create a limiter file
+        File limiter(chunkName(m_filesize));
+        limiter.write();
     }
 }
