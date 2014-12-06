@@ -15,7 +15,6 @@ int main(int argc, char* argv[]) try {
     if( argc == 2){
         Aggregate agg(argv[1]);
         agg.start();
-/*
         while( agg.totalChunks() == 0)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
         while( !agg.complete() ){
@@ -40,7 +39,6 @@ int main(int argc, char* argv[]) try {
             boost::this_thread::sleep(boost::posix_time::millisec(100));
             std::cout<< DELETE DELETE DELETE;
         }
-*/
         agg.join();
     } else {
         std::cout << "Usage: aggregate [PATH]\n" << std::endl;

@@ -7,8 +7,10 @@
    if it is empty, create new inside the BasicTransaction
 */
 
-Aggregate::Aggregate(const std::string url, unsigned txns,uintmax_t split):
-    m_chunks(txns), m_url(url), m_splittable_size(split), m_filesize(0)
+Aggregate::Aggregate(const std::string url, const std::string savefolder,
+        unsigned txns,uintmax_t split):
+    m_chunks(txns), m_url(url), m_splittable_size(split),
+    m_filesize(0), m_savefolder(savefolder)
 {
     m_hasedUrl = md5(m_url);
     m_prettyUrl = prettify(m_url);
@@ -19,21 +21,20 @@ Aggregate::~Aggregate(){
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         delete (*it);
     /*
-    for (auto it = m_free_socket.begin(); it != m_free_socket.end(); ++it)
-        delete *it;
-        */
+       for (auto it = m_free_socket.begin(); it != m_free_socket.end(); ++it)
+       delete *it;
+       */
 }
 
 void Aggregate::joinAll(){
     // Join all Chunks
-    print("here");
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         (*it)->txn()->join();
     }
-    print("nothere");
 }
 
 void Aggregate::join(){
+    // TODO have check
     m_thread.join();
 }
 
@@ -46,6 +47,7 @@ void Aggregate::stop(){
 }
 
 void Aggregate::start() {
+    // TODO have check
     m_thread = boost::thread(&Aggregate::worker,this);
 }
 
@@ -95,8 +97,8 @@ double Aggregate::progress() const {
 
 uintmax_t Aggregate::timeRemaining() const {
     uintmax_t max=0;
-     for(auto i = m_chunk.begin();i != m_chunk.end();++i){
-       uintmax_t t = (*i)->txn()->timeRemaining();
+    for(auto i = m_chunk.begin();i != m_chunk.end();++i){
+        uintmax_t t = (*i)->txn()->timeRemaining();
         if(t>max)
             max = t;
     }
@@ -211,19 +213,19 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker(){
-    print("starter");
+    //print("starter");
     try {
-    starter();
+        starter();
     } catch (ex::aggregate::AlreadyComplete) {
         print("merger2");
         merger();
         return;
     }
-    print("splitter");
+    //print("splitter");
     splitter();
-    print("joinall");
+    //print("joinall");
     joinAll();
-    print("merger");
+    //print("merger");
     merger();
 }
 
@@ -234,12 +236,21 @@ void Aggregate::merger() {
     // do not merge the Chunks
 
     /*
-    if( size() != m_filesize )
-        throw(ex::Invalid,"filesize");
-        */
+       if( size() != m_filesize )
+       throw(ex::Invalid,"filesize");
+       */
 
     // Create a file where chunk files are merged
-    File merged(prettyName());
+    std::string filename = m_savefolder+ "/" + prettyName();
+    if( Node(filename).exists() ){
+        unsigned n = 1;
+        while( Node(filename+"."+std::to_string(n)).exists() ){
+            n++;
+        }
+        filename += "."+std::to_string(n);
+    }
+
+    File merged(filename);
     // Append the content to "merged" and remove
     // the chunk files
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
@@ -276,17 +287,17 @@ void Aggregate::starter() {
     Directory session(m_hasedUrl);
     if ( session.exists() && !session.isEmpty() ) {
 
-        print("a");
+        //print("a");
         // TODO some case for files other than
         // numeric in nature
         // solution: use folders
         std::vector<std::string> files = session.list(Node::FILE,true);
         sort(files.begin(),files.end(),numerically);
 
-        print("b");
+        //print("b");
         // Last element name holds the total size of the download file
         m_filesize = std::atoi(files[files.size()-1].c_str());
-        print("c");
+        //print("c");
 
         // "starter" indicates the first Chunk usable
         // from the list of sorted Chunks
@@ -316,12 +327,12 @@ void Aggregate::starter() {
             }
         }
 
-        print("d");
+        //print("d");
         // No need to start the download
         // It is already complete
         if(researcher == NULL) {
 
-        print("d1");
+            //print("d1");
             for(unsigned i=0; i < files.size()-1; i++){
                 File* f = new File(chunkName(std::atoi(files[i].c_str())));
                 Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
@@ -329,10 +340,10 @@ void Aggregate::starter() {
                 Chunk* c = new Chunk(t,f);
                 m_chunk.push_back(c);
             }
-        print("d2");
+            //print("d2");
             Throw(ex::aggregate::AlreadyComplete);
         }
-        print("e");
+        //print("e");
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
@@ -340,7 +351,7 @@ void Aggregate::starter() {
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
-        print("f");
+        //print("f");
 
 
         for(unsigned i=0; i < files.size()-1; i++){
@@ -355,7 +366,7 @@ void Aggregate::starter() {
                 c->txn()->start();
             }
         }
-        print("g");
+        //print("g");
 
         // Set m_filesize by looking at the last thing
     } else {

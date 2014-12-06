@@ -19,6 +19,8 @@ class Aggregate{
         boost::thread m_thread;
         //std::vector<Socket*> m_free_socket;
         std::vector<Chunk*> m_chunk;
+        // the save folder of the file
+        std::string m_savefolder;
         // the url of the file
         std::string m_url;
         // the hash of url
@@ -33,7 +35,7 @@ class Aggregate{
         uintmax_t m_filesize;
     public:
         // Constructor
-        Aggregate(const std::string url, unsigned txns=8,uintmax_t split=100*1024);
+        Aggregate(const std::string url, const std::string savefolder="Potatoes",unsigned txns=8,uintmax_t split=100*1024);
 
         // Destructor
         ~Aggregate();

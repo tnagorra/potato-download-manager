@@ -167,7 +167,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
             m_respHeaders[boost::to_lower_copy(header.substr(0,colon))]
                 = header.substr(colon+2,header.size()-colon-3);
         }
-        print(header);
+        //print(header);
     }
 
     // Determine the size of the response body
