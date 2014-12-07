@@ -211,23 +211,24 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker(){
-    //print("starter");
+    fancyprint("STARTER",NOTIFY);
     try {
         starter();
     } catch (ex::aggregate::AlreadyComplete) {
+        fancyprint("MERGER",NOTIFY);
         merger();
         return;
     }
-    //print("splitter");
+    fancyprint("SPLITTER",NOTIFY);
     splitter();
-    //print("joinall");
+    fancyprint("JOIN ALL",NOTIFY);
     joinAll();
-    //print("merger");
+    fancyprint("MERGER",NOTIFY);
     merger();
 }
 
 void Aggregate::merger() {
-    // TODO maybe add complete()
+    // TODO
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
