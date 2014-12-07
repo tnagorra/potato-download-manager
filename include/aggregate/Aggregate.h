@@ -35,7 +35,7 @@ class Aggregate{
         uintmax_t m_filesize;
     public:
         // Constructor
-        Aggregate(const std::string url, const std::string savefolder="Potatoes",unsigned txns=8,uintmax_t split=100*1024);
+        Aggregate(const std::string url, const std::string savefolder="Potatoes",unsigned txns=8,uintmax_t split=500*1024);
 
         // Destructor
         ~Aggregate();

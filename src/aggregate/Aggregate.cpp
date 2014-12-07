@@ -124,7 +124,7 @@ bool Aggregate::splitReady() const {
         // TODO 0 Insert some really good algorithm
         // Maybe wait for download to get to stable state
         // Waiting for a while may be benificial in long run
-        if ((*it)->txn()->speed()<=10 && !(*it)->txn()->isComplete())
+        if ((*it)->txn()->speed()<=100 && !(*it)->txn()->isComplete())
             return false;
     }
     return true;
@@ -175,9 +175,9 @@ void Aggregate::display() {
         if( m_chunk[i]->txn()->isComplete() )
             fancycout(m_chunk[i]->file()->filename().c_str() << " ",SUCCESS);
         else if( m_chunk[i]->txn()->state() >= BasicTransaction::State::downloading)
-            fancycout(m_chunk[i]->file()->filename().c_str() << " ",NOTIFY);
-        else
             fancycout(m_chunk[i]->file()->filename().c_str() << " ",WARNING);
+        else
+            fancycout(m_chunk[i]->file()->filename().c_str() << " ",NOTIFY);
     }
     fancycout(m_filesize,SUCCESS);
     std::cout << std::endl;

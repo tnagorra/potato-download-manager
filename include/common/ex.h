@@ -48,9 +48,9 @@ enum CC {BLACK,RED,GREEN,YELLOW,BLUE,PURPLE,TEAL,WHITE,GRAY};
 #define DELETE "\033[A\033[2K"
 
 #define SUCCESS COLOR(0,CC::GREEN,CC::BLACK)
-#define NOTIFY COLOR(1,CC::BLUE,CC::BLACK)
+#define NOTIFY COLOR(0,CC::BLUE,CC::BLACK)
 #define WARNING COLOR(0,CC::YELLOW,CC::BLACK)
-#define ERROR COLOR(1,CC::RED,CC::BLACK)
+#define ERROR COLOR(0,CC::RED,CC::BLACK)
 
 #define print(thing) std::cout<<thing<<std::endl
 #define fancyprint(thing,color) std::cout << color << thing << DISCOLOR << std::endl
