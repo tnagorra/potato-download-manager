@@ -46,6 +46,18 @@ fs::path Node::presuf(const fs::path& prefix, const fs::path& suffix) const {
 }
 */
 
+// Returns new path in case of conflict
+fs::path Node::newpath() const {
+    std::string npath = m_name.c_str();
+    if( Node(npath).exists() ){
+        unsigned i = 1;
+        while( Node(npath+"."+std::to_string(i)).exists() )
+            i++;
+        npath += "."+std::to_string(i);
+    }
+    return npath;
+}
+
 // Returns the path
 fs::path Node::path() const {
     return m_name;
@@ -104,4 +116,5 @@ uintmax_t Node::diskspace(Disk m) const {
         default: Throw(ex::Invalid,"Mode");
     }
 }
+
 // End of File Node.cpp

@@ -3,14 +3,6 @@
 
 //"http://onlinekaraoke.tv/assets/songs/29000-29999/29660-i-will-always-love-you-whitney-houston--1411573135.mp3"
 
-#define COLOR "\033[0;36;40m"
-#define PROGRESSY "\033[0;37;45m"
-#define PROGRESSN "\033[0;37;47m"
-#define DISCOLOR "\033[0m"
-#define DELETE "\033[A\033[2K"
-
-
-
 int main(int argc, char* argv[]) try {
     if( argc == 2){
         Aggregate agg(argv[1]);
@@ -26,10 +18,10 @@ int main(int argc, char* argv[]) try {
 
             int len = 50;
             int place = agg.progress()/100*len;
-            std::cout << PROGRESSY;
+            std::cout << COLOR(0,CC::WHITE,CC::PURPLE);
             for(int i=0;i< place;i++)
                 std::cout << " ";
-            std::cout << PROGRESSN;
+            std::cout << COLOR(0,CC::PURPLE,CC::WHITE);
             for(int i=place;i<len;i++)
                 std::cout << " ";
             std::cout << DISCOLOR;
@@ -41,9 +33,9 @@ int main(int argc, char* argv[]) try {
         }
         agg.join();
     } else {
-        std::cout << "Usage: aggregate [PATH]\n" << std::endl;
+        fancyprint("Usage: aggregate [PATH]",WARNING);
     }
     return 0;
 } catch (std::exception& ex) {
-    std::cout<<ex.what()<<std::endl;
+    fancyprint(ex.what(),ERROR);
 }

@@ -83,8 +83,14 @@ std::string md5(std::string text) {
 }
 
 std::string prettify(std::string url){
-    size_t last_slash = url.find_last_of('/');
-    return decodeUrl(url.substr(last_slash+1,url.length()) );
+    // Finds the name by getting the name after
+    // the last "/" and the before the first "?"
+    // after that
+    size_t last_slash = url.find_last_of('/')+1;
+    size_t first_ques= url.find('?',last_slash)-1;
+    if( first_ques == std::string::npos)
+        first_ques = url.length();
+    return decodeUrl(url.substr(last_slash,first_ques-last_slash+1));
 }
 
 int charToHex(char x){

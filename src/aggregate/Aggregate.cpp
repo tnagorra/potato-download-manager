@@ -211,44 +211,32 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker(){
-    //print("starter");
+    fancyprint("STARTER",NOTIFY);
     try {
         starter();
     } catch (ex::aggregate::AlreadyComplete) {
+        fancyprint("MERGER",NOTIFY);
         merger();
         return;
     }
-    //print("splitter");
+    fancyprint("SPLITTER",NOTIFY);
     splitter();
-    //print("joinall");
+    fancyprint("JOIN ALL",NOTIFY);
     joinAll();
-    //print("merger");
+    fancyprint("MERGER",NOTIFY);
     merger();
 }
 
 void Aggregate::merger() {
-    // TODO maybe add complete()
+    // TODO
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
 
-    /*
-       if( size() != m_filesize )
-       throw(ex::Invalid,"filesize");
-       */
+    File merged(prettyName());
+    // Write an empty merge file first
+    merged.write(Node::NEW);
 
-    // Create a file where chunk files are merged
-    std::string filename = prettyName();
-
-    if( Node(filename).exists() ){
-        unsigned n = 1;
-        while( Node(filename+"."+std::to_string(n)).exists() ){
-            n++;
-        }
-        filename += "."+std::to_string(n);
-    }
-
-    File merged(filename);
     // Append the content to "merged" and remove
     // the chunk files
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
