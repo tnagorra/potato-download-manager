@@ -288,29 +288,41 @@ void Aggregate::starter() {
         // "starter" indicates the first Chunk usable
         // from the list of sorted Chunks
         // A complete Transaction isn't started again
-        unsigned istarter=0;
-        Chunk* researcher = NULL;
-        for(unsigned i=0;i<files.size()-1;i++){
+
+
+        for(unsigned i=0; i < files.size()-1; i++){
             File* f = new File(chunkName(std::atoi(files[i].c_str())));
-            uintmax_t s1 = f->size();
-            uintmax_t s2 = std::atoi(files[i+1].c_str()) - std::atoi(files[i].c_str());
-            if(s1 < s2) {
-                // If not complete, it is the reseacher
-                istarter = i;
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-                BasicTransaction* t = BasicTransaction::factory(m_url,r);
-                researcher = new Chunk(t,f);
-                researcher->txn()->start();
-                break;
-            } else if (s1 == s2){
-                delete f;
-                // TODO We could push these files in a
-                // queue, and not delete it because we
-                // need it later
-            } else {
-                delete f;
-                Throw(ex::Invalid,"Filesize",", exceeds acceptable value, ");
-            }
+            Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+            BasicTransaction* t= BasicTransaction::factory(m_url,r);
+            Chunk* c = new Chunk(t,f);
+            m_chunk.push_back(c);
+            c->txn()->start();
+        }
+
+        /*
+           unsigned istarter=0;
+           Chunk* researcher = NULL;
+           for(unsigned i=0;i<files.size()-1;i++){
+           File* f = new File(chunkName(std::atoi(files[i].c_str())));
+           uintmax_t s1 = f->size();
+           uintmax_t s2 = std::atoi(files[i+1].c_str()) - std::atoi(files[i].c_str());
+           if(s1 < s2) {
+        // If not complete, it is the reseacher
+        istarter = i;
+        Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+        BasicTransaction* t = BasicTransaction::factory(m_url,r);
+        researcher = new Chunk(t,f);
+        researcher->txn()->start();
+        break;
+        } else if (s1 == s2){
+        delete f;
+        // TODO We could push these files in a
+        // queue, and not delete it because we
+        // need it later
+        } else {
+        delete f;
+        Throw(ex::Invalid,"Filesize",", exceeds acceptable value, ");
+        }
         }
 
         //print("d");
@@ -318,16 +330,16 @@ void Aggregate::starter() {
         // It is already complete
         if(researcher == NULL) {
 
-            //print("d1");
-            for(unsigned i=0; i < files.size()-1; i++){
-                File* f = new File(chunkName(std::atoi(files[i].c_str())));
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-                BasicTransaction* t= BasicTransaction::factory(m_url,r);
-                Chunk* c = new Chunk(t,f);
-                m_chunk.push_back(c);
-            }
-            //print("d2");
-            Throw(ex::aggregate::AlreadyComplete);
+        //print("d1");
+        for(unsigned i=0; i < files.size()-1; i++){
+        File* f = new File(chunkName(std::atoi(files[i].c_str())));
+        Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+        BasicTransaction* t= BasicTransaction::factory(m_url,r);
+        Chunk* c = new Chunk(t,f);
+        m_chunk.push_back(c);
+        }
+        //print("d2");
+        Throw(ex::aggregate::AlreadyComplete);
         }
         //print("e");
 
@@ -335,26 +347,26 @@ void Aggregate::starter() {
         // Now we get the proper information about the file
         // and further process can be started
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
-            boost::this_thread::sleep(boost::posix_time::millisec(100));
+        boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         //print("f");
 
 
         for(unsigned i=0; i < files.size()-1; i++){
-            if(i==istarter){
-                m_chunk.push_back(researcher);
-            } else {
-                File* f = new File(chunkName(std::atoi(files[i].c_str())));
-                Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-                BasicTransaction* t= researcher->txn()->clone(r);
-                Chunk* c = new Chunk(t,f);
-                m_chunk.push_back(c);
-                c->txn()->start();
-            }
+        if(i==istarter){
+        m_chunk.push_back(researcher);
+        } else {
+        File* f = new File(chunkName(std::atoi(files[i].c_str())));
+        Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+        BasicTransaction* t= researcher->txn()->clone(r);
+        Chunk* c = new Chunk(t,f);
+        m_chunk.push_back(c);
+        c->txn()->start();
+        }
         }
         //print("g");
+        */
 
-        // Set m_filesize by looking at the last thing
     } else {
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability

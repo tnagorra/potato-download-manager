@@ -9,12 +9,10 @@ int main(int argc, char* argv[]) try {
         agg.start();
         while( agg.totalChunks() == 0)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
+
+        std::cout << formatByte(agg.bytesTotal()) <<std::endl;
         while( !agg.complete() ){
-            std::cout << formatByte(agg.bytesTotal()) <<std::endl;
-            std::cout << agg.activeChunks() << "/" << agg.totalChunks() <<"\t";
-            std::cout <<  formatByte(agg.speed()) << "ps\t";
-            std::cout << formatTime(agg.timeRemaining()) << "\t";
-            std::cout << std::endl;
+
 
             int len = 50;
             int place = agg.progress()/100*len;
@@ -25,11 +23,17 @@ int main(int argc, char* argv[]) try {
             for(int i=place;i<len;i++)
                 std::cout << " ";
             std::cout << DISCOLOR;
-            std::cout << " " << round(agg.progress(),2) << "%";
+            std::cout << " " << round(agg.progress(),2) << "%\t";
+
+
+            std::cout << agg.activeChunks() << "/" << agg.totalChunks() <<"\t";
+            std::cout << formatTime(agg.timeRemaining()) << "\t";
+            std::cout <<  formatByte(agg.speed()) << "ps\t";
             std::cout << std::endl;
 
             boost::this_thread::sleep(boost::posix_time::millisec(100));
-            std::cout<< DELETE DELETE DELETE;
+
+            std::cout<< DELETE;
         }
         agg.join();
     } else {
