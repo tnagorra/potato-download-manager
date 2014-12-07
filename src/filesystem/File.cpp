@@ -81,10 +81,16 @@ void File::copy(const fs::path& tos,Conflict c) {
     Node to(tos);
     if( (to.exists() && to.what() == DIRECTORY) || (to.filename() == "." || to.filename() == ".."))
         toss /= filename();
+
     File too(toss);
-    if( too.exists() && c==LEAVE)
-        Throw(ex::filesystem::AlreadyThere,too.path().string());
+    if( too.exists() ){
+        if(c==LEAVE)
+            Throw(ex::filesystem::AlreadyThere,too.path().string());
+        else if (c==NEW)
+            path(newpath());
+    }
     close();
+
     if( too.path().has_parent_path())
         Directory(too.parentpath().string()).create();
     fs::copy(path(),too.path());
@@ -100,10 +106,16 @@ void File::move(const fs::path& tos,Conflict c) {
     Node to(tos);
     if( (to.exists() && to.what() == DIRECTORY) || (to.filename() == "." || to.filename() == ".."))
         toss /= filename();
+
     File too(toss);
-    if( too.exists() && c==LEAVE)
-        Throw(ex::filesystem::AlreadyThere,too.path().string());
+    if( too.exists() ){
+        if(c==LEAVE)
+            Throw(ex::filesystem::AlreadyThere,too.path().string());
+        else if (c==NEW)
+            path(newpath());
+    }
     close();
+
     if( too.path().has_parent_path())
         Directory(too.parentpath().string()).create();
     fs::rename(path(),too.path());
@@ -160,16 +172,24 @@ void File::open(State mode) {
 // Creates an empty File
 // Throws ex::filesystem::AlreadyThere
 void File::write(Conflict c) {
-    if( c == LEAVE && exists())
-        Throw(ex::filesystem::AlreadyThere,m_name.string());
+    if( exists() ){
+        if(c == LEAVE)
+            Throw(ex::filesystem::AlreadyThere,m_name.string());
+        else if(c == NEW)
+            path(newpath());
+    }
     open(WRITE);
 }
 
 // Creates a File using string, B+T
 // Throws ex::filesystem::AlreadyThere
 void File::write(const std::string& data,Conflict c) {
-    if( c == LEAVE && exists())
-        Throw(ex::filesystem::AlreadyThere,m_name.string());
+    if( exists() ){
+        if(c == LEAVE)
+            Throw(ex::filesystem::AlreadyThere,m_name.string());
+        else if(c == NEW)
+            path(newpath());
+    }
     open(WRITE);
     m_stream << data;
 }
@@ -177,8 +197,12 @@ void File::write(const std::string& data,Conflict c) {
 // Creates a File using istream, B+T ??
 // Throws ex::filesystem::AlreadyThere
 void File::write(std::istream& data,Conflict c,uintmax_t n){
-    if( c == LEAVE && exists())
-        Throw(ex::filesystem::AlreadyThere,m_name.string());
+    if( exists() ){
+        if(c == LEAVE)
+            Throw(ex::filesystem::AlreadyThere,m_name.string());
+        else if(c == NEW)
+            path(newpath());
+    }
     open(WRITE);
     streamCopy(data, n);
 }

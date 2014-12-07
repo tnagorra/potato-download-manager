@@ -14,8 +14,8 @@ namespace fs = boost::filesystem;
 class Node{
     public:
         // Things that may be done in case of a name conflict:
-        // Either force the action, or do nothing.
-        enum Conflict {FORCE,LEAVE};
+        // Either force the action, create another, or do nothing.
+        enum Conflict {FORCE,LEAVE,NEW};
         // Types of disk space information. CAPACITY is the total
         // storage capacity. FREE and AVAILABLE are similar, but
         // I don't know the difference.
@@ -38,6 +38,9 @@ class Node{
 
         // Sets a different path
         virtual void path(const fs::path& name);
+
+        // Returns new path in case of confilct
+        fs::path newpath() const;
 
         // Returns the path
         fs::path path() const;

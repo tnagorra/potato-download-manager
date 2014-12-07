@@ -232,23 +232,10 @@ void Aggregate::merger() {
     // to the size of file downloaded then
     // do not merge the Chunks
 
-    /*
-       if( size() != m_filesize )
-       throw(ex::Invalid,"filesize");
-       */
+    File merged(prettyName());
+    // Write an empty merge file first
+    merged.write(Node::NEW);
 
-    // Create a file where chunk files are merged
-    std::string filename = prettyName();
-
-    if( Node(filename).exists() ){
-        unsigned n = 1;
-        while( Node(filename+"."+std::to_string(n)).exists() ){
-            n++;
-        }
-        filename += "."+std::to_string(n);
-    }
-
-    File merged(filename);
     // Append the content to "merged" and remove
     // the chunk files
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
