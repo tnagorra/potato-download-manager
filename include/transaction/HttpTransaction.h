@@ -40,12 +40,13 @@ class HttpTransaction : public Transaction<SocketType> {
     using Transaction<SocketType>::m_bytesDone;
     using Transaction<SocketType>::m_bytesTotal;
     using Transaction<SocketType>::m_reader;
+    using Transaction<SocketType>::m_beenSplit;
     using Transaction<SocketType>::resolveHost;
     using Transaction<SocketType>::connectHost;
-    using Transaction<SocketType>::m_beenSplit;
-    using Transaction<SocketType>::m_beenPaused;
-
-
+    using Transaction<SocketType>::createSocket;
+    using Transaction<SocketType>::resolveHost;
+    using Transaction<SocketType>::resolveHostMain;
+    using Transaction<SocketType>::connectHost;
 
     // Private data members
     private:

@@ -2,19 +2,58 @@
 #include <sys/time.h>
 #include <sys/socket.h>
 
+// Constructor.
 template <typename SocketType>
 Transaction<SocketType>::Transaction(RemoteData* rdata, Range range)
     : BasicTransaction(rdata,range), mptr_socket(NULL) { }
 
-// Dont think we really need this. And things are simple for the
-// factory without it.
-/*template <typename SocketType>
-Transaction<SocketType>::Transaction(RemoteData* rdata,
-        antiSockType* sock, const Range range)
-    : BasicTransaction(rdata,range) {
-    mptr_socket = SockTraits<SocketType>::transform(sock);
-}*/
+// An assignment operator for converting from a transaction of one
+// socket type to another. To be used **only** for redirects, nowhere
+// else, because only the relevant members are copied.
+template <typename SocketType>
+void Transaction<SocketType>::operator=(
+        const Transaction<antiSockType>& i) {
+    m_range = i.range();
+    mptr_thread = i.p_thread();
+    mptr_speedThread = i.p_speedThread();
+    m_reader = i.reader();
+    mptr_socket = SockTraits<SocketType>::transform(i.p_socket());
+}
 
+// Getter for the socket
+template <typename SocketType>
+SocketType* Transaction<SocketType>::p_socket() const {
+    return mptr_socket;
+}
+
+// Inject a tcp socket to the downloader. These may be called
+// if you have a live socket and want that to be used for the
+// download. Reusing active sockets saves the latency time
+// losses caused when creating new connections. injectSocket
+// may only be called before you start() the download, other-
+// wise it will just return.
+template <typename SocketType>
+void Transaction<SocketType>::injectSocket(SSLSock* sock) {
+    mptr_socket = SockTraits<SocketType>::transform(sock);
+}
+template <typename SocketType>
+void Transaction<SocketType>::injectSocket(PlainSock* sock) {
+    mptr_socket = SockTraits<SocketType>::transform(sock);
+}
+
+// If mptr_socket is NULL, create a new one.
+template <typename SocketType>
+void Transaction<SocketType>::checkSocket() {
+    if (mptr_socket==NULL)
+        mptr_socket = SockTraits<SocketType>::transform();
+}
+
+// Subfunctions for the download worker. These execute
+// sequentially in the mptr_thread, and perform discrete
+// subtasks in the downloading process.
+
+// Perform dns resolution on the remote host. Entry point
+// for resolveHost main.
 template <typename SocketType>
 void Transaction<SocketType>::resolveHost() {
     checkSocket();
@@ -27,7 +66,7 @@ void Transaction<SocketType>::resolveHost() {
         resolveHostMain();
 }
 
-template <>
+template <> // Template specialization for SSLSock
 void Transaction<SSLSock>::resolveHost() {
     checkSocket();
     boost::system::error_code ec;
@@ -39,6 +78,7 @@ void Transaction<SSLSock>::resolveHost() {
     } else resolveHostMain();
 }
 
+// Do the actual dns resolution.
 template <typename SocketType>
 void Transaction<SocketType>::resolveHostMain() {
     // Number of tries left
@@ -63,6 +103,7 @@ void Transaction<SocketType>::resolveHostMain() {
     } while (m_endpIterator==err_itr && --triesleft);
 }
 
+// Establish a tcp connection with the remote host.
 template <typename SocketType>
 void Transaction<SocketType>::connectHost() {
     boost::system::error_code ec;
@@ -94,7 +135,7 @@ void Transaction<SocketType>::connectHost() {
     boost::this_thread::interruption_point();
 }
 
-template <>
+template <>     // template specialization for SSLSock
 void Transaction<SSLSock>::connectHost() {
     boost::system::error_code ec;
     // Return, if we already have an endpoint (meaning we are already
@@ -132,47 +173,6 @@ void Transaction<SSLSock>::connectHost() {
 
     boost::this_thread::interruption_point();
 }
-
-template <typename SocketType>
-SocketType* Transaction<SocketType>::p_socket() const {
-    return mptr_socket;
-}
-
-template <typename SocketType>
-void Transaction<SocketType>::injectSocket(SSLSock* sock) {
-    mptr_socket = SockTraits<SocketType>::transform(sock);
-}
-
-template <typename SocketType>
-void Transaction<SocketType>::injectSocket(PlainSock* sock) {
-    mptr_socket = SockTraits<SocketType>::transform(sock);
-}
-
-template <typename SocketType>
-void Transaction<SocketType>::checkSocket() {
-    if (mptr_socket==NULL)
-        mptr_socket = SockTraits<SocketType>::transform();
-}
-
-// An assignment operator for converting from a transaction of one
-// socket type to another. To be used **only** for redirects, nowhere
-// else, because only the relevant members are copied.
-template <typename SocketType>
-void Transaction<SocketType>::operator=(
-        const Transaction<antiSockType>& i) {
-    //m_state = i.state();
-    m_range = i.range();
-    //mptr_rdata = i.p_remoteData();
-    mptr_thread = i.p_thread();
-    mptr_speedThread = i.p_speedThread();
-    //m_response = i.m_response;
-    m_reader = i.reader();
-    //m_endpIterator = i.endpIterator();
-    //m_bytesTotal = i.bytesTotal();
-    //m_bytesDone = i.bytesDone();
-    mptr_socket = SockTraits<SocketType>::transform(i.p_socket());
-}
-
 
 template class Transaction<PlainSock>;
 template class Transaction<SSLSock>;
