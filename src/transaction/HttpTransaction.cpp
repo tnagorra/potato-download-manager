@@ -9,17 +9,13 @@
 
 using boost::asio::ip::tcp;
 
+// Constructor.
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
         Range range) : Transaction<SocketType>(rdata,range)
 { }
 
-/*template <typename SocketType>
-HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        antiSockType* sock, const Range range)
-    : Transaction<SocketType>(rdata,sock,range)
-{ }*/
-
+// Start the downloader thread and return immediately
 template <typename SocketType>
 void HttpTransaction<SocketType>::start() {
     if (m_state!= State::idle)
@@ -32,30 +28,30 @@ void HttpTransaction<SocketType>::start() {
             &BasicTransaction::speedWorker, this);
 }
 
+// Stop the download if it is running.
 template <typename SocketType>
 void HttpTransaction<SocketType>::stop() {
-    this->mptr_thread->interrupt();
-    this->mptr_speedThread->interrupt();
+    if (isRunning()) {
+        this->mptr_thread->interrupt();
+        this->mptr_speedThread->interrupt();
+    }
 }
 
+// workerMain() is the entry point of the download Thread
 template <typename SocketType>
-void HttpTransaction<SocketType>::readToSink() {
-    boost::asio::streambuf dumie;
-    if (mptr_socket->available())
-        boost::asio::read(*mptr_socket, dumie,
-                boost::asio::transfer_at_least(
-                    mptr_socket->available()));
+void HttpTransaction<SocketType>::workerMain() try {
+    resolveHost();
+    connectHost();
+    createAndSendRequest();
+    receiveHeaders();
+    writeOut();
+} catch (HttpTransaction<antiSockType>* radar) {
+    radar->workerMain();
+} catch (HttpTransaction<SocketType>* self) {
+    self->workerMain();
 }
 
-template <>
-void HttpTransaction<SSLSock>::readToSink() {
-    boost::asio::streambuf dumie;
-    if (mptr_socket->lowest_layer().available())
-        boost::asio::read(*mptr_socket, dumie,
-                boost::asio::transfer_at_least(
-                    mptr_socket->lowest_layer().available()));
-}
-
+// Create the http request headers and send them
 template <typename SocketType>
 void HttpTransaction<SocketType>::createAndSendRequest() {
     readToSink();
@@ -104,6 +100,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     boost::this_thread::interruption_point();
 }
 
+// Wait while the expecting data from the server
 template <typename SocketType>
 void HttpTransaction<SocketType>::waitData() {
     // While there are no bytes to read, just hang around
@@ -114,7 +111,7 @@ void HttpTransaction<SocketType>::waitData() {
     }
 }
 
-template<>
+template<>  // Template specialization for SSLSock
 void HttpTransaction<SSLSock>::waitData() {
     // While there are no bytes to read, just hang around
     while (!mptr_socket->lowest_layer().available()) {
@@ -124,6 +121,7 @@ void HttpTransaction<SSLSock>::waitData() {
     }
 }
 
+// Read and parse the http response headers
 template <typename SocketType>
 void HttpTransaction<SocketType>::receiveHeaders() {
     // Wait for the headers to arrive
@@ -198,6 +196,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     handleStatusCode(status_code);
 }
 
+// Handle an unexpected http status code
 template <typename SocketType>
 void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
     unsigned int category = code/100;
@@ -244,16 +243,8 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
     }
 }
 
-template <typename SocketType>
-void HttpTransaction<SocketType>::clearProgress() {
-    m_state = State::idle;
-    m_bytesDone = 0;
-    m_statusLine = "";
-    m_beenSplit = false;
-    m_respHeaders = std::map<std::string,std::string>();
-    delete mptr_response; mptr_response = new boost::asio::streambuf;
-}
-
+// write data to somewhere through the callback - the *real*
+// downloader!
 template <typename SocketType>
 void HttpTransaction<SocketType>::writeOut() {
     uintmax_t bufBytes = mptr_response->size();
@@ -293,19 +284,36 @@ void HttpTransaction<SocketType>::writeOut() {
     m_state = State::complete;
 }
 
+// Read out any remaining data on the socket to sink
 template <typename SocketType>
-void HttpTransaction<SocketType>::workerMain() try {
-    resolveHost();
-    connectHost();
-    createAndSendRequest();
-    receiveHeaders();
-    writeOut();
-} catch (HttpTransaction<antiSockType>* radar) {
-    radar->workerMain();
-} catch (HttpTransaction<SocketType>* self) {
-    self->workerMain();
+void HttpTransaction<SocketType>::readToSink() {
+    boost::asio::streambuf dumie;
+    if (mptr_socket->available())
+        boost::asio::read(*mptr_socket, dumie,
+                boost::asio::transfer_at_least(
+                    mptr_socket->available()));
 }
 
+template <> // Template specialization for SSLSock
+void HttpTransaction<SSLSock>::readToSink() {
+    boost::asio::streambuf dumie;
+    if (mptr_socket->lowest_layer().available())
+        boost::asio::read(*mptr_socket, dumie,
+                boost::asio::transfer_at_least(
+                    mptr_socket->lowest_layer().available()));
+}
+
+// Clear all transaction progress and return to start
+// state. Needed to handle things like redirects.
+template <typename SocketType>
+void HttpTransaction<SocketType>::clearProgress() {
+    m_state = State::idle;
+    m_bytesDone = 0;
+    m_statusLine = "";
+    m_beenSplit = false;
+    m_respHeaders = std::map<std::string,std::string>();
+    delete mptr_response; mptr_response = new boost::asio::streambuf;
+}
 
 template class HttpTransaction<PlainSock>;
 template class HttpTransaction<SSLSock>;
