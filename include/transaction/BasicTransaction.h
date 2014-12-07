@@ -52,6 +52,8 @@ class BasicTransaction {
         tcp::resolver::iterator m_endpIterator;
         // Has the transaction been split (range-updated) externally?
         bool m_beenSplit;
+        // Has a pause request been issued?
+        bool m_pauseRequest;
         // Is the transaction is in a paused (temporary hold) state?
         bool m_beenPaused;
 
@@ -180,7 +182,6 @@ class BasicTransaction {
 
         // Worker function for calculating the speeds
         void speedWorker();
-
 };
 
 #endif

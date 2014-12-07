@@ -270,9 +270,12 @@ void HttpTransaction<SocketType>::writeOut() {
 
         m_bytesDone += bufBytes;
 
-        while (m_beenPaused) {
-            boost::this_thread::sleep(
-                    boost::posix_time::milliseconds(200));
+        if (m_pauseRequest) {
+            m_beenPaused = true;
+            while (m_beenPaused)
+                boost::this_thread::sleep(
+                        boost::posix_time::milliseconds(200));
+            m_pauseRequest = false;
         }
 
         boost::this_thread::interruption_point();

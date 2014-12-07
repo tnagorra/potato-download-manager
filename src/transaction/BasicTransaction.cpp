@@ -12,6 +12,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
     m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
     m_beenSplit(false),
+    m_pauseRequest(false),
     m_beenPaused(false) {
 
     mptr_response = new boost::asio::streambuf;
@@ -83,7 +84,7 @@ BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
 // download, stop() is used. The resuming is handled by
 // Aggregator.
 void BasicTransaction::pause() {
-    m_beenPaused = true;
+    m_pauseRequest = true;
 }
 
 // Resume after a previous pause() call.
