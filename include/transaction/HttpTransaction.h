@@ -21,10 +21,8 @@
 
 
 // class HttpTransaction
-// The contract this class fulfills is to take a RemoteDataHttp and
-// a Range, and produce a stream of bytes.
-// This class is the core of the downloader, in the sense that the
-// actual downloading happens and is co-ordinated here.
+// This class is a protocol-specific subclass of Transaction. As the
+// name implies, it handles the http protocol.
 template <typename SocketType>
 class HttpTransaction : public Transaction<SocketType> {
 
@@ -40,50 +38,58 @@ class HttpTransaction : public Transaction<SocketType> {
     using Transaction<SocketType>::m_bytesDone;
     using Transaction<SocketType>::m_bytesTotal;
     using Transaction<SocketType>::m_reader;
-    using Transaction<SocketType>::resolveHost;
-    using Transaction<SocketType>::connectHost;
     using Transaction<SocketType>::m_beenSplit;
     using Transaction<SocketType>::m_beenPaused;
-
-
+    using Transaction<SocketType>::m_pauseRequest;
+    using Transaction<SocketType>::connectHost;
+    using Transaction<SocketType>::resolveHost;
+    using Transaction<SocketType>::resolveHostMain;
+    using Transaction<SocketType>::isRunning;
 
     // Private data members
     private:
     // The response status line
     std::string m_statusLine;
-    // The response headers
+    // The response headers, as name-value pairs
     std::map<std::string,std::string> m_respHeaders;
 
-    // these are smaller functions that do specific actions
-    // inside the worker thread
+    // Subfunctions for the download worker. These execute
+    // sequentially in the mptr_thread, and perform discrete
+    // subtasks in the downloading process.
+
+    // Create the http request headers and send them
     void createAndSendRequest();
-    void readToSink();
+    // Wait while the expecting data from the server
     void waitData();
+    // Read and parse the http response headers
     void receiveHeaders();
+    // Handle an unexpected http status code
     void handleStatusCode(unsigned int code);
+    // write data to somewhere through the callback - the *real*
+    // downloader!
     void writeOut();
 
+    // Read out any remaining data on the socket to sink
+    void readToSink();
     // Clear all transaction progress and return to start
-    // state
+    // state. Needed to handle things like redirects.
     void clearProgress();
+
     public:
     typedef typename SockTraits<SocketType>::antiSock antiSockType;
 
-    // workerMain() is the entry point of the worker thread
-    void workerMain();
-
-    // Constructor. Default Range argument (0,0) means the
-    // entire resource
+   // Constructor.
     HttpTransaction(RemoteDataHttp* rdata,
             Range range = Range(0,0));
 
-    // This has been deemed unnecessary for now
-    // Overload in case a different socket type is provided
-    //HttpTransaction(RemoteDataHttp* rdata, antiSockType* asock,
-    //        const Range range = Range(0,0));
-
+    // Start the downloader thread and return immediately.
     void start();
+
+    // Stop the download if it is running.
     void stop();
+
+    // workerMain() is the entry point of the download Thread
+    void workerMain();
 };
 
 typedef HttpTransaction<PlainSock> HttppTransaction;

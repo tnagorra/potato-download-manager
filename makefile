@@ -3,8 +3,8 @@ SRCDIR:=src
 OBJDIR:=bin/obj
 BINDIR:=bin
 
-#CC=g++
-CC=clang++-3.5
+CC=g++
+#CC=clang++-3.5
 CFLAGS=-c -I$(INCDIR)/ --std=c++11
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 
