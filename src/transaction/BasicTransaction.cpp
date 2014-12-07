@@ -2,6 +2,7 @@
 // The factory method needs our children to be fully defined
 #include "transaction/HttpTransaction.h"
 
+// The constructor.
 BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
     : m_range(range),
     mptr_rdata(rdata),
@@ -12,6 +13,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
     m_bytesDone(0),
     m_beenSplit(false),
     m_beenPaused(false) {
+
     mptr_response = new boost::asio::streambuf;
     // If the range has a zero size but is not an unitialized range,
     // the download is immediately complete
@@ -19,11 +21,16 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
         m_state = State::complete;
 }
 
+// Static factory methods for generating objects of this type.
+// They can be provided with a RemoteData object or a url,
+// and an optional byterange.
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
         Range range) {
-    if (!rdata)
+
+    if (!rdata) // Danger!! Null pointer
         Throw(ex::Invalid, "The RemoteData pointer passed");
-    BasicTransaction* product;
+
+    BasicTransaction* product;  // The product of our factory
     switch (rdata->scheme()) {
         case RemoteData::Protocol::http:
             product = new HttpTransaction<PlainSock>(
@@ -45,11 +52,79 @@ BasicTransaction* BasicTransaction::factory(std::string url,
     return factory(rdata_url, range);
 }
 
+// Register the byte-Reader callback function
+// The parameter must be a boost::function object of type
+// void() (std::istream&, uintmax_t), which is a void function
+// with two parameters : an istream to read from an the number
+// of bytes to read.
 void BasicTransaction::registerReader(
-        boost::function<void (std::istream&, uintmax_t)>& bytereader) {
+        boost::function<void (std::istream&, uintmax_t)>& bytereader){
     m_reader = bytereader;
 }
 
+// Clone this BasicTransaction object. A range has to be
+// provided and a new socket may be passed in case you want
+// it to be used.
+BasicTransaction* BasicTransaction::clone(Range r, PlainSock* sock) {
+    BasicTransaction* bt = factory(mptr_rdata,r);
+    bt->injectSocket(sock);
+    return bt;
+}
+
+BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
+    BasicTransaction* bt = factory(mptr_rdata,r);
+    bt->injectSocket(sock);
+    return bt;
+}
+
+// Pause the download. This pause is just a temporary hold,
+// used by the Aggregator class to prevent writeouts when
+// in the process of splitting. To actually *pause* the
+// download, stop() is used. The resuming is handled by
+// Aggregator.
+void BasicTransaction::pause() {
+    m_beenPaused = true;
+}
+
+// Resume after a previous pause() call.
+void BasicTransaction::play() {
+    m_beenPaused = false;
+}
+
+// Block until the download is finished or fails.
+void BasicTransaction::join() const {
+    if (m_state==State::idle || isComplete())
+        return;
+    if (mptr_thread==NULL || mptr_speedThread==NULL)
+        return;
+    mptr_thread->join();
+    mptr_speedThread->join();
+}
+
+// Update the upper byte of the byte range. updateRange is
+// called when you decide you no longer decide any more bytes
+// beyond a certain point. Used by Aggregator for splitting.
+ void BasicTransaction::updateRange(uintmax_t u) {
+    if (!m_range.uninitialized()) {
+        if (u<m_range.ub())
+            m_beenSplit = true;
+    } else {
+        if (u<m_bytesTotal)
+            m_beenSplit = true;
+    }
+    m_range.update(u,m_range.lb());
+    m_bytesTotal = m_range.size();
+}
+
+// Getters and setters for the data members.
+
+// Get state as BasicTransaction::State
+typename BasicTransaction::State
+    BasicTransaction::state() const {
+    return m_state;
+}
+
+// and as a string
 std::string BasicTransaction::stateString () const{
     switch(m_state) {
         case State::idle:
@@ -73,101 +148,104 @@ std::string BasicTransaction::stateString () const{
     }
 }
 
-typename BasicTransaction::State
-    BasicTransaction::state() const {
-    return m_state;
-}
-
-uintmax_t BasicTransaction::bytesDone() const {
-    return m_bytesDone;
-}
-
-uintmax_t BasicTransaction::bytesTotal() const {
-    return m_bytesTotal;
-}
-
-uintmax_t BasicTransaction::bytesRemaining() const {
-    return m_bytesTotal-m_bytesDone;
-}
-
+// Returns if complete (success or failure)
 bool BasicTransaction::isComplete() const {
     return state()==State::complete || state()==State::failed;
 }
 
+// Get the byterange
 Range BasicTransaction::range() const {
     return m_range;
 }
 
+// Get the remotedata pointer
 RemoteData* BasicTransaction::p_remoteData() const {
     return mptr_rdata;
 }
 
+// Get a pointer to the downloader thread object
 boost::thread* BasicTransaction::p_thread() const {
     return mptr_thread;
 }
 
+// Get a pointer to the speed observer thread object
 boost::thread* BasicTransaction::p_speedThread() const {
     return mptr_speedThread;
 }
 
+// Return the writeout callback functor
 boost::function<void (std::istream&, uintmax_t)>
 BasicTransaction::reader() const {
     return m_reader;
 }
 
+// Returns the endpoint iterator
 tcp::resolver::iterator BasicTransaction::endpIterator() const {
     return m_endpIterator;
 }
 
+// Return the bytes done, thats the number of bytes downloaded
+// and actually written out.
+uintmax_t BasicTransaction::bytesDone() const {
+    return m_bytesDone;
+}
+
+// return the total number of bytes to be downloaded. Initially this
+// is the size indicated by m_range, but will be different if
+// the server sends a differently sized response
+uintmax_t BasicTransaction::bytesTotal() const {
+    return m_bytesTotal;
+}
+
+// total-done
+uintmax_t BasicTransaction::bytesRemaining() const {
+    return m_bytesTotal-m_bytesDone;
+}
+
+// Return if the download is running, i.e. is not idle and
+// not complete/failed
 bool BasicTransaction::isRunning() const {
     return (m_state!=State::idle && !isComplete());
 }
 
-void BasicTransaction::pause() {
-    m_beenPaused = true;
-}
-
+// Returns if the download has been 'pause()'ed
 bool BasicTransaction::isPaused() const {
     return m_beenPaused;
 }
 
-void BasicTransaction::play() {
-    m_beenPaused = false;
+// Speed observation functions
+
+// The average speed, in bytes per second. Average speed is
+// bytesDone/timeElapsed
+double BasicTransaction::avgSpeed() const {
+    return m_avgSpeed;
 }
 
-BasicTransaction* BasicTransaction::clone(Range r, PlainSock* sock) {
-    BasicTransaction* bt = factory(mptr_rdata,r);
-    bt->injectSocket(sock);
-    return bt;
+// The 'instantaneous' speed in bytes per second. It is calculated
+// for very short intervals of time.
+double BasicTransaction::instSpeed() const {
+    return m_instSpeed;
 }
 
-BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
-    BasicTransaction* bt = factory(mptr_rdata,r);
-    bt->injectSocket(sock);
-    return bt;
+// The 'hifi' speed, which I don't understand properly.
+double BasicTransaction::hifiSpeed() const {
+    return m_hifiSpeed;
 }
 
-void BasicTransaction::updateRange(uintmax_t u) {
-    if (!m_range.uninitialized()) {
-        if (u<m_range.ub())
-            m_beenSplit = true;
-    } else {
-        if (u<m_bytesTotal)
-            m_beenSplit = true;
-    }
-    m_range.update(u,m_range.lb());
-    m_bytesTotal = m_range.size();
+// THE speed, which will be shown at the frontend.
+double BasicTransaction::speed() const {
+    return avgSpeed();
 }
 
-void BasicTransaction::join() const {
-    if (m_state==State::idle || isComplete())
-        return;
-    if (mptr_thread==NULL || mptr_speedThread==NULL)
-        return;
-    mptr_thread->join();
-    mptr_speedThread->join();
+// An estimate of the time remaining, in seconds.
+uintmax_t BasicTransaction::timeRemaining() const {
+    if (speed()==0)
+        return std::numeric_limits<uintmax_t>::max();
+    return bytesRemaining()/speed();
 }
 
+// The function that runs on m_speedThread and does the speed
+// calculation work.
 void BasicTransaction::speedWorker() {
     /*
        uintmax_t tick=0;
@@ -203,28 +281,6 @@ void BasicTransaction::speedWorker() {
         m_hifiSpeed= (m_hifiSpeed*per+m_instSpeed)/(per+1);
         no++;
     }
-}
-
-double BasicTransaction::avgSpeed() const {
-    return m_avgSpeed;
-}
-
-double BasicTransaction::instSpeed() const {
-    return m_instSpeed;
-}
-
-double BasicTransaction::hifiSpeed() const {
-    return m_hifiSpeed;
-}
-
-double BasicTransaction::speed() const {
-    return avgSpeed();
-}
-
-uintmax_t BasicTransaction::timeRemaining() const {
-    if (speed()==0)
-        return std::numeric_limits<uintmax_t>::max();
-    return bytesRemaining()/speed();
 }
 
 // End file BasicTransaction.cpp
