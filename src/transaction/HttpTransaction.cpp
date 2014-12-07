@@ -285,6 +285,8 @@ void HttpTransaction<SocketType>::writeOut() {
         m_state = State::failed;
     }
     m_state = State::complete;
+    m_pauseRequest = false;
+    m_beenPaused = false;
 }
 
 // Read out any remaining data on the socket to sink

@@ -124,7 +124,7 @@ bool Aggregate::splitReady() const {
         // TODO 0 Insert some really good algorithm
         // Maybe wait for download to get to stable state
         // Waiting for a while may be benificial in long run
-        if ((*it)->txn()->speed()<=100 && !(*it)->txn()->isComplete())
+        if ((*it)->txn()->speed()<=10 && !(*it)->txn()->isComplete())
             return false;
     }
     return true;
@@ -169,17 +169,29 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     return bneck;
 }
 
+void Aggregate::display() {
+    fancycout(activeChunks() << "/" << totalChunks() << " ",ERROR);
+    for(auto i=0;i<m_chunk.size();i++){
+        if( m_chunk[i]->txn()->isComplete() )
+            fancycout(m_chunk[i]->file()->filename().c_str() << " ",SUCCESS);
+        else if( m_chunk[i]->txn()->state() >= BasicTransaction::State::downloading)
+            fancycout(m_chunk[i]->file()->filename().c_str() << " ",NOTIFY);
+        else
+            fancycout(m_chunk[i]->file()->filename().c_str() << " ",WARNING);
+    }
+    fancycout(m_filesize,SUCCESS);
+    std::cout << std::endl;
+}
+
 // Split a Chunk and insert new Chunk after it
 void Aggregate::split(std::vector<Chunk*>::size_type split_index){
-    // TODO could stop worrying about pausing this shit
-    // Get the Chunk to be splitted
-    // Pause the BasicTransaction
-    // Wait until it is paused
     Chunk* cell = m_chunk[split_index];
 
     cell->txn()->pause();
+    //fancyprint("Pause",NOTIFY);
     while(!cell->txn()->isPaused())
         boost::this_thread::sleep(boost::posix_time::millisec(100));
+    //fancyprint("Pause complete",SUCCESS);
 
     // Calculate the split point ie midpoint
     // Note: Range is exclusive of previous session
@@ -190,6 +202,8 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     if( midpoint > upper || midpoint < lower)
         Throw(ex::Invalid,"Range","Midpoint");
+    // TODO can return void, as this means the split won't be
+    // necessary
 
     //std::cout << "U " << upper << " L " << lower <<std::endl;
     //std::cout << "D " << downloaded << " M " << midpoint << std::endl;
@@ -211,19 +225,13 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker(){
-    fancyprint("STARTER",NOTIFY);
-    try {
-        starter();
-    } catch (ex::aggregate::AlreadyComplete) {
-        fancyprint("MERGER",NOTIFY);
-        merger();
-        return;
-    }
-    fancyprint("SPLITTER",NOTIFY);
+    //fancyprint("STARTER",NOTIFY);
+    starter();
+    //fancyprint("SPLITTER",NOTIFY);
     splitter();
-    fancyprint("JOIN ALL",NOTIFY);
+    //fancyprint("JOIN ALL",NOTIFY);
     joinAll();
-    fancyprint("MERGER",NOTIFY);
+    //fancyprint("MERGER",NOTIFY);
     merger();
 }
 
@@ -249,20 +257,23 @@ void Aggregate::merger() {
 
 void Aggregate::splitter() {
     // Loop while a bottleneck exists
-    while (true){
+    while (!complete()){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Get the bottle neck and split
         // NOTE: There may be some problem here
-        if(activeChunks() < m_chunks && splitReady()){
+        //print("here");
+        if(activeChunks() < m_chunks) {
             std::vector<Chunk*>::size_type bneck;
             try {
                 bneck = bottleNeck();
             } catch (ex::aggregate::NoBottleneck) {
                 break;
             }
-            split(bneck);
+            //print("there");
+            if(splitReady())
+                split(bneck);
         }
     }
 }

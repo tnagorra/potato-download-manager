@@ -52,8 +52,10 @@ enum CC {BLACK,RED,GREEN,YELLOW,BLUE,PURPLE,TEAL,WHITE,GRAY};
 #define WARNING COLOR(0,CC::YELLOW,CC::BLACK)
 #define ERROR COLOR(1,CC::RED,CC::BLACK)
 
-#define print(thing) std::cout<<thing<<std::endl;
-#define fancyprint(thing,color) std::cout << color << thing << DISCOLOR << std::endl;
+#define print(thing) std::cout<<thing<<std::endl
+#define fancyprint(thing,color) std::cout << color << thing << DISCOLOR << std::endl
+
+#define fancycout(thing,color) std::cout << color << thing << DISCOLOR
 
 // Namesepace ex
 // This is the namespace which contains all exception classes.

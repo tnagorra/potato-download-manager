@@ -52,6 +52,8 @@ class Aggregate{
         // Create a thread to start Chunk
         void start();
 
+        void display();
+
         // Total data downloaded; includes already saved file
         uintmax_t bytesDone() const;
 
