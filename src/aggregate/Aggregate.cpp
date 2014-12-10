@@ -75,15 +75,6 @@ uintmax_t Aggregate::bytesDone() const {
     return bytes;
 }
 
-uintmax_t Aggregate::bytesTotal() const {
-    return m_filesize;
-}
-
-double Aggregate::progress() const {
-    if( m_filesize == 0 ) return 0;
-    return 1.0*bytesDone()/m_filesize*100;
-}
-
 bool Aggregate::complete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if( (*it)->txn()->isComplete() == false )
@@ -99,17 +90,6 @@ double Aggregate::speed() const {
     return s;
 }
 
-uintmax_t Aggregate::timeRemaining() const {
-    double spd = speed();
-    if(spd == 0)
-        return std::numeric_limits<uintmax_t>::max();
-    uintmax_t bt = bytesTotal();
-    uintmax_t bd = bytesDone();
-    if(bt < bd)
-        Throw(ex::Invalid,"Total bytes and Downloaded bytes");
-    return (bytesTotal()-bytesDone())/spd;
-}
-
 unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
@@ -117,19 +97,6 @@ unsigned Aggregate::activeChunks() const {
             count++;
     }
     return count;
-}
-unsigned Aggregate::totalChunks() const {
-    return m_chunk.size();
-}
-
-std::string Aggregate::chunkName(uintmax_t num) const {
-    // NOTE: "/" or "\" doesn't matter as it is taken
-    //      care of inside File class
-    return m_hasedUrl+"/"+std::to_string(num);
-}
-
-std::string Aggregate::prettyName() const {
-    return m_prettyUrl;
 }
 
 void Aggregate::joinChunks(){

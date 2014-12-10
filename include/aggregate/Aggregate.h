@@ -59,10 +59,15 @@ class Aggregate{
         uintmax_t bytesDone() const;
 
         // Total data that we are trying to download
-        uintmax_t bytesTotal() const;
+        inline uintmax_t bytesTotal() const {
+            return m_filesize;
+        }
 
         // Returns the total progress
-        double progress() const;
+        double progress() const {
+            if( m_filesize == 0 ) return 0;
+            return 1.0*bytesDone()/m_filesize*100;
+        }
 
         // Returns if all the Chunk in the vector are complete
         bool complete() const;
@@ -71,14 +76,25 @@ class Aggregate{
         double speed() const;
 
         // Returns the total time Remaining
-        uintmax_t timeRemaining() const;
+        uintmax_t timeRemaining() const {
+            double spd = speed();
+            if(spd == 0)
+                return std::numeric_limits<uintmax_t>::max();
+            uintmax_t bt = bytesTotal();
+            uintmax_t bd = bytesDone();
+            if(bt < bd)
+                Throw(ex::Invalid,"Total bytes and Downloaded bytes");
+            return (bytesTotal()-bytesDone())/spd;
+        }
 
         // Returns the number of active BasicTransactions in the vector
         // active implies it has been started but isn't complete yet
         unsigned activeChunks() const;
 
         // Returns the number of total BasicTransactions in the vector
-        unsigned totalChunks() const;
+        inline unsigned totalChunks() const {
+            return m_chunk.size();
+        }
 
     private:
         // Runs after start() in a thread
@@ -106,10 +122,16 @@ class Aggregate{
         void split(std::vector<Chunk*>::size_type split_index);
 
         // Returns name of the Chunk with starting byte num
-        std::string chunkName(uintmax_t num) const;
+        // NOTE: "/" or "\" doesn't matter as it is taken
+        //      care of inside File class
+        inline std::string chunkName(uintmax_t num) const {
+            return m_hasedUrl+"/"+std::to_string(num);
+        }
 
         // Returns a pretty name
-        std::string prettyName() const;
+        inline std::string prettyName() const {
+            return m_prettyUrl;
+        }
 };
 
 #endif
