@@ -75,6 +75,13 @@ uintmax_t Aggregate::bytesDone() const {
     return bytes;
 }
 
+uintmax_t Aggregate::bytesTotal() const {
+    uintmax_t bytes = 0;
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
+        bytes += (*it)->bytesTotal();
+    return bytes;
+}
+
 bool Aggregate::complete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if( (*it)->txn()->isComplete() == false )
@@ -215,7 +222,7 @@ void Aggregate::starter() {
         // Last element name holds the total size of the download file
         m_filesize = std::atoi(files.back().c_str());
         if( File(chunkName(m_filesize)).size() != 0 )
-                Throw(ex::Invalid,"Limiter file");
+            Throw(ex::Invalid,"Limiter file");
 
         // Start other chunks
         for(unsigned i=0; i < files.size()-1; i++){
@@ -279,6 +286,8 @@ void Aggregate::merger() {
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
+    if( m_filesize != bytesTotal())
+        Throw(ex::Invalid,"Filesize");
 
     File merged(prettyName());
     // Write an empty merge file first

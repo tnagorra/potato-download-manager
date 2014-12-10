@@ -59,9 +59,7 @@ class Aggregate{
         uintmax_t bytesDone() const;
 
         // Total data that we are trying to download
-        inline uintmax_t bytesTotal() const {
-            return m_filesize;
-        }
+        inline uintmax_t bytesTotal() const;
 
         // Returns the total progress
         double progress() const {
