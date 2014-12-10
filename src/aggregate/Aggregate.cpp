@@ -236,13 +236,21 @@ void Aggregate::starter() {
     Directory session(m_hasedUrl);
     if ( session.exists() && !session.isEmpty() ) {
 
-        // TODO some case for files not having numeric names
         std::vector<std::string> files = session.list(Node::FILE,true);
+        // Remove non-numeric names
+        for(unsigned i=0;i<files.size();i++){
+            if(!isNumeric(files[i]))
+                files.erase(files.begin()+i);
+        }
         sort(files.begin(),files.end(),numerically);
 
+        // Check the last entry for filesize
         // Last element name holds the total size of the download file
-        m_filesize = std::atoi(files[files.size()-1].c_str());
+        m_filesize = std::atoi(files.back().c_str());
+        if( File(chunkName(m_filesize)).size() != 0 )
+                Throw(ex::Invalid,"Limiter file");
 
+        // Start other chunks
         for(unsigned i=0; i < files.size()-1; i++){
             File* f = new File(chunkName(std::atoi(files[i].c_str())));
             Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
@@ -279,7 +287,7 @@ void Aggregate::starter() {
 
 void Aggregate::splitter() {
     // Loop while a bottleneck exists
-    while (!complete()){
+    while (true){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -318,4 +326,3 @@ void Aggregate::merger() {
     // Remove the old directory
     Directory(m_hasedUrl).remove(Node::FORCE);
 }
-

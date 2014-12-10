@@ -54,4 +54,6 @@ int charToHex(char x);
 // Helper to sort string according to numeric value
 bool numerically(std::string const & a, std::string const & b);
 
+// Helper to find if string is numeric
+bool isNumeric(const std::string& s);
 #endif
