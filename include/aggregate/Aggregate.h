@@ -40,9 +40,6 @@ class Aggregate{
         // Destructor
         ~Aggregate();
 
-        // Join all the BasicTransaction threads of Chunks in vector
-        void joinAll();
-
         // Join it's thread
         void join();
 
@@ -52,18 +49,29 @@ class Aggregate{
         // Create a thread to start Chunk
         void start();
 
+        // Displays cool information about stuffs
         void display();
 
-        // Total data downloaded; includes already saved file
+        // Display progress bar
+        void progressbar();
+
+        // Total data downloaded; includes already saved bytes
         uintmax_t bytesDone() const;
 
+        // Total data that we are trying to download
         uintmax_t bytesTotal() const;
 
-        // Returns name of the Chunk with starting byte num
-        std::string chunkName(uintmax_t num) const;
+        // Returns the total progress
+        double progress() const;
 
-        // Returns a pretty name
-        std::string prettyName() const;
+        // Returns if all the Chunk in the vector are complete
+        bool complete() const;
+
+        // Returns the total speed of the Chunks
+        double speed() const;
+
+        // Returns the total time Remaining
+        uintmax_t timeRemaining() const;
 
         // Returns the number of active BasicTransactions in the vector
         // active implies it has been started but isn't complete yet
@@ -72,26 +80,6 @@ class Aggregate{
         // Returns the number of total BasicTransactions in the vector
         unsigned totalChunks() const;
 
-        // Returns if all the Chunk in the vector are complete
-        bool complete() const;
-
-        // Returns if any of the Chunk is splittable
-        bool splittable() const;
-
-        // Returns if all the BasicTransactions are downloading something
-        bool splitReady() const;
-
-        // Returns the index of bottleneck Chunk
-        std::vector<Chunk*>::size_type bottleNeck() const;
-
-        // Split a Chunk and insert new Chunk after it
-        void split(std::vector<Chunk*>::size_type split_index);
-
-        double speed() const;
-
-        uintmax_t timeRemaining() const;
-
-        double progress() const;
     private:
         // Runs after start() in a thread
         void worker();
@@ -104,6 +92,24 @@ class Aggregate{
 
         // Starts the process, finds about previous sessions
         void starter();
+
+        // Join all the BasicTransaction threads of Chunks in vector
+        void joinChunks();
+
+        // Returns if all the BasicTransactions are downloading something
+        bool splitReady() const;
+
+        // Returns the index of bottleneck Chunk
+        std::vector<Chunk*>::size_type bottleNeck() const;
+
+        // Split a Chunk and insert new Chunk after it
+        void split(std::vector<Chunk*>::size_type split_index);
+
+        // Returns name of the Chunk with starting byte num
+        std::string chunkName(uintmax_t num) const;
+
+        // Returns a pretty name
+        std::string prettyName() const;
 };
 
 #endif
