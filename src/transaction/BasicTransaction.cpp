@@ -12,8 +12,8 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
     m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
     m_beenSplit(false),
-    m_pauseRequest(false),
-    m_beenPaused(false) {
+    m_pauseRequest(false)
+     {
 
     mptr_response = new boost::asio::streambuf;
     // If the range has a zero size but is not an unitialized range,
@@ -89,7 +89,7 @@ void BasicTransaction::pause() {
 
 // Resume after a previous pause() call.
 void BasicTransaction::play() {
-    m_beenPaused = false;
+    m_pauseRequest = false;
 }
 
 // Block until the download is finished or fails.
@@ -207,11 +207,6 @@ uintmax_t BasicTransaction::bytesRemaining() const {
 // not complete/failed
 bool BasicTransaction::isRunning() const {
     return (m_state!=State::idle && !isComplete());
-}
-
-// Returns if the download has been 'pause()'ed
-bool BasicTransaction::isPaused() const {
-    return m_beenPaused;
 }
 
 // Speed observation functions

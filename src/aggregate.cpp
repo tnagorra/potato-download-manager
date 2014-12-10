@@ -7,13 +7,15 @@ int main(int argc, char* argv[]) try {
     if( argc == 2){
         Aggregate agg(argv[1]);
         agg.start();
+        File f("attrib");
+        f.remove();
         while( agg.totalChunks() == 0)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
-
         while( !agg.complete() ){
            // std::cout << formatByte(agg.bytesTotal()) <<std::endl;
 
             agg.display();
+            int all = agg.totalChunks();
 
             int len = 50;
             int place = agg.progress()/100*len;
@@ -31,7 +33,8 @@ int main(int argc, char* argv[]) try {
             std::cout << std::endl;
 
             boost::this_thread::sleep(boost::posix_time::millisec(100));
-            std::cout<< DELETE << DELETE;
+            for(int i=0;i<all+1;i++)
+                std::cout<< DELETE;
         }
         agg.join();
     } else {

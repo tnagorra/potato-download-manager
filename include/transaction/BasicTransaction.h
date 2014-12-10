@@ -18,6 +18,8 @@
 #include "transaction/Range.h"
 #include "transaction/SocketTypes.h"
 
+
+#include "filesystem/File.h"
 using boost::asio::ip::tcp;
 
 // class BasicTransaction (abstract)
@@ -54,8 +56,6 @@ class BasicTransaction {
         bool m_beenSplit;
         // Has a pause request been issued?
         bool m_pauseRequest;
-        // Is the transaction is in a paused (temporary hold) state?
-        bool m_beenPaused;
 
         // Total number of bytes to be downloaded. Initially this
         // member is set to the size indicated by m_range, but will
@@ -167,9 +167,6 @@ class BasicTransaction {
         // Return if the download is running, i.e. is not idle and
         // not complete/failed
         bool isRunning() const;
-
-        // Returns if the download has been 'pause()'ed
-        bool isPaused() const;
 
         // Getters for getting speed related values. All values
         // are returned in bytes per second.

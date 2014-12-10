@@ -39,7 +39,6 @@ class HttpTransaction : public Transaction<SocketType> {
     using Transaction<SocketType>::m_bytesTotal;
     using Transaction<SocketType>::m_reader;
     using Transaction<SocketType>::m_beenSplit;
-    using Transaction<SocketType>::m_beenPaused;
     using Transaction<SocketType>::m_pauseRequest;
     using Transaction<SocketType>::connectHost;
     using Transaction<SocketType>::resolveHost;

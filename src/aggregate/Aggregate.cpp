@@ -172,15 +172,19 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 void Aggregate::display() {
     fancycout(activeChunks() << "/" << totalChunks() << " ",ERROR);
     for(auto i=0;i<m_chunk.size();i++){
-        if( m_chunk[i]->txn()->isComplete() )
-            fancycout(m_chunk[i]->file()->filename().c_str() << " ",SUCCESS);
-        else if( m_chunk[i]->txn()->state() >= BasicTransaction::State::downloading)
-            fancycout(m_chunk[i]->file()->filename().c_str() << " ",WARNING);
-        else
-            fancycout(m_chunk[i]->file()->filename().c_str() << " ",NOTIFY);
+        uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
+        uintmax_t down= m_chunk[i]->txn()->range().lb()+m_chunk[i]->txn()->bytesDone();
+        uintmax_t higher = m_chunk[i]->txn()->range().ub();
+        if( m_chunk[i]->txn()->isComplete() ){
+            fancyprint(lower << ":" << down << ":"<< higher<< " ",SUCCESS);
+        }else if( m_chunk[i]->txn()->state() >= BasicTransaction::State::downloading){
+            fancyprint(lower << ":" << down << ":"<< higher<< " ",WARNING);
+        }else{
+            fancyprint(lower << ":" << down << ":"<< higher<< " ",NOTIFY);
+        }
     }
-    fancycout(m_filesize,SUCCESS);
-    std::cout << std::endl;
+    //fancycout(m_filesize,SUCCESS);
+    //std::cout << std::endl;
 }
 
 // Split a Chunk and insert new Chunk after it
@@ -188,10 +192,6 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     Chunk* cell = m_chunk[split_index];
 
     cell->txn()->pause();
-    //fancyprint("Pause",NOTIFY);
-    while(!cell->txn()->isPaused())
-        boost::this_thread::sleep(boost::posix_time::millisec(100));
-    //fancyprint("Pause complete",SUCCESS);
 
     // Calculate the split point ie midpoint
     // Note: Range is exclusive of previous session
@@ -202,6 +202,15 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     if( midpoint > upper || midpoint < lower)
         Throw(ex::Invalid,"Range","Midpoint");
+    if( midpoint < lower+downloaded )
+        Throw(ex::Invalid,"Range","Midpoint and Downloaded");
+
+    File f("attrib");
+    std::string s = std::to_string(lower)+":"+std::to_string(upper);
+    s += " -> " + std::to_string(lower) + ":" +std::to_string(midpoint);
+    s += " & " + std::to_string(midpoint) + ":" +std::to_string(upper)+"\n";
+    f.append(s);
+
     // TODO can return void, as this means the split won't be
     // necessary
 
@@ -210,7 +219,15 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
+
+    f.append("First\n");
+    f.append(std::to_string(cell->txn()->range().lb()) + ":"
+            + std::to_string(cell->txn()->range().ub())+"\n");
     cell->txn()->updateRange(midpoint);
+    f.append("Second\n");
+    f.append(std::to_string(cell->txn()->range().lb()) + ":"
+            + std::to_string(cell->txn()->range().ub())+"\n\n");
+
     File* newfile = new File(chunkName(midpoint));
     Range newrange(upper,midpoint);
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
@@ -272,8 +289,8 @@ void Aggregate::splitter() {
                 break;
             }
             //print("there");
-            if(splitReady())
-                split(bneck);
+            //if(splitReady())
+            split(bneck);
         }
     }
 }

@@ -247,6 +247,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
 // downloader!
 template <typename SocketType>
 void HttpTransaction<SocketType>::writeOut() {
+
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
     if (bufBytes)
@@ -254,9 +255,17 @@ void HttpTransaction<SocketType>::writeOut() {
     m_bytesDone = bufBytes;
     m_state = State::downloading;
 
+
     boost::system::error_code error;
     while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
                 boost::asio::transfer_at_least(1), error))) {
+
+        // This blocks prevents writing to a file
+        // when splitting is performed
+        while (m_pauseRequest)
+            boost::this_thread::sleep(
+                    boost::posix_time::milliseconds(200));
+        m_pauseRequest = false;
 
         if (bufBytes+m_bytesDone>=m_bytesTotal) {
             if (m_bytesDone>m_bytesTotal)
@@ -270,23 +279,15 @@ void HttpTransaction<SocketType>::writeOut() {
 
         m_bytesDone += bufBytes;
 
-        if (m_pauseRequest) {
-            m_beenPaused = true;
-            while (m_beenPaused)
-                boost::this_thread::sleep(
-                        boost::posix_time::milliseconds(200));
-            m_pauseRequest = false;
-        }
-
         boost::this_thread::interruption_point();
     }
 
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;
     }
+
     m_state = State::complete;
     m_pauseRequest = false;
-    m_beenPaused = false;
 }
 
 // Read out any remaining data on the socket to sink
