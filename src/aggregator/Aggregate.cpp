@@ -1,4 +1,4 @@
-#include"aggregate/Aggregate.h"
+#include"aggregator/Aggregate.h"
 
 Aggregate::Aggregate(const std::string url, const std::string savefolder,
         unsigned txns,uintmax_t split):

@@ -8,8 +8,8 @@
 #include "transaction/Transaction.h"
 #include "filesystem/File.h"
 #include "filesystem/Directory.h"
-#include "aggregate/Chunk.h"
-#include "aggregate/ex.h"
+#include "aggregator/Chunk.h"
+#include "aggregator/ex.h"
 #include "common/helper.h"
 
 /*
@@ -21,6 +21,7 @@
        if it is empty, create new inside the BasicTransaction
     2. Implement wite/read lock
     3. Check if the thread hasn't started
+    4. Check for nonresumability
 */
 
 class Aggregate{
@@ -44,7 +45,7 @@ class Aggregate{
         uintmax_t m_filesize;
     public:
         // Constructor
-        Aggregate(const std::string url, const std::string savefolder="Potatoes",unsigned txns=8,uintmax_t split=500*1024);
+        Aggregate(const std::string url, const std::string savefolder="potatoes",unsigned txns=8,uintmax_t split=500*1024);
 
         // Destructor
         ~Aggregate();

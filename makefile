@@ -8,7 +8,7 @@ CC=g++
 CFLAGS=-c -I$(INCDIR)/ --std=c++11
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 
-all: filesystem transaction aggregate
+all: filesystem transaction aggregator
 
 ## Variables and rules for FILE
 SOURCES_FILE:= Node.cpp File.cpp Directory.cpp
@@ -44,19 +44,19 @@ LDFLAGS_DOWN=-lboost_system -lboost_filesystem -lboost_thread\
 SOURCES_AGGREGATE:= Chunk.cpp Aggregate.cpp
 HEADERS_AGGREGATE:= Chunk.h Aggregate.h
 OBJECTS_AGGREGATE:=$(SOURCES_AGGREGATE:.cpp=.o)
-FSOURCES_AGGREGATE:=$(addprefix $(SRCDIR)/aggregate/,$(SOURCES_AGGREGATE))
-FHEADERS_AGGREGATE:=$(addprefix $(INCDIR)/aggregate/,$(HEADERS_AGGREGATE))
-FOBJECTS_AGGREGATE:=$(addprefix $(OBJDIR)/aggregate/,$(OBJECTS_AGGREGATE))
+FSOURCES_AGGREGATE:=$(addprefix $(SRCDIR)/aggregator/,$(SOURCES_AGGREGATE))
+FHEADERS_AGGREGATE:=$(addprefix $(INCDIR)/aggregator/,$(HEADERS_AGGREGATE))
+FOBJECTS_AGGREGATE:=$(addprefix $(OBJDIR)/aggregator/,$(OBJECTS_AGGREGATE))
 LDFLAGS_AGGREGATE=-lboost_system -lboost_filesystem -lboost_thread\
 	-lssl -lcrypto -pthread
 
 MAINO_FILE:=$(OBJDIR)/filesystem.o
 MAINO_DOWN:=$(OBJDIR)/transaction.o
-MAINO_AGGREGATE:=$(OBJDIR)/aggregate.o
+MAINO_AGGREGATE:=$(OBJDIR)/aggregator.o
 
 EXEC_FILE:=$(BINDIR)/filesystem
 EXEC_DOWN:=$(BINDIR)/transaction
-EXEC_AGGREGATE:=$(BINDIR)/aggregate
+EXEC_AGGREGATE:=$(BINDIR)/aggregator
 
 filesystem: $(FHEADERS_FILE) $(FHEADERS_COMM) $(EXEC_FILE)
 $(EXEC_FILE): $(FOBJECTS_FILE) $(FOBJECTS_COMM) $(MAINO_FILE)
@@ -67,7 +67,7 @@ $(EXEC_DOWN): $(FOBJECTS_DOWN) $(MAINO_DOWN) $(FOBJECTS_FILE)
 	$(CC) $(FOBJECTS_DOWN) $(MAINO_DOWN) $(FOBJECTS_FILE) \
 	-g -o $@ $(LDFLAGS_DOWN) $(LDFLAGS_FILE)
 
-aggregate: $(EXEC_AGGREGATE) $(FHEADERS_AGGREGATE) $(FHEADERS_DOWN)\
+aggregator: $(EXEC_AGGREGATE) $(FHEADERS_AGGREGATE) $(FHEADERS_DOWN)\
     $(FHEADERS_FILE) $(FHEADERS_COMM)
 $(EXEC_AGGREGATE): $(FOBJECTS_AGGREGATE) $(MAINO_AGGREGATE) $(FOBJECTS_FILE) $(FOBJECTS_DOWN) $(FOBJECTS_COMM)
 	$(CC) $(FOBJECTS_AGGREGATE) $(MAINO_AGGREGATE) $(FOBJECTS_FILE) $(FOBJECTS_DOWN) $(FOBJECTS_COMM) \
@@ -79,7 +79,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR) $(BINDIR)
 
 $(OBJDIR): | $(BINDIR)
 	mkdir $(OBJDIR) $(OBJDIR)/filesystem $(OBJDIR)/transaction\
-		$(OBJDIR)/common $(OBJDIR)/aggregate
+		$(OBJDIR)/common $(OBJDIR)/aggregator
 
 $(BINDIR):
 	mkdir $(BINDIR)

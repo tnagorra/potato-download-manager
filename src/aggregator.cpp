@@ -1,5 +1,5 @@
 #include <iostream>
-#include <aggregate/Aggregate.h>
+#include <aggregator/Aggregate.h>
 
 //"http://onlinekaraoke.tv/assets/songs/29000-29999/29660-i-will-always-love-you-whitney-houston--1411573135.mp3"
 
