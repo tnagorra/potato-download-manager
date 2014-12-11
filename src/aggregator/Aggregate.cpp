@@ -20,7 +20,8 @@ Aggregate::~Aggregate(){
 }
 
 void Aggregate::join(){
-    // TODO have check
+    // If the thread has completed or represents Not-A-Thread
+    // it just returns
     m_thread.join();
 }
 
@@ -29,7 +30,11 @@ void Aggregate::stop(){
 }
 
 void Aggregate::start() {
-    // TODO have check
+    // if m_thread represents a thread of execution
+    // then don't start the thread again
+    //if( m_thread.get_id() == boost::thread::id() )
+    if (m_thread.joinable())
+        return;
     m_thread = boost::thread(&Aggregate::worker,this);
 }
 

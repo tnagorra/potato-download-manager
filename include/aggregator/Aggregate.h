@@ -21,7 +21,6 @@
        take it from m_socket and pop it
        if it is empty, create new inside the BasicTransaction
     2. Implement wite/read lock
-    3. Check if the thread hasn't started
 */
 
 class Aggregate{
