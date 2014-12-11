@@ -1,12 +1,5 @@
 #include"aggregate/Aggregate.h"
 
-/*
-   When BasicTransaction is complete, push those to m_socket
-   When BasicTransaction is started and m_socket isn't empty,
-   take it from m_socket and pop it
-   if it is empty, create new inside the BasicTransaction
-*/
-
 Aggregate::Aggregate(const std::string url, const std::string savefolder,
         unsigned txns,uintmax_t split):
     m_chunks(txns), m_url(url), m_splittable_size(split),
@@ -42,17 +35,23 @@ void Aggregate::start() {
 
 void Aggregate::display() {
     fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
+
     for(auto i=0;i<m_chunk.size();i++){
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
         uintmax_t down= m_chunk[i]->txn()->range().lb()+m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
-        if( m_chunk[i]->txn()->isComplete() ){
-            fancyprint(lower << ":" << down << ":"<< higher<< " ",SUCCESS);
-        }else if( m_chunk[i]->txn()->state() >= BasicTransaction::State::downloading){
-            fancyprint(lower << ":" << down << ":"<< higher<< " ",WARNING);
-        }else{
-            fancyprint(lower << ":" << down << ":"<< higher<< " ",NOTIFY);
-        }
+        std::string myColor;
+
+        if(m_chunk[i]->txn()->state() == BasicTransaction::State::complete)
+            myColor = SUCCESS;
+        else if( m_chunk[i]->txn()->state() == BasicTransaction::State::failed)
+            myColor = ERROR;
+        else if( m_chunk[i]->txn()->state() == BasicTransaction::State::downloading)
+            myColor = WARNING;
+        else
+            myColor = NOTIFY;
+
+        fancyprint(lower << ":" << down << ":"<< higher<< " ",myColor);
     }
 }
 
@@ -82,7 +81,7 @@ uintmax_t Aggregate::bytesTotal() const {
     return bytes;
 }
 
-bool Aggregate::complete() const {
+bool Aggregate::isComplete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if( (*it)->txn()->isComplete() == false )
             return false;
@@ -111,7 +110,7 @@ void Aggregate::joinChunks(){
         (*it)->txn()->join();
 }
 
-bool Aggregate::splitReady() const {
+bool Aggregate::isSplitReady() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         // TODO Some hifi algorithm
         if ((*it)->txn()->speed()<=100 && !(*it)->txn()->isComplete())
@@ -127,24 +126,25 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     uintmax_t btr = 0;
     std::vector<Chunk*>::size_type bneck = 0;
     std::vector<Chunk*>::size_type it = 0;
-    for (;it < m_chunk.size();++it){
+
+    while (it < m_chunk.size()) {
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
-        if(ibr <= m_splittable_size)
+        if(ibr < m_splittable_size)
             continue;
         // If it is splittable, it is the bottleneck
         bneck = it;
         bbr = m_chunk[bneck]->txn()->bytesRemaining();
         btr = m_chunk[bneck]->txn()->timeRemaining();
         break;
+        ++it;
     }
 
     // If there is no bottleneck Chunk then throw exception
-    if( it == m_chunk.size() ) {
+    if(it == m_chunk.size())
         Throw(ex::aggregate::NoBottleneck);
-    }
 
     // Now just get the real bottle neck
-    for (; it < m_chunk.size(); ++it){
+    while (it < m_chunk.size()) {
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
         if( ibr <= m_splittable_size)
             continue;
@@ -154,6 +154,7 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
             btr = m_chunk[bneck]->txn()->timeRemaining();
         }
+        ++it;
     }
 
     return bneck;
@@ -173,7 +174,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     uintmax_t midpoint = (upper+(lower+downloaded))/2;
 
     if( midpoint > upper || midpoint < lower)
-        Throw(ex::Invalid,"Range","Midpoint");
+        Throw(ex::Error,"Midpoint lies outside of lower and upper bounds.");
 
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
@@ -193,7 +194,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     newcell->txn()->start();
 }
 
-void Aggregate::worker(){
+void Aggregate::worker() try {
     //fancyprint("STARTER",NOTIFY);
     starter();
     //fancyprint("SPLITTER",NOTIFY);
@@ -202,6 +203,8 @@ void Aggregate::worker(){
     joinChunks();
     //fancyprint("MERGER",NOTIFY);
     merger();
+} catch ( ex::Error e ) {
+    fancyprint(e.what(),ERROR);
 }
 
 void Aggregate::starter() {
@@ -222,7 +225,7 @@ void Aggregate::starter() {
         // Last element name holds the total size of the download file
         m_filesize = std::atoi(files.back().c_str());
         if( File(chunkName(m_filesize)).size() != 0 )
-            Throw(ex::Invalid,"Limiter file");
+            Throw(ex::Error,"Limiter file must have zero size.");
 
         // Start other chunks
         for(unsigned i=0; i < files.size()-1; i++){
@@ -250,6 +253,9 @@ void Aggregate::starter() {
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
+        if(researcher->txn()->state() == BasicTransaction::State::failed)
+            Throw(ex::Error,"Starting transaction failed.");
+
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
 
@@ -275,20 +281,20 @@ void Aggregate::splitter() {
                 break;
             }
             // NOTE: Removing this showed the synronization bug
-            //if(splitReady())
+            //if(isSplitReady())
             split(bneck);
         }
     }
 }
 
 void Aggregate::merger() {
-    // TODO
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
     if( m_filesize != bytesTotal())
-        Throw(ex::Invalid,"Filesize");
+        Throw(ex::Error,"Downloaded bytes is greater than total filesize.");
 
+    // New file to concatenate the Chunks
     File merged(prettyName());
     // Write an empty merge file first
     merged.write(Node::NEW);

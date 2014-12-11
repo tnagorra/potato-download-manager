@@ -9,7 +9,7 @@ int main(int argc, char* argv[]) try {
         agg.start();
         while( agg.totalChunks() == 0)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
-        while( !agg.complete() ){
+        while( !agg.isComplete() ){
 
             int all = agg.totalChunks();
             agg.display();

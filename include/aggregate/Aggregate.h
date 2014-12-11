@@ -1,23 +1,32 @@
 #ifndef __CO_AGGREGATE__
 #define __CO_AGGREGATE__
 
-#include<iostream>
-#include<vector>
-#include<boost/date_time/posix_time/posix_time.hpp>
-#include<boost/thread.hpp>
-#include"transaction/Transaction.h"
-#include"filesystem/File.h"
-#include"filesystem/Directory.h"
-#include"aggregate/Chunk.h"
-#include"common/helper.h"
-#include"aggregate/ex.h"
-#include<string>
 #include <limits>
+#include <iostream>
+#include <string>
+#include <vector>
+#include "transaction/Transaction.h"
+#include "filesystem/File.h"
+#include "filesystem/Directory.h"
+#include "aggregate/Chunk.h"
+#include "aggregate/ex.h"
+#include "common/helper.h"
+
+/*
+   TODO
+    1. Reusing sockets
+       When BasicTransaction is complete, push those to m_socket
+       When BasicTransaction is started and m_socket isn't empty,
+       take it from m_socket and pop it
+       if it is empty, create new inside the BasicTransaction
+    2. Implement wite/read lock
+    3. Check if the thread hasn't started
+*/
 
 class Aggregate{
     private:
-        boost::thread m_thread;
         //std::vector<Socket*> m_free_socket;
+        boost::thread m_thread;
         std::vector<Chunk*> m_chunk;
         // the save folder of the file
         std::string m_savefolder;
@@ -59,7 +68,7 @@ class Aggregate{
         uintmax_t bytesDone() const;
 
         // Total data that we are trying to download
-        inline uintmax_t bytesTotal() const;
+        uintmax_t bytesTotal() const;
 
         // Returns the total progress
         double progress() const {
@@ -68,21 +77,16 @@ class Aggregate{
         }
 
         // Returns if all the Chunk in the vector are complete
-        bool complete() const;
+        bool isComplete() const;
 
         // Returns the total speed of the Chunks
         double speed() const;
 
         // Returns the total time Remaining
         uintmax_t timeRemaining() const {
-            double spd = speed();
-            if(spd == 0)
+            if(speed()== 0)
                 return std::numeric_limits<uintmax_t>::max();
-            uintmax_t bt = bytesTotal();
-            uintmax_t bd = bytesDone();
-            if(bt < bd)
-                Throw(ex::Invalid,"Total bytes and Downloaded bytes");
-            return (bytesTotal()-bytesDone())/spd;
+            return bytesTotal() < bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
         }
 
         // Returns the number of active BasicTransactions in the vector
@@ -111,7 +115,7 @@ class Aggregate{
         void joinChunks();
 
         // Returns if all the BasicTransactions are downloading something
-        bool splitReady() const;
+        bool isSplitReady() const;
 
         // Returns the index of bottleneck Chunk
         std::vector<Chunk*>::size_type bottleNeck() const;
