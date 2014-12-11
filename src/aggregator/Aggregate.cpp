@@ -110,6 +110,19 @@ void Aggregate::joinChunks(){
         (*it)->txn()->join();
 }
 
+RemoteData::Partial Aggregate::isSplittable() const {
+    // Iterate over all the transactions, if any of them has
+    // started and it can be splitted then continue else
+    // just remove the block
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
+        if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::no)
+            return RemoteData::Partial::no;
+        else if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::yes)
+            return RemoteData::Partial::yes;
+    }
+    return RemoteData::Partial::unknown;
+}
+
 bool Aggregate::isSplitReady() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         // TODO Some hifi algorithm
@@ -266,13 +279,25 @@ void Aggregate::starter() {
 }
 
 void Aggregate::splitter() {
+
+    // Check if any of the Chunk is splittable
+    while (true){
+        // Sleep
+        boost::this_thread::sleep(boost::posix_time::millisec(100));
+
+        RemoteData::Partial p = isSplittable();
+        if (p==RemoteData::Partial::yes)
+            break;
+        else if (p==RemoteData::Partial::no)
+            return;
+    }
+
     // Loop while a bottleneck exists
     while (true){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Get the bottle neck and split
-        // NOTE: There may be some problem here
         if(activeChunks() < m_chunks) {
             std::vector<Chunk*>::size_type bneck;
             try {
