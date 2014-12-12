@@ -137,35 +137,30 @@ bool Aggregate::isSplitReady() const {
 }
 
 std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
-    // Initialize bottleneck such that it is the first chunk
-    // which is splittable
-    uintmax_t bbr = 0;
-    uintmax_t btr = 0;
-    std::vector<Chunk*>::size_type bneck = 0;
     std::vector<Chunk*>::size_type it = 0;
+    std::vector<Chunk*>::size_type bneck = 0;
 
+    // Initialize bottleneck such that it is the first splittable chunk
     while (it < m_chunk.size()) {
-        uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
-        if(ibr < m_splittable_size)
-            continue;
-        // If it is splittable, it is the bottleneck
-        bneck = it;
-        bbr = m_chunk[bneck]->txn()->bytesRemaining();
-        btr = m_chunk[bneck]->txn()->timeRemaining();
-        break;
+        if(m_chunk[it]->txn()->bytesRemaining() > m_splittable_size){
+            // If it is splittable, it is the bottleneck
+            bneck = it;
+            break;
+        }
         ++it;
     }
-
     // If there is no bottleneck Chunk then throw exception
     if(it == m_chunk.size())
         Throw(ex::aggregate::NoBottleneck);
 
-    // Now just get the real bottle neck
+    uintmax_t bbr = m_chunk[bneck]->txn()->bytesRemaining();
+    uintmax_t btr = m_chunk[bneck]->txn()->timeRemaining();
+    // Iterate over the remaining chunks to find the real bottle neck
     while (it < m_chunk.size()) {
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
+        uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
         if( ibr <= m_splittable_size)
             continue;
-        uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
         if((btr < itr) || (btr==itr && bbr<ibr)){
             bneck = it;
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
@@ -173,7 +168,6 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
         }
         ++it;
     }
-
     return bneck;
 }
 

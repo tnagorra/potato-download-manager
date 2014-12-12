@@ -130,9 +130,8 @@ class Aggregate{
         void split(std::vector<Chunk*>::size_type split_index);
 
         // Returns name of the Chunk with starting byte num
-        // NOTE: "/" or "\" doesn't matter as it is taken
-        //      care of inside File class
         inline std::string chunkName(uintmax_t num) const {
+            // Choice of "/" or "\" is taken care of inside class File
             return m_hashedUrl+"/"+std::to_string(num);
         }
 
