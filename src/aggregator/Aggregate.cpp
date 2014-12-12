@@ -5,7 +5,7 @@ Aggregate::Aggregate(const std::string url, const std::string savefolder,
     m_chunks(txns), m_url(url), m_splittable_size(split),
     m_filesize(0), m_savefolder(savefolder)
 {
-    m_hasedUrl = m_savefolder+"/"+md5(m_url);
+    m_hashedUrl = m_savefolder+"/"+md5(m_url);
     m_prettyUrl = m_savefolder+"/"+prettify(m_url);
 }
 
@@ -117,8 +117,7 @@ void Aggregate::joinChunks(){
 
 RemoteData::Partial Aggregate::isSplittable() const {
     // Iterate over all the transactions, if any of them has
-    // started and it can be splitted then continue else
-    // just remove the block
+    // started and it can be splitted then return yes
     for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
         if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::no)
             return RemoteData::Partial::no;
@@ -227,8 +226,9 @@ void Aggregate::worker() try {
 
 void Aggregate::starter() {
     // Directory session is used to find out about
-    // previous downloads
-    Directory session(m_hasedUrl);
+    // previous download information
+    Directory session(m_hashedUrl);
+
     if ( session.exists() && !session.isEmpty() ) {
 
         std::vector<std::string> files = session.list(Node::FILE,true);
@@ -237,6 +237,7 @@ void Aggregate::starter() {
             if(!isNumeric(files[i]))
                 files.erase(files.begin()+i);
         }
+        // sort the files numerically
         sort(files.begin(),files.end(),numerically);
 
         // Check the last entry for filesize
@@ -245,7 +246,7 @@ void Aggregate::starter() {
         if( File(chunkName(m_filesize)).size() != 0 )
             Throw(ex::Error,"Limiter file must have zero size.");
 
-        // Start other chunks
+        // Start all the chunks
         for(unsigned i=0; i < files.size()-1; i++){
             File* f = new File(chunkName(std::atoi(files[i].c_str())));
             Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
@@ -283,7 +284,7 @@ void Aggregate::starter() {
     }
 }
 
-void Aggregate::splitter() {
+void Aggregate::splitter() try {
 
     // Check if any of the Chunk is splittable
     while (true){
@@ -291,9 +292,9 @@ void Aggregate::splitter() {
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         RemoteData::Partial p = isSplittable();
-        if (p==RemoteData::Partial::yes)
+        if (p == RemoteData::Partial::yes)
             break;
-        else if (p==RemoteData::Partial::no)
+        else if (p == RemoteData::Partial::no)
             return;
     }
 
@@ -304,17 +305,18 @@ void Aggregate::splitter() {
 
         // Get the bottle neck and split
         if(activeChunks() < m_chunks) {
-            std::vector<Chunk*>::size_type bneck;
-            try {
-                bneck = bottleNeck();
-            } catch (ex::aggregate::NoBottleneck) {
-                break;
-            }
+            std::vector<Chunk*>::size_type bneck = bottleNeck();
+
             // NOTE: Removing this showed the synronization bug
             //if(isSplitReady())
             split(bneck);
         }
     }
+} catch (ex::aggregate::NoBottleneck e) {
+    // This isn't a bad thing, just signifies
+    // that no further segmentation can occur.
+    // It helps to get outside the splitting
+    // loop.
 }
 
 void Aggregate::merger() {
@@ -336,5 +338,5 @@ void Aggregate::merger() {
         (*it)->file()->remove();
     }
     // Remove the old directory
-    Directory(m_hasedUrl).remove(Node::FORCE);
+    Directory(m_hashedUrl).remove(Node::FORCE);
 }

@@ -20,20 +20,23 @@
        When BasicTransaction is started and m_socket isn't empty,
        take it from m_socket and pop it
        if it is empty, create new inside the BasicTransaction
-    2. Implement wite/read lock
+    2. Implement write/read lock
 */
 
 class Aggregate{
     private:
+        // store usable sockets for reuse
         //std::vector<Socket*> m_free_socket;
+        // the working thread
         boost::thread m_thread;
+        // vector to save the chunks
         std::vector<Chunk*> m_chunk;
         // the save folder of the file
         std::string m_savefolder;
         // the url of the file
         std::string m_url;
         // the hash of url
-        std::string m_hasedUrl;
+        std::string m_hashedUrl;
         // the proper filename from url
         std::string m_prettyUrl;
         // maximum number of Chunks
@@ -130,7 +133,7 @@ class Aggregate{
         // NOTE: "/" or "\" doesn't matter as it is taken
         //      care of inside File class
         inline std::string chunkName(uintmax_t num) const {
-            return m_hasedUrl+"/"+std::to_string(num);
+            return m_hashedUrl+"/"+std::to_string(num);
         }
 
         // Returns a pretty name

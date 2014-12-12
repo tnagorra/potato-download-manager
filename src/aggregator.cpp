@@ -1,7 +1,10 @@
 #include <iostream>
 #include <aggregator/Aggregate.h>
 
-//"http://onlinekaraoke.tv/assets/songs/29000-29999/29660-i-will-always-love-you-whitney-houston--1411573135.mp3"
+// TODO
+// 1. Use a Range object reference as argument
+// 2. Rename p_functions() to functions()
+// 3. change state()==something to joinable()
 
 int main(int argc, char* argv[]) try {
     if( argc == 2){
