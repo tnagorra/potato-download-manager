@@ -62,7 +62,7 @@ class Aggregate{
         void start();
 
         // Displays cool information about stuffs
-        void display();
+        unsigned display();
 
         // Display progress bar
         void progressbar();
@@ -89,7 +89,7 @@ class Aggregate{
         uintmax_t timeRemaining() const {
             if(speed()== 0)
                 return std::numeric_limits<uintmax_t>::max();
-            return bytesTotal() < bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
+            return bytesTotal() > bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
         }
 
         // Returns the number of active BasicTransactions in the vector

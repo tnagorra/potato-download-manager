@@ -14,11 +14,10 @@ int main(int argc, char* argv[]) try {
             boost::this_thread::sleep(boost::posix_time::millisec(100));
         while( !agg.isComplete() ){
 
-            int all = agg.totalChunks();
-            agg.display();
+            unsigned all = agg.display();
             agg.progressbar();
             boost::this_thread::sleep(boost::posix_time::millisec(100));
-            for(int i=0;i<all+2;i++)
+            for(int i=0;i<all+1;i++)
                 std::cout<< DELETE;
         }
         agg.join();

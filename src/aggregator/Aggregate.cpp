@@ -38,10 +38,11 @@ void Aggregate::start() {
     m_thread = boost::thread(&Aggregate::worker,this);
 }
 
-void Aggregate::display() {
+unsigned Aggregate::display() {
     fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
 
-    for(auto i=0;i<m_chunk.size();i++){
+    int j = m_chunk.size();
+    for(auto i=0;i<j;i++){
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
         uintmax_t down= m_chunk[i]->txn()->range().lb()+m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
@@ -58,6 +59,7 @@ void Aggregate::display() {
 
         fancyprint(lower << ":" << down << ":"<< higher<< " ",myColor);
     }
+    return j+1;
 }
 
 void Aggregate::progressbar() {
@@ -135,42 +137,44 @@ bool Aggregate::isSplitReady() const {
     }
     return true;
 }
-
 std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
-    std::vector<Chunk*>::size_type it = 0;
+    // Initialize bottleneck such that it is the first chunk
+    // which is splittable
+    uintmax_t bbr = 0;
+    uintmax_t btr = 0;
     std::vector<Chunk*>::size_type bneck = 0;
-
-    // Initialize bottleneck such that it is the first splittable chunk
-    while (it < m_chunk.size()) {
-        if(m_chunk[it]->txn()->bytesRemaining() > m_splittable_size){
-            // If it is splittable, it is the bottleneck
-            bneck = it;
-            break;
-        }
-        ++it;
-    }
-    // If there is no bottleneck Chunk then throw exception
-    if(it == m_chunk.size())
-        Throw(ex::aggregate::NoBottleneck);
-
-    uintmax_t bbr = m_chunk[bneck]->txn()->bytesRemaining();
-    uintmax_t btr = m_chunk[bneck]->txn()->timeRemaining();
-    // Iterate over the remaining chunks to find the real bottle neck
-    while (it < m_chunk.size()) {
+    std::vector<Chunk*>::size_type it = 0;
+    for (;it < m_chunk.size();++it){
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
-        uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
+        if(ibr <= m_splittable_size)
+            continue;
+        // If it is splittable, it is the bottleneck
+        bneck = it;
+        bbr = m_chunk[bneck]->txn()->bytesRemaining();
+        btr = m_chunk[bneck]->txn()->timeRemaining();
+        break;
+    }
+
+    // If there is no bottleneck Chunk then throw exception
+    if( it == m_chunk.size() ) {
+        Throw(ex::aggregate::NoBottleneck);
+    }
+
+    // Now just get the real bottle neck
+    for (; it < m_chunk.size(); ++it){
+        uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
         if( ibr <= m_splittable_size)
             continue;
+        uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
         if((btr < itr) || (btr==itr && bbr<ibr)){
             bneck = it;
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
             btr = m_chunk[bneck]->txn()->timeRemaining();
         }
-        ++it;
     }
+
     return bneck;
 }
-
 // Split a Chunk and insert new Chunk after it
 void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     Chunk* cell = m_chunk[split_index];
@@ -281,7 +285,7 @@ void Aggregate::starter() {
 void Aggregate::splitter() try {
 
     // Check if any of the Chunk is splittable
-    while (true){
+    while (!isComplete()){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -293,11 +297,12 @@ void Aggregate::splitter() try {
     }
 
     // Loop while a bottleneck exists
-    while (true){
+    while (!isComplete()){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Get the bottle neck and split
+        //print( activeChunks() << " " << m_chunks);
         if(activeChunks() < m_chunks) {
             std::vector<Chunk*>::size_type bneck = bottleNeck();
 
