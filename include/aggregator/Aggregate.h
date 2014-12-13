@@ -21,6 +21,7 @@
        take it from m_socket and pop it
        if it is empty, create new inside the BasicTransaction
     2. Implement write/read lock
+    3. Add logic for failed conditions
 */
 
 class Aggregate{
@@ -45,6 +46,9 @@ class Aggregate{
         uintmax_t m_splittable_size;
         // Size of the download file
         uintmax_t m_filesize;
+        // Failed or not, exceptions can't be
+        // thrown outside the worker
+        bool m_failed;
     public:
         // Constructor
         Aggregate(const std::string url, const std::string savefolder="potatoes",unsigned txns=8,uintmax_t split=500*1024);
@@ -101,6 +105,9 @@ class Aggregate{
             return m_chunk.size();
         }
 
+        inline bool hasFailed() const {
+            return m_failed;
+        }
     private:
         // Runs after start() in a thread
         void worker();

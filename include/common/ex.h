@@ -7,6 +7,7 @@
 #define __CO_EX__
 #include<iostream>
 #include<string>
+#include<sstream>
 
 // The following macros are helpers for easy exception-throwing.
 // You don't need to remember how many arguments an exception-
@@ -19,19 +20,19 @@
 // are the arguments to the exception constructor and the last one
 // is the occurance string, a string describing where (file, line,
 // function) where the error occured.
-#define Throw3(name,arg1,arg2) throw  name(arg1,arg2,"# "+\
+#define Throw3(name,arg1,arg2) throw  name(arg1,arg2,"@ "+\
         std::string(__FILE__)+":"+std::to_string(__LINE__)+\
         " inside function \""+std::string(__FUNCTION__)+"\"")
 
 // Throw a two-argument exception, where the first argument is as
 // necessary for the exception and the second is the occurance string.
-#define Throw2(name,arg) throw  name(arg, "# "+std::string\
+#define Throw2(name,arg) throw  name(arg, "@ "+std::string\
         (__FILE__)+":"+std::to_string(__LINE__)+\
         " inside function \""+std::string(__FUNCTION__)+"\"")
 
 // Throw a single-argument exception, whose only argument is the
 // occurance string.
-#define Throw1(name) throw name("# "+std::string(__FILE__)+\
+#define Throw1(name) throw name("@ "+std::string(__FILE__)+\
         ":"+std::to_string(__LINE__)+" inside function \""+\
         std::string(__FUNCTION__)+"\"")
 
@@ -79,10 +80,16 @@ namespace ex{
             // return a nice message containing the error message
             // and occurance.
             const char* what() const throw() {
+                std::ostringstream out;
+                out << occurance << "\n" << msg;
+                return out.str().c_str();
+                /*
                 std::string str;
-                if (occurance.length() > 0) str += occurance + "\n";
+                if (occurance.length() > 0)
+                    str += occurance + "\n";
                 str += "Error: "+msg+"\n";
                 return str.c_str();
+                */
             }
     };
 

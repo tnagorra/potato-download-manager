@@ -3,7 +3,7 @@
 Aggregate::Aggregate(const std::string url, const std::string savefolder,
         unsigned txns,uintmax_t split):
     m_chunks(txns), m_url(url), m_splittable_size(split),
-    m_filesize(0), m_savefolder(savefolder)
+    m_filesize(0), m_savefolder(savefolder), m_failed(false)
 {
     m_hashedUrl = m_savefolder+"/"+md5(m_url);
     m_prettyUrl = m_savefolder+"/"+prettify(m_url);
@@ -120,12 +120,20 @@ void Aggregate::joinChunks(){
 RemoteData::Partial Aggregate::isSplittable() const {
     // Iterate over all the transactions, if any of them has
     // started and it can be splitted then return yes
+
+    // Stores if all Chunks was complete
+    bool pcomplete = true;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
-        if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::no)
-            return RemoteData::Partial::no;
-        else if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::yes)
-            return RemoteData::Partial::yes;
+        if(!(*it)->txn()->isComplete()){
+            if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::no)
+                return RemoteData::Partial::no;
+            else if ((*it)->txn()->p_remoteData()->canPartial() == RemoteData::Partial::yes)
+                return RemoteData::Partial::yes;
+            pcomplete = false;
+        }
     }
+    if(pcomplete)
+        Throw(ex::aggregate::NoBottleneck);
     return RemoteData::Partial::unknown;
 }
 
@@ -219,6 +227,7 @@ void Aggregate::worker() try {
     //fancyprint("MERGER",NOTIFY);
     merger();
 } catch ( ex::Error e ) {
+    m_failed = true;
     fancyprint(e.what(),ERROR);
 }
 
@@ -244,15 +253,19 @@ void Aggregate::starter() {
         if( File(chunkName(m_filesize)).size() != 0 )
             Throw(ex::Error,"Limiter file must have zero size.");
 
-        // Start all the chunks
+        // Populate all the Chunks
         for(unsigned i=0; i < files.size()-1; i++){
             File* f = new File(chunkName(std::atoi(files[i].c_str())));
-            Range r = Range(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
             BasicTransaction* t= BasicTransaction::factory(m_url,r);
             Chunk* c = new Chunk(t,f);
             m_chunk.push_back(c);
-            c->txn()->start();
         }
+
+        // Start all the Chunks
+        // They should be started at last
+        for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
+            (*it)->txn()->start();
 
     } else {
         // Researcher finds about the necessary information
@@ -279,13 +292,24 @@ void Aggregate::starter() {
         // Create a limiter file
         File limiter(chunkName(m_filesize));
         limiter.write();
+
+        // Create config file
+        std::string c= m_hashedUrl + "/info/config";
+        File conf(c);
+        conf.write();
+        conf.append("Url: "+m_url+"\n");
+        conf.append("Segments: " + std::to_string(m_chunks)+"\n");
+        conf.append("Save folder: "+m_savefolder+"\n");
+        conf.append("Save as: " +m_prettyUrl+"\n");
+        conf.append("File size: " + formatByte(m_filesize)+"\n");
+        conf.append("Split size: " + formatByte(m_splittable_size)+"\n");
     }
 }
 
 void Aggregate::splitter() try {
 
     // Check if any of the Chunk is splittable
-    while (!isComplete()){
+    while (true){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -297,7 +321,7 @@ void Aggregate::splitter() try {
     }
 
     // Loop while a bottleneck exists
-    while (!isComplete()){
+    while (true){
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -314,8 +338,8 @@ void Aggregate::splitter() try {
 } catch (ex::aggregate::NoBottleneck e) {
     // This isn't a bad thing, just signifies
     // that no further segmentation can occur.
-    // It helps to get outside the splitting
-    // loop.
+    // It helps to get outside both of splitting
+    // loops.
 }
 
 void Aggregate::merger() {
