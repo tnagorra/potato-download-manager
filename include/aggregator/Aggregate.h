@@ -21,7 +21,8 @@
        take it from m_socket and pop it
        if it is empty, create new inside the BasicTransaction
     2. Implement write/read lock
-    3. Add logic for failed conditions
+    3. Catch exceptions inside BasicTransaction
+    4. Do something about Range and Range&
 */
 
 class Aggregate{

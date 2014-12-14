@@ -27,6 +27,10 @@ void Aggregate::join(){
 
 void Aggregate::stop(){
     // TODO stop everything
+    for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
+        (*it)->txn()->stop();
+    if(m_thread.joinable())
+        m_thread.interrupt();
 }
 
 void Aggregate::start() {
