@@ -102,8 +102,8 @@ bool Aggregate::isComplete() const {
 
 double Aggregate::speed() const {
     double s = 0;
-    for(auto i = m_chunk.begin();i != m_chunk.end();++i)
-        s += (*i)->txn().speed();
+    for(auto it = m_chunk.begin();it != m_chunk.end();++it)
+        s += (*it)->txn().speed();
     return s;
 }
 
@@ -129,9 +129,9 @@ RemoteData::Partial Aggregate::isSplittable() const {
     bool pcomplete = true;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
         if(!(*it)->txn().isComplete()){
-            if ((*it)->txn().p_remoteData()->canPartial() == RemoteData::Partial::no)
+            if ((*it)->txn().remoteData().canPartial() == RemoteData::Partial::no)
                 return RemoteData::Partial::no;
-            else if ((*it)->txn().p_remoteData()->canPartial() == RemoteData::Partial::yes)
+            else if ((*it)->txn().remoteData().canPartial() == RemoteData::Partial::yes)
                 return RemoteData::Partial::yes;
             pcomplete = false;
         }

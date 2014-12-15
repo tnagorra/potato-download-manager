@@ -42,7 +42,7 @@ class Transaction : public BasicTransaction {
 
     public:
         // Constructor.
-        Transaction(RemoteData* rdata, Range range = Range(0,0));
+        Transaction(RemoteData* rdata, const Range& range = Range(0,0));
 
         // Destructor.
         virtual ~Transaction() {}

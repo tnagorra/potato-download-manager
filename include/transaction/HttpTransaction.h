@@ -78,8 +78,7 @@ class HttpTransaction : public Transaction<SocketType> {
     typedef typename SockTraits<SocketType>::antiSock antiSockType;
 
    // Constructor.
-    HttpTransaction(RemoteDataHttp* rdata,
-            Range range = Range(0,0));
+    HttpTransaction(RemoteDataHttp* rdata, const Range& range = Range(0,0));
 
     // Start the downloader thread and return immediately.
     void start();

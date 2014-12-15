@@ -75,7 +75,7 @@ class BasicTransaction {
     public:
         // Constructor. Default Range argument (0,0) means the
         // entire resource
-        BasicTransaction(RemoteData* rdata, Range range = Range(0,0));
+        BasicTransaction(RemoteData* rdata, const Range& range = Range(0,0));
 
         // Destructor
         virtual ~BasicTransaction() {}
@@ -84,9 +84,9 @@ class BasicTransaction {
         // They can be provided with a RemoteData object or a url,
         // and an optional byterange.
         static BasicTransaction* factory(RemoteData* rdata,
-                Range range = Range(0,0));
+                const Range& range = Range(0,0));
         static BasicTransaction* factory(std::string url,
-                Range range = Range(0,0));
+                const Range& range = Range(0,0));
 
         // Register the byte-Reader callback function
         // The parameter must be a boost::function object of type
@@ -108,8 +108,8 @@ class BasicTransaction {
         // Clone this BasicTransaction object. A range has to be
         // provided and a new socket may be passed in case you want
         // it to be used.
-        BasicTransaction* clone(Range r, PlainSock* sock=NULL);
-        BasicTransaction* clone(Range r, SSLSock* sock);
+        BasicTransaction* clone(const Range& r, PlainSock* sock=NULL);
+        BasicTransaction* clone(const Range& r, SSLSock* sock);
 
         // Start the download
         virtual void start()=0;
@@ -145,10 +145,10 @@ class BasicTransaction {
         bool isComplete() const;
 
         // Get the byterange
-        Range range() const;
+        const Range& range() const;
 
-        // Get the remotedata pointer
-        RemoteData* p_remoteData() const;
+        // Get the remotedata reference
+        const RemoteData& remoteData() const;
 
         // Get pointers to the downloader and speed observer threads
         boost::thread* p_thread() const;

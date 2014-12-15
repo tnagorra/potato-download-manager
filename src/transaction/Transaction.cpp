@@ -4,7 +4,7 @@
 
 // Constructor.
 template <typename SocketType>
-Transaction<SocketType>::Transaction(RemoteData* rdata, Range range)
+Transaction<SocketType>::Transaction(RemoteData* rdata, const Range& range)
     : BasicTransaction(rdata,range), mptr_socket(NULL) { }
 
 // An assignment operator for converting from a transaction of one

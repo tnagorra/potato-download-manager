@@ -22,7 +22,9 @@
        if it is empty, create new inside the BasicTransaction
     2. Implement write/read lock
     3. Catch exceptions inside BasicTransaction
-    4. Do something about Range and Range&
+    4. Don't use beenSplit and seperate bytesTotal
+    4. Something in updateRange()
+    5. Consider what to do when server doesn't provide size info
 */
 
 class Aggregate{

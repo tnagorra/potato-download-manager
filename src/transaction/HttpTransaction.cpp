@@ -12,7 +12,7 @@ using boost::asio::ip::tcp;
 // Constructor.
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        Range range) : Transaction<SocketType>(rdata,range)
+        const Range& range) : Transaction<SocketType>(rdata,range)
 { }
 
 // Start the downloader thread and return immediately

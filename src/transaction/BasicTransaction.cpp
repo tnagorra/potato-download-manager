@@ -3,7 +3,7 @@
 #include "transaction/HttpTransaction.h"
 
 // The constructor.
-BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
+BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range)
     : m_range(range),
     mptr_rdata(rdata),
     mptr_thread(NULL),
@@ -26,7 +26,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, Range range)
 // They can be provided with a RemoteData object or a url,
 // and an optional byterange.
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
-        Range range) {
+        const Range& range) {
 
     if (!rdata) // Danger!! Null pointer
         Throw(ex::Invalid, "The RemoteData pointer passed");
@@ -48,7 +48,7 @@ BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
 }
 
 BasicTransaction* BasicTransaction::factory(std::string url,
-        Range range) {
+        const Range& range) {
     RemoteData* rdata_url = RemoteData::factory(url);
     return factory(rdata_url, range);
 }
@@ -66,13 +66,13 @@ void BasicTransaction::registerReader(
 // Clone this BasicTransaction object. A range has to be
 // provided and a new socket may be passed in case you want
 // it to be used.
-BasicTransaction* BasicTransaction::clone(Range r, PlainSock* sock) {
+BasicTransaction* BasicTransaction::clone(const Range& r, PlainSock* sock) {
     BasicTransaction* bt = factory(mptr_rdata,r);
     bt->injectSocket(sock);
     return bt;
 }
 
-BasicTransaction* BasicTransaction::clone(Range r, SSLSock* sock) {
+BasicTransaction* BasicTransaction::clone(const Range& r, SSLSock* sock) {
     BasicTransaction* bt = factory(mptr_rdata,r);
     bt->injectSocket(sock);
     return bt;
@@ -155,13 +155,13 @@ bool BasicTransaction::isComplete() const {
 }
 
 // Get the byterange
-Range BasicTransaction::range() const {
+const Range& BasicTransaction::range() const {
     return m_range;
 }
 
 // Get the remotedata pointer
-RemoteData* BasicTransaction::p_remoteData() const {
-    return mptr_rdata;
+const RemoteData& BasicTransaction::remoteData() const {
+    return *mptr_rdata;
 }
 
 // Get a pointer to the downloader thread object
