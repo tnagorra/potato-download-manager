@@ -335,7 +335,7 @@ void Aggregate::splitter() try {
             std::vector<Chunk*>::size_type bneck = bottleNeck();
 
             // NOTE: Removing this showed the synronization bug
-            if(isSplitReady())
+            //if(isSplitReady())
             split(bneck);
         }
     }
