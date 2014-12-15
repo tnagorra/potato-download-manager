@@ -25,17 +25,34 @@ class Chunk {
         ~Chunk();
 
         // Returns pointer of BasicTransaction
-        BasicTransaction* const txn();
+        inline BasicTransaction& txn(){
+            return *mptr_txn;
+        }
 
         // Returns pointer to File
-        File* const file();
+        inline File& file(){
+            return *mptr_file;
+        }
+
+        inline const BasicTransaction& txn() const{
+            return *mptr_txn;
+        }
+
+        // Returns pointer to File
+        inline const File& file() const {
+            return *mptr_file;
+        }
 
         // Return total downloaded bytes of a Chunk
         // Includes data bytes saved + data bytes downloaded
-        uintmax_t bytesDone() const;
+        inline uintmax_t bytesDone() const {
+            return m_fileSize + txn().bytesDone();
+        }
 
         // Return total bytes of a Chunk
-        uintmax_t bytesTotal() const;
+        inline uintmax_t bytesTotal() const {
+            return m_fileSize + txn().bytesTotal();
+        }
 };
 
 #endif
