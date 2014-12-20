@@ -1,10 +1,15 @@
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/positional_options.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/cmdline.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/ini_parser.hpp>
 #include <iostream>
 #include <aggregator/Aggregate.h>
 
-// TODO
-// 1. Use a Range object reference as argument
-// 2. Rename p_functions() to functions()
-// 3. change state()==something to joinable()
+namespace pt = boost::property_tree;
+namespace po = boost::program_options;
 
 int main(int argc, char* argv[]) try {
     if( argc == 2){

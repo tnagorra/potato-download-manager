@@ -9,7 +9,7 @@ Chunk::Chunk(BasicTransaction* txnp, File* filep):
         Throw(ex::Invalid,"BasicTransaction");
 
     // Initialize m_fileSize with size of file
-    m_fileSize = file().size();
+    m_fileSize = file()->size();
 
     // Bind and inject the append function of File
     // inside the BasicTransaction
@@ -17,7 +17,7 @@ Chunk::Chunk(BasicTransaction* txnp, File* filep):
         boost::bind(static_cast<void(File::*)(std::istream&,uintmax_t)>
                 (&File::append),mptr_file,_1,_2);
 
-    txn().registerReader(reader);
+    txn()->registerReader(reader);
 }
 
 Chunk::~Chunk() {

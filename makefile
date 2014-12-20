@@ -48,7 +48,7 @@ FSOURCES_AGGREGATE:=$(addprefix $(SRCDIR)/aggregator/,$(SOURCES_AGGREGATE))
 FHEADERS_AGGREGATE:=$(addprefix $(INCDIR)/aggregator/,$(HEADERS_AGGREGATE))
 FOBJECTS_AGGREGATE:=$(addprefix $(OBJDIR)/aggregator/,$(OBJECTS_AGGREGATE))
 LDFLAGS_AGGREGATE=-lboost_system -lboost_filesystem -lboost_thread\
-	-lssl -lcrypto -pthread
+	-lssl -lcrypto -pthread -lboost_program_options
 
 MAINO_FILE:=$(OBJDIR)/filesystem.o
 MAINO_DOWN:=$(OBJDIR)/transaction.o

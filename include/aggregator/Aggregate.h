@@ -32,7 +32,7 @@ class Aggregate{
         // store usable sockets for reuse
         //std::vector<Socket*> m_free_socket;
         // the working thread
-        boost::thread m_thread;
+        boost::thread* m_thread;
         // vector to save the chunks
         std::vector<Chunk*> m_chunk;
         // the save folder of the file
@@ -54,19 +54,31 @@ class Aggregate{
         bool m_failed;
     public:
         // Constructor
-        Aggregate(const std::string url, const std::string savefolder="potatoes",unsigned txns=8,uintmax_t split=500*1024);
+        Aggregate(const std::string& url, const std::string& savefolder="potatoes",unsigned txns=8,uintmax_t split=500*1024);
 
         // Destructor
         ~Aggregate();
 
         // Join it's thread
-        void join();
+        void join(){
+            // If the thread has completed or represents Not-A-Thread
+            // it just returns
+            if(m_thread)
+                m_thread->join();
+        }
 
         // Stop the downloads
         void stop();
 
         // Create a thread to start Chunk
-        void start();
+        void start() {
+            // if m_thread represents a thread of execution
+            // then don't start the thread again
+            //if( m_thread.get_id() == boost::thread::id() )
+            if (m_thread && m_thread->joinable())
+                return;
+            m_thread = new boost::thread(&Aggregate::worker,this);
+        }
 
         // Displays cool information about stuffs
         unsigned display();
