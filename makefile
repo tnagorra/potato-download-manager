@@ -8,7 +8,7 @@ CC=clang++-3.5
 CFLAGS=-c -I$(INCDIR)/ --std=c++11
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 
-all: filesystem transaction aggregator
+all: filesystem transaction aggregator options
 
 ## Variables and rules for FILE
 SOURCES_FILE:= Node.cpp File.cpp Directory.cpp
@@ -48,15 +48,26 @@ FSOURCES_AGGREGATE:=$(addprefix $(SRCDIR)/aggregator/,$(SOURCES_AGGREGATE))
 FHEADERS_AGGREGATE:=$(addprefix $(INCDIR)/aggregator/,$(HEADERS_AGGREGATE))
 FOBJECTS_AGGREGATE:=$(addprefix $(OBJDIR)/aggregator/,$(OBJECTS_AGGREGATE))
 LDFLAGS_AGGREGATE=-lboost_system -lboost_filesystem -lboost_thread\
-	-lssl -lcrypto -pthread -lboost_program_options
+	-lssl -lcrypto -pthread
+
+## Variables and rules for OPTION
+SOURCES_OPTION:= CommonOptions.cpp LocalOptions.cpp GlobalOptions.cpp
+HEADERS_OPTION:= CommonOptions.h LocalOptions.h GlobalOptions.h
+OBJECTS_OPTION:=$(SOURCES_OPTION:.cpp=.o)
+FSOURCES_OPTION:=$(addprefix $(SRCDIR)/options/,$(SOURCES_OPTION))
+FHEADERS_OPTION:=$(addprefix $(INCDIR)/options/,$(HEADERS_OPTION))
+FOBJECTS_OPTION:=$(addprefix $(OBJDIR)/options/,$(OBJECTS_OPTION))
+LDFLAGS_OPTION=-lboost_system -lboost_program_options
 
 MAINO_FILE:=$(OBJDIR)/filesystem.o
 MAINO_DOWN:=$(OBJDIR)/transaction.o
 MAINO_AGGREGATE:=$(OBJDIR)/aggregator.o
+MAINO_OPTION:=$(OBJDIR)/options.o
 
 EXEC_FILE:=$(BINDIR)/filesystem
 EXEC_DOWN:=$(BINDIR)/transaction
 EXEC_AGGREGATE:=$(BINDIR)/aggregator
+EXEC_OPTION:=$(BINDIR)/options
 
 filesystem: $(FHEADERS_FILE) $(FHEADERS_COMM) $(EXEC_FILE)
 $(EXEC_FILE): $(FOBJECTS_FILE) $(FOBJECTS_COMM) $(MAINO_FILE)
@@ -73,13 +84,18 @@ $(EXEC_AGGREGATE): $(FOBJECTS_AGGREGATE) $(MAINO_AGGREGATE) $(FOBJECTS_FILE) $(F
 	$(CC) $(FOBJECTS_AGGREGATE) $(MAINO_AGGREGATE) $(FOBJECTS_FILE) $(FOBJECTS_DOWN) $(FOBJECTS_COMM) \
 	-g -o $@ $(LDFLAGS_AGGREGATE) $(LDFLAGS_FILE) $(LDFLAGS_DOWN)
 
+options: $(EXEC_OPTION) $(FHEADERS_OPTION)
+$(EXEC_OPTION): $(FOBJECTS_OPTION) $(MAINO_OPTION)
+	$(CC) $(FOBJECTS_OPTION) $(MAINO_OPTION) \
+	-g -o $@ $(LDFLAGS_OPTION)
+
 ### Common parts to both
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR) $(BINDIR)
 	$(CC) -o $@ $< $(CFLAGS)
 
 $(OBJDIR): | $(BINDIR)
 	mkdir $(OBJDIR) $(OBJDIR)/filesystem $(OBJDIR)/transaction\
-		$(OBJDIR)/common $(OBJDIR)/aggregator
+		$(OBJDIR)/common $(OBJDIR)/aggregator $(OBJDIR)/options
 
 $(BINDIR):
 	mkdir $(BINDIR)
