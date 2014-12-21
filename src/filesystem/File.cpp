@@ -3,6 +3,16 @@
 
 #include "filesystem/File.h"
 
+std::fstream& File::ostream() {
+    open(WRITE);
+    return m_stream;
+}
+
+std::fstream& File::istream() {
+    open(READ);
+    return m_stream;
+}
+
 // Asserts that the filename is clean for portability.
 // That means the function does nothing if the filename is
 // portable, and throws ex::Invalid if its not.

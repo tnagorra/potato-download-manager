@@ -26,9 +26,9 @@ void CommonOptions::store(int ac, char* av[]){
 }
 
 void CommonOptions::store(const std::string& filename){
-    std::fstream m_stream;
-    m_stream.open(filename,std::ios::in);
-    po::store(po::parse_config_file(m_stream, m_desc, true), m_vm);
+    File conf(filename);
+    if( conf.exists())
+        po::store(po::parse_config_file(conf.istream(), m_desc, true), m_vm);
 }
 
 void CommonOptions::load() {
@@ -73,9 +73,8 @@ void CommonOptions::unload(const std::string& filename){
     }
     root.push_back(pt::ptree::value_type(old, branch));
 
-    std::fstream conffile;
-    conffile.open(filename,std::ios::out);
-    write_ini(conffile,root);
+    File conf(filename);
+    write_ini(conf.ostream(),root);
 }
 
 void CommonOptions::help(){

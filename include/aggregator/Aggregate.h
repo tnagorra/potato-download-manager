@@ -25,6 +25,8 @@
     4. Don't use beenSplit and seperate bytesTotal
     4. Something in updateRange()
     5. Consider what to do when server doesn't provide size info
+    7. Use Option in Aggregate class
+    8. Make Options give data outside
 */
 
 class Aggregate{
@@ -36,7 +38,9 @@ class Aggregate{
         // vector to save the chunks
         std::vector<Chunk*> m_chunk;
         // the save folder of the file
-        std::string m_savefolder;
+        std::string m_heaven;
+        // the temporary folder of the file
+        std::string m_purgatory;
         // the url of the file
         std::string m_url;
         // the hash of url
@@ -54,7 +58,10 @@ class Aggregate{
         bool m_failed;
     public:
         // Constructor
-        Aggregate(const std::string& url, const std::string& savefolder="potatoes",unsigned txns=8,uintmax_t split=500*1024);
+        Aggregate(const std::string& url,
+                const std::string& heaven="potatoes",
+                const std::string& purgatory="potas",
+                unsigned txns=8,uintmax_t split=500*1024);
 
         // Destructor
         ~Aggregate();

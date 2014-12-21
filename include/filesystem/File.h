@@ -22,6 +22,7 @@ class File : public Node {
     protected:
         // The standard library stream that represents the file
         std::fstream m_stream;
+
         // The mode in which it has been opened
         Mode m_mode;
         // The state which it is in
@@ -53,6 +54,11 @@ class File : public Node {
         // If n is 0, then total input stream is copied
         void streamCopy(std::istream& in, uintmax_t n=0);
     public:
+        // returns stream but risky
+        std::fstream& ostream();
+
+        // returns stream but risky
+        std::fstream& istream();
 
         // Constructor of the object.
         // Throws ex::Not if given node not a file.

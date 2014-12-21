@@ -1,15 +1,15 @@
 #include"aggregator/Aggregate.h"
 
-Aggregate::Aggregate(const std::string& url, const std::string& savefolder,
-        unsigned txns,uintmax_t split):
-    m_chunks(txns), m_url(url), m_splittable_size(split),
-    m_filesize(0), m_savefolder(savefolder), m_failed(false), m_thread(NULL)
+Aggregate::Aggregate(const std::string& url, const std::string& heaven,
+        const std::string& purgatory, unsigned txns,uintmax_t split):
+    m_chunks(txns), m_url(url), m_splittable_size(split),m_purgatory(purgatory),
+    m_filesize(0), m_heaven(heaven), m_failed(false), m_thread(NULL)
 {
     // Check to ensure m_splittable_size is not less than 100 KiB
     if(m_splittable_size < 100*1024)
         m_splittable_size = 100*1024;
-    m_hashedUrl = m_savefolder+"/"+md5(m_url);
-    m_prettyUrl = m_savefolder+"/"+prettify(m_url);
+    m_hashedUrl = m_purgatory+"/"+md5(m_url);
+    m_prettyUrl = m_heaven+"/"+prettify(m_url);
 }
 
 Aggregate::~Aggregate(){
@@ -289,19 +289,21 @@ void Aggregate::starter() {
 
         // Create config file, the name can be "infor.ini"
         // as non-numeric names will be removed anyhow
+        /* TODO remove this shit now
         std::string confname = m_hashedUrl + "info.ini";
         std::string confbody =
             "#Configuration file for a download\n"
             "Url="+m_url+"\n"
             //"Filesize=" + formatByte(m_filesize)+"\n"
             "[file]\n"
-            "destination="+m_savefolder+"\n"
+            "destination="+m_heaven+"\n"
             "name=" +m_prettyUrl+"\n"
             "[segment]\n"
             "number=" + std::to_string(m_chunks)+"\n"
             "threshold=" + formatByte(m_splittable_size)+"\n";
         File conf(confname);
         conf.write(confbody);
+        */
     }
 }
 

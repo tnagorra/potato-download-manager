@@ -14,6 +14,8 @@
 #include<string>
 #include<vector>
 
+#include "filesystem/File.h"
+
 namespace po = boost::program_options;
 namespace pt = boost::property_tree;
 

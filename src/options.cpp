@@ -8,7 +8,7 @@ int main(int ac, char* av[]) try {
     l.store("potatoes/local.ini");
     l.store("potatoes/global.ini");
     l.load();
-    l.help();
+//    l.help();
     l.display();
     l.unload("potatoes/merger.ini");
     return 0;
