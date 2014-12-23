@@ -334,6 +334,8 @@ void Aggregate::splitter() try {
             // NOTE: Removing this showed the synronization bug
             //if(isSplitReady())
             split(bneck);
+            // Just a hack that saved the day
+            boost::this_thread::sleep(boost::posix_time::millisec(100));
         }
     }
 } catch (ex::aggregate::NoBottleneck e) {
