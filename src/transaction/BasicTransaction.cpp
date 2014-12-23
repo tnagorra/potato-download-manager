@@ -230,7 +230,7 @@ double BasicTransaction::hifiSpeed() const {
 
 // THE speed, which will be shown at the frontend.
 double BasicTransaction::speed() const {
-    return avgSpeed();
+    return hifiSpeed();
 }
 
 // An estimate of the time remaining, in seconds.
@@ -261,8 +261,8 @@ void BasicTransaction::speedWorker() {
        m_instSpeed = (1.0*delta)/10;
        }
        */
-    const double refresh = 0.01;
-    const unsigned persistance = 2/refresh;
+    const double refresh = 0.1;
+    const unsigned persistance = 1/refresh;
     uintmax_t no = 0;
     while( state() != State::downloading && state() !=State::complete)
         boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
