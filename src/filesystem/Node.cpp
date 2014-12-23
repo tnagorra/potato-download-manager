@@ -51,9 +51,12 @@ fs::path Node::newpath() const {
     std::string npath = m_name.c_str();
     if( Node(npath).exists() ){
         unsigned i = 1;
-        while( Node(npath+"."+std::to_string(i)).exists() )
+        while(1){
+            npath = (m_name.parent_path()/m_name.stem()).c_str()+std::string(".")+std::to_string(i)+m_name.extension().c_str();
+            if (!Node(npath).exists())
+                break;
             i++;
-        npath += "."+std::to_string(i);
+        }
     }
     return npath;
 }
@@ -83,7 +86,7 @@ fs::path Node::parentpath() const {
 
 // Returns what type the Node is
 Node::Type Node::what() const {
-   if( !exists() )
+    if( !exists() )
         Throw(ex::filesystem::NotThere,m_name.string());
     if(fs::is_directory(m_name))
         return DIRECTORY;
