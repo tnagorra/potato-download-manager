@@ -205,9 +205,16 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     // Insert newly created Chunk in the vector after
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
+
     // Start those BasicTransactions
-    cell->txn()->play();
     newcell->txn()->start();
+
+
+    boost::this_thread::sleep(boost::posix_time::millisec(100));
+
+
+    cell->txn()->play();
+
 }
 
 void Aggregate::worker() try {
@@ -290,17 +297,17 @@ void Aggregate::starter() {
         // Create config file, the name can be "infor.ini"
         // as non-numeric names will be removed anyhow
         /* TODO remove this shit now
-        std::string confname = m_hashedUrl + "info.ini";
-        std::string confbody =
-            "#Configuration file for a download\n"
-            "Url="+m_url+"\n"
-            //"Filesize=" + formatByte(m_filesize)+"\n"
-            "[file]\n"
-            "destination="+m_heaven+"\n"
-            "name=" +m_prettyUrl+"\n"
-            "[segment]\n"
-            "number=" + std::to_string(m_chunks)+"\n"
-            "threshold=" + formatByte(m_splittable_size)+"\n";
+           std::string confname = m_hashedUrl + "info.ini";
+           std::string confbody =
+           "#Configuration file for a download\n"
+           "Url="+m_url+"\n"
+        //"Filesize=" + formatByte(m_filesize)+"\n"
+        "[file]\n"
+        "destination="+m_heaven+"\n"
+        "name=" +m_prettyUrl+"\n"
+        "[segment]\n"
+        "number=" + std::to_string(m_chunks)+"\n"
+        "threshold=" + formatByte(m_splittable_size)+"\n";
         File conf(confname);
         conf.write(confbody);
         */
@@ -334,8 +341,6 @@ void Aggregate::splitter() try {
             // NOTE: Removing this showed the synronization bug
             //if(isSplitReady())
             split(bneck);
-            // Just a hack that saved the day
-            boost::this_thread::sleep(boost::posix_time::millisec(100));
         }
     }
 } catch (ex::aggregate::NoBottleneck e) {
@@ -346,23 +351,34 @@ void Aggregate::splitter() try {
 }
 
 void Aggregate::merger() {
+
+    // Just sleep for a while
+    // Only for syncronization in main loop
+    boost::this_thread::sleep(boost::posix_time::millisec(500));
+
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
     if( m_filesize != bytesTotal())
         Throw(ex::Error,"Downloaded bytes is greater than total filesize.");
 
-    // New file to concatenate the Chunks
-    File merged(prettyName());
-    // Write an empty merge file first
-    merged.write(Node::NEW);
+    fancyprint("Merging!",NOTIFY);
 
+    File merged(prettyName());
+    merged.write(Node::NEW);
     // Append the content to "merged" and remove
-    // the chunk files
-    for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        merged.append(*((*it)->file()));
-        (*it)->file()->remove();
+    for(unsigned i=0; i < m_chunk.size(); i++){
+        std::cout << i+1  << " of " << m_chunk.size() <<std::endl;
+        merged.append(*(m_chunk[i]->file()));
+        std::cout << DELETE;
     }
+
+    std::cout << DELETE;
+    fancyprint("Merge Complete!",WARNING);
+
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
+
+    std::cout << DELETE;
+    fancyprint("Complete!",SUCCESS);
 }

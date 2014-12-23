@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) try {
                 std::cout<< DELETE;
         }
         agg.join();
+        fancyprint("Why am I still here?",NOTIFY);
     } else {
         fancyprint("Usage: aggregate [PATH]",WARNING);
     }

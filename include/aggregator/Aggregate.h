@@ -27,6 +27,7 @@
     5. Consider what to do when server doesn't provide size info
     7. Use Option in Aggregate class
     8. Make Options give data outside
+    9. How to save the settings? Leave the folders in potas?
 */
 
 class Aggregate{

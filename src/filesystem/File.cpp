@@ -97,7 +97,7 @@ void File::copy(const fs::path& tos,Conflict c) {
         if(c==LEAVE)
             Throw(ex::filesystem::AlreadyThere,too.path().string());
         else if (c==NEW)
-            path(newpath());
+            too.path(too.newpath());
     }
     close();
 
@@ -119,10 +119,11 @@ void File::move(const fs::path& tos,Conflict c) {
 
     File too(toss);
     if( too.exists() ){
+        std::cout << too.path().string() << std::endl;
         if(c==LEAVE)
             Throw(ex::filesystem::AlreadyThere,too.path().string());
         else if (c==NEW)
-            path(newpath());
+            too.path(too.newpath());
     }
     close();
 
