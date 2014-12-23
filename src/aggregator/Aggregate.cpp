@@ -54,12 +54,10 @@ unsigned Aggregate::display() {
 void Aggregate::progressbar() {
     const unsigned len = 50;
     unsigned place = progress()/100*len;
-
-    /*
-    fancycout(std::string(place,' '), COLOR(0,CC::WHITE,CC::PURPLE));
-    fancycout(std::string(len-place,' '),COLOR(0,CC::PURPLE,CC::WHITE));
-    */
-
+    if(len-place > 0){
+        fancycout(std::string(place,' '), COLOR(0,CC::WHITE,CC::PURPLE));
+        fancycout(std::string(len-place,' '),COLOR(0,CC::PURPLE,CC::WHITE));
+    }
     print( " " << round(progress(),2) << "%\t"
             << formatTime(timeRemaining()) << "\t"
             << formatByte(speed()) << "ps\t");
