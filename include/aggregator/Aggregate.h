@@ -14,23 +14,10 @@
 #include "common/helper.h"
 
 /*
-   TODO
-    1. Reusing sockets
-       When BasicTransaction is complete, push those to m_socket
-       When BasicTransaction is started and m_socket isn't empty,
-       take it from m_socket and pop it
-       if it is empty, create new inside the BasicTransaction
-    2. Implement write/read lock
-    3. Catch exceptions inside BasicTransaction
-    4. Don't use beenSplit and seperate bytesTotal
-    4. Something in updateRange()
-    5. Consider what to do when server doesn't provide size info
-    7. Use Option in Aggregate class
-    10. Some hifi algorithm for splitting files
-    12. Use better exceptions
-    13. Add transaction.date in local.ini
-    14. Implement wait, retry, speedlimit, ...
-    15. Reset slow connections
+   When BasicTransaction is complete, push those to m_socket
+   When BasicTransaction is started and m_socket isn't empty,
+   take it from m_socket and pop it
+   if it is empty, create new inside the BasicTransaction
 */
 
 class Aggregate{
