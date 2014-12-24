@@ -1,19 +1,24 @@
 #include "options/CommonOptions.h"
 
 CommonOptions::CommonOptions(): m_desc("Options") {
+    // To centralize default values, it is moved
+    // in getter functions. Avoiding default here would
+    // save up memory as well as the configuration file
+    // will be cleaner.
+    // (no default values need to be saved)
     m_desc.add_options()
         ("help,h", "produce help message")
-        ("segment.threshold,T",po::value<uintmax_t>()->default_value(1024*100),
+        ("segment.threshold,T",po::value<uintmax_t>(),
          "the smallest size of a segment")
-        ("segment.number,N",po::value<unsigned>()->default_value(8),
+        ("segment.number,N",po::value<unsigned>(),
          "the total no. of active segments")
-        ("transaction.timeout,t",po::value<unsigned>()->default_value(80),
+        ("transaction.timeout,t",po::value<unsigned>(),
          "the timeout for the transaction")
-        ("transaction.retries,r",po::value<int>()->default_value(-1),
+        ("transaction.retries,r",po::value<int>(),
          "the total no. of retries for transaction")
-        ("transaction.wait,w",po::value<unsigned>()->default_value(10),
+        ("transaction.wait,w",po::value<unsigned>(),
          "the wait for the transaction")
-        ("file.mode,m",po::value<std::string>()->default_value(std::string("rename")),
+        ("file.conflict,m",po::value<std::string>(),
          "the mode for file conflict")
         ;
 }
@@ -41,7 +46,7 @@ void CommonOptions::unload(const std::string& filename){
     std::string old;
     for (const auto& it : m_vm) {
         std::string fullname = it.first;
-        size_t pos = fullname.find('.');
+        size_t pos = fullname.find_last_of('.');
         std::string group = fullname.substr(0,pos);
         std::string name = fullname.substr(pos+1,fullname.length()-pos);
 
@@ -77,10 +82,6 @@ void CommonOptions::unload(const std::string& filename){
     write_ini(conf.ostream(),root);
 }
 
-void CommonOptions::help(){
-    std::cout << m_desc << std::endl;
-}
-
 void CommonOptions::display() {
 
     for (const auto& it : m_vm) {
@@ -103,4 +104,3 @@ void CommonOptions::display() {
             std::cout << "error" <<std::endl;
     }
 }
-

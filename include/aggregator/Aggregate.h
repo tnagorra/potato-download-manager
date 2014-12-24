@@ -26,10 +26,11 @@
     4. Something in updateRange()
     5. Consider what to do when server doesn't provide size info
     7. Use Option in Aggregate class
-    8. Make Options give data outside
-    9. How to save the settings? Leave the folders in potas?
     10. Some hifi algorithm for splitting files
-    11. Speed calculator is shit
+    12. Use better exceptions
+    13. Add transaction.date in local.ini
+    14. Implement wait, retry, speedlimit, ...
+    15. Reset slow connections
 */
 
 class Aggregate{

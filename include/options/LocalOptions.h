@@ -6,6 +6,13 @@
 class LocalOptions : public CommonOptions {
     public:
         LocalOptions();
+
+        std::string transaction_path() const {
+            if (m_vm.count("transaction.path"))
+                return m_vm["transaction.path"].as<std::string>();
+            return "dafuq";
+        }
+
 };
 
 #endif

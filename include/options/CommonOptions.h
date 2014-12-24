@@ -10,6 +10,7 @@
 #include<boost/program_options/parsers.hpp>
 
 #include<iostream>
+#include<sstream>
 #include<fstream>
 #include<string>
 #include<vector>
@@ -39,11 +40,62 @@ class CommonOptions {
         // Saves the variables map to a config file
         void unload(const std::string& filename);
 
-        // Displays the values of options description
-        void help();
-
         // Displays the values of variables map
-        void display();
+        // For debugging
+         void display();
+
+         bool help() const {
+             if (m_vm.count("help"))
+                 return true;
+             return false;
+         }
+
+         std::string content() const {
+             std::ostringstream os;
+             os << m_desc;
+             return os.str();
+         }
+
+         uintmax_t segment_threshold() const {
+             if (m_vm.count("segment.threshold"))
+                 return m_vm["segment.threshold"].as<uintmax_t>();
+             return 1024*100;
+         }
+
+         unsigned segment_number() const {
+             if (m_vm.count("segment.number"))
+                 return m_vm["segment.number"].as<unsigned>();
+             return 8;
+         }
+
+         unsigned transaction_timeout() const {
+             if (m_vm.count("transaction.timeout"))
+                 return m_vm["transaction.timeout"].as<unsigned>();
+             return 80;
+         }
+
+         int transaction_retries() const {
+             if (m_vm.count("transaction.retries"))
+                 return m_vm["transaction.retries"].as<int>();
+             return -1;
+         }
+
+         unsigned transaction_wait() const {
+             if (m_vm.count("transaction.wait"))
+                 return m_vm["transaction.wait"].as<unsigned>();
+             return 10;
+         }
+
+         Node::Conflict file_conflict() const {
+             if (m_vm.count("file.conflict")){
+                 std::string c = m_vm["file.conflict"].as<std::string>();
+                 if(c=="leave")
+                     return Node::LEAVE;
+                 else if(c=="force")
+                     return Node::FORCE;
+             }
+             return Node::NEW;
+         }
 };
 
 #endif
