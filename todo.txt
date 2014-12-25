@@ -9,7 +9,6 @@
 (B) Caputre cookie
 (B) Implement grabber
 (B) Reusing Sockets +Aggregate @Aggregate
-(B) Use LocalOptions +Aggregate @Aggregate
 (B) Interactive UI design
 (B) Implement wait, retry, speed limit +BasicTransaction
 (C) Don't use beenSplit, bytesTotal() +BasicTransaction
