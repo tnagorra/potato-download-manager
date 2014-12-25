@@ -14,6 +14,7 @@ extern "C" {
 #include <cmath>
 #include <ctime>
 #include <cctype>
+#include "common/ex.h"
 
 // Infinity ∞ unicode
 
@@ -56,4 +57,8 @@ bool numerically(std::string const & a, std::string const & b);
 
 // Helper to find if string is numeric
 bool isNumeric(const std::string& s);
+
+
+std::string progressbar(float progress,std::string yes, std::string no,unsigned len=50);
+
 #endif

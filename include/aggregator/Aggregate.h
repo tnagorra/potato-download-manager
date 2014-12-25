@@ -79,10 +79,7 @@ class Aggregate{
         }
 
         // Displays cool information about stuffs
-        unsigned display();
-
-        // Display progress bar
-        void progressbar();
+        unsigned displayChunks();
 
         // Total data downloaded; includes already saved bytes
         uintmax_t bytesDone() const;
@@ -104,7 +101,7 @@ class Aggregate{
 
         // Returns the total time Remaining
         uintmax_t timeRemaining() const {
-            if(speed()== 0)
+            if(speed() <= .0000001 )
                 return std::numeric_limits<uintmax_t>::max();
             return bytesTotal() > bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
         }

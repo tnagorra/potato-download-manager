@@ -10,6 +10,54 @@ Aggregate::Aggregate(const std::string& url, const std::string& heaven,
         m_splittable_size = 100*1024;
     m_hashedUrl = m_purgatory+"/"+md5(m_url);
     m_prettyUrl = m_heaven+"/"+prettify(m_url);
+
+    // Directory session is used to find out about
+    // previous download information
+    Directory session(m_hashedUrl);
+    std::vector<std::string> files;
+
+    if ( session.exists() && !session.isEmpty() ) {
+        files = session.list(Node::FILE,true);
+        // Remove non-numeric names
+        for(unsigned i=0;i<files.size();i++){
+            if(!isNumeric(files[i]))
+                files.erase(files.begin()+i);
+        }
+        // sort the files numerically
+        sort(files.begin(),files.end(),numerically);
+    }
+
+    // If no numeric files are found!
+    if( files.size()==0){
+
+        File* newfile = new File(chunkName(0));
+        BasicTransaction* newtxn = BasicTransaction::factory(m_url);
+        Chunk* researcher = new Chunk(newtxn,newfile);
+        m_chunk.push_back(researcher);
+
+    } else {
+
+        m_filesize = std::atoi(files.back().c_str());
+
+        // ie, the last file must not be with name "0"
+        if(m_filesize==0)
+            Throw(ex::Error,"File size seems to be zero.");
+        // ie, limiter file should be empty
+        if( File(chunkName(m_filesize)).size() != 0 )
+            Throw(ex::Error,"Limiter file must have zero size.");
+        // ie, '0' could be missing
+        if(files[0]!="0")
+            files.insert(files.begin(),"0");
+
+        // Populate all the Chunks
+        for(unsigned i=0; i < files.size()-1; i++){
+            File* f = new File(chunkName(std::atoi(files[i].c_str())));
+            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+            BasicTransaction* t= BasicTransaction::factory(m_url,r);
+            Chunk* c = new Chunk(t,f);
+            m_chunk.push_back(c);
+        }
+    }
 }
 
 Aggregate::~Aggregate(){
@@ -27,7 +75,7 @@ void Aggregate::stop(){
         m_thread->interrupt();
 }
 
-unsigned Aggregate::display() {
+unsigned Aggregate::displayChunks() {
     fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
 
     int j = m_chunk.size();
@@ -48,20 +96,15 @@ unsigned Aggregate::display() {
 
         fancyprint(lower << ":" << down << ":"<< higher<< " ",myColor);
     }
-    return j+1;
-}
 
-void Aggregate::progressbar() {
-    const unsigned len = 50;
-    unsigned place = progress()/100*len;
-    if(len-place > 0){
-        fancycout(std::string(place,' '), COLOR(0,CC::WHITE,CC::PURPLE));
-        fancycout(std::string(len-place,' '),COLOR(0,CC::PURPLE,CC::WHITE));
-    }
+    std::cout << progressbar(progress(),COLOR(0,CC::PURPLE,CC::WHITE),COLOR(0,CC::WHITE,CC::PURPLE));
     print( " " << round(progress(),2) << "%\t"
             << formatTime(timeRemaining()) << "\t"
             << formatByte(speed()) << "ps\t");
+
+    return j+1;
 }
+
 
 uintmax_t Aggregate::bytesDone() const {
     uintmax_t bytes = 0;
@@ -229,32 +272,15 @@ void Aggregate::worker() try {
 }
 
 void Aggregate::starter() {
-    // Directory session is used to find out about
-    // previous download information
-    Directory session(m_hashedUrl);
-    std::vector<std::string> files;
 
-    if ( session.exists() && !session.isEmpty() ) {
-        files = session.list(Node::FILE,true);
-        // Remove non-numeric names
-        for(unsigned i=0;i<files.size();i++){
-            if(!isNumeric(files[i]))
-                files.erase(files.begin()+i);
-        }
-        // sort the files numerically
-        sort(files.begin(),files.end(),numerically);
-    }
-
-    // If no numeric files are found!
-    if( files.size()==0){
+    // If there is only one chunk then it is the first
+    // download chunk so infomation must be gathered
+    if(m_chunk.size()==1){
 
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
         // NOTE: No range is sent to the BasicTransaction
-        File* newfile = new File(chunkName(0));
-        BasicTransaction* newtxn = BasicTransaction::factory(m_url);
-        Chunk* researcher = new Chunk(newtxn,newfile);
-        m_chunk.push_back(researcher);
+        Chunk* researcher = m_chunk[0];
         researcher->txn()->start();
 
         // Wait for researcher until downloading starts,
@@ -274,27 +300,6 @@ void Aggregate::starter() {
         limiter.write();
 
     } else {
-
-        m_filesize = std::atoi(files.back().c_str());
-
-        // ie, the last file must not be with name "0"
-        if(m_filesize==0)
-            Throw(ex::Error,"File size seems to be zero.");
-        // ie, limiter file should be empty
-        if( File(chunkName(m_filesize)).size() != 0 )
-            Throw(ex::Error,"Limiter file must have zero size.");
-        // ie, '0' could be missing
-        if(files[0]!="0")
-            files.insert(files.begin(),"0");
-
-        // Populate all the Chunks
-        for(unsigned i=0; i < files.size()-1; i++){
-            File* f = new File(chunkName(std::atoi(files[i].c_str())));
-            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-            BasicTransaction* t= BasicTransaction::factory(m_url,r);
-            Chunk* c = new Chunk(t,f);
-            m_chunk.push_back(c);
-        }
 
         // Start all the Chunks
         // They should be started at last

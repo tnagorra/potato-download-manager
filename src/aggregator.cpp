@@ -27,15 +27,13 @@ int main(int ac, char* av[]) try {
         // Find the purgatory and look for sessions
         Directory session(g.destination_purgatory());
         if( !session.exists() || session.isEmpty()){
-            std::cout << "No download history!" << std::endl;
+            fancyprint("No download history.",WARNING);
             return 0;
         }
 
-        std::cout << g.destination_purgatory() << "/" << std::endl;
-
+        fancyprint("Download history",NOTIFY);
         // If session exists then print all the valid sessions
         std::vector<std::string> hash = session.list(Node::DIRECTORY);
-        int c=1;
         for(int i=0;i< hash.size();i++){
             std::string confname = hash[i]+"/" +localConfig;
             if(!File(confname).exists())
@@ -44,9 +42,16 @@ int main(int ac, char* av[]) try {
             l.store(confname);
             l.load();
 
-            // TODO Do some good stuff here
-            std::cout << c++ << ". " << prettify(l.transaction_path()) << std::endl;
-            std::cout << l.transaction_path() << std::endl;
+            print( g.destination_path() << "/" << prettify(l.transaction_path()) );
+
+            Aggregate agg(l.transaction_path(),g.destination_path(),
+                    g.destination_purgatory(),l.segment_number(),
+                    l.segment_threshold());
+
+            std::cout << progressbar(agg.progress(),COLOR(0,CC::WHITE,CC::BLUE),COLOR(0,CC::BLUE,CC::WHITE));
+            print( " " << round(agg.progress(),2) << "%\t");
+
+            //agg.progressbar();
         }
 
     } else {
@@ -56,7 +61,7 @@ int main(int ac, char* av[]) try {
             l.store(ac,av);
             // If it contains -h then show help immediately
             if(l.help()){
-                std::cout << l.content() << std::endl;
+                print(l.content());
                 return 0;
             }
             // Load global config
@@ -77,8 +82,7 @@ int main(int ac, char* av[]) try {
         while( agg.totalChunks() == 0)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
         while( !agg.isComplete() && !agg.hasFailed()){
-            unsigned all = agg.display();
-            agg.progressbar();
+            unsigned all = agg.displayChunks();
             boost::this_thread::sleep(boost::posix_time::millisec(100));
             for(int i=0;i<all+1;i++)
                 std::cout<< DELETE;

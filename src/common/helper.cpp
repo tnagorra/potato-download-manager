@@ -127,3 +127,9 @@ bool isNumeric(const std::string& s) {
         ++it;
     return !s.empty() && it == s.end();
 }
+std::string progressbar(float progress,std::string yes, std::string no,unsigned len) {
+    unsigned place = progress/100*len;
+    if(len-place > 0)
+        return yes+std::string(place,' ')+no+std::string(len-place,' ')+DISCOLOR;
+    return "";
+}
