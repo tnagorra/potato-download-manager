@@ -1,6 +1,7 @@
 #include "options/CommonOptions.h"
 #include "options/GlobalOptions.h"
 #include "options/LocalOptions.h"
+#include "common/ex.h"
 #include "common/helper.h"
 #include <vector>
 #include <iostream>
@@ -17,18 +18,19 @@ int main(int ac, char* av[]) try {
 
     //
     // if nothing is specified then show things
-    if( ac<=1 ){
+    if ( ac<=1 ) {
         // Find the purgatory and look for sessions
         Directory session(g.destination_purgatory());
         if( !session.exists() || session.isEmpty()){
-            std::cout << "No previous sessions!" << std::endl;
+            std::cout << "No download history!" << std::endl;
             return 0;
         }
 
-        std::cout << "Previous sessions in " << g.destination_purgatory() << " :" << std::endl;
+        std::cout << g.destination_purgatory() << "/" << std::endl;
 
         // If session exists then print all the valid sessions
         std::vector<std::string> hash = session.list(Node::DIRECTORY);
+        int c=1;
         for(int i=0;i< hash.size();i++){
             std::string confname = hash[i]+"/" +localConfig;
             if(!File(confname).exists())
@@ -38,6 +40,7 @@ int main(int ac, char* av[]) try {
             l.load();
 
             // TODO Do some good stuff here
+            std::cout << c++ << ". " << prettify(l.transaction_path()) << std::endl;
             std::cout << l.transaction_path() << std::endl;
         }
 
@@ -59,7 +62,12 @@ int main(int ac, char* av[]) try {
         l.unload(g.destination_purgatory()+"/"+md5(l.transaction_path())+"/"+localConfig);
 
         // TODO Do some good stuff here
-        std::cout << l.transaction_path() << std::endl;
+
+        /*
+        Aggregate agg(l.transaction_path(),g.destination_path(),
+                g.destination_purgatory(),l.segment_number(),
+                l.segment_threshold());
+                */
     }
 
     return 0;

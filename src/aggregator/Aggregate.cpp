@@ -203,13 +203,11 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     // Insert newly created Chunk in the vector after
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
-
     // Start those BasicTransactions
     newcell->txn()->start();
 
-
+    // HACK
     boost::this_thread::sleep(boost::posix_time::millisec(100));
-
 
     cell->txn()->play();
 
@@ -234,10 +232,10 @@ void Aggregate::starter() {
     // Directory session is used to find out about
     // previous download information
     Directory session(m_hashedUrl);
+    std::vector<std::string> files;
 
     if ( session.exists() && !session.isEmpty() ) {
-
-        std::vector<std::string> files = session.list(Node::FILE,true);
+        files = session.list(Node::FILE,true);
         // Remove non-numeric names
         for(unsigned i=0;i<files.size();i++){
             if(!isNumeric(files[i]))
@@ -245,28 +243,11 @@ void Aggregate::starter() {
         }
         // sort the files numerically
         sort(files.begin(),files.end(),numerically);
+    }
 
-        // Check the last entry for filesize
-        // Last element name holds the total size of the download file
-        m_filesize = std::atoi(files.back().c_str());
-        if( File(chunkName(m_filesize)).size() != 0 )
-            Throw(ex::Error,"Limiter file must have zero size.");
+    // If no numeric files are found!
+    if( files.size()==0){
 
-        // Populate all the Chunks
-        for(unsigned i=0; i < files.size()-1; i++){
-            File* f = new File(chunkName(std::atoi(files[i].c_str())));
-            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
-            BasicTransaction* t= BasicTransaction::factory(m_url,r);
-            Chunk* c = new Chunk(t,f);
-            m_chunk.push_back(c);
-        }
-
-        // Start all the Chunks
-        // They should be started at last
-        for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
-            (*it)->txn()->start();
-
-    } else {
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
         // NOTE: No range is sent to the BasicTransaction
@@ -292,23 +273,33 @@ void Aggregate::starter() {
         File limiter(chunkName(m_filesize));
         limiter.write();
 
-        // Create config file, the name can be "infor.ini"
-        // as non-numeric names will be removed anyhow
-        /* TODO remove this shit now
-           std::string confname = m_hashedUrl + "info.ini";
-           std::string confbody =
-           "#Configuration file for a download\n"
-           "Url="+m_url+"\n"
-        //"Filesize=" + formatByte(m_filesize)+"\n"
-        "[file]\n"
-        "destination="+m_heaven+"\n"
-        "name=" +m_prettyUrl+"\n"
-        "[segment]\n"
-        "number=" + std::to_string(m_chunks)+"\n"
-        "threshold=" + formatByte(m_splittable_size)+"\n";
-        File conf(confname);
-        conf.write(confbody);
-        */
+    } else {
+
+        m_filesize = std::atoi(files.back().c_str());
+
+        // ie, the last file must not be with name "0"
+        if(m_filesize==0)
+            Throw(ex::Error,"File size seems to be zero.");
+        // ie, limiter file should be empty
+        if( File(chunkName(m_filesize)).size() != 0 )
+            Throw(ex::Error,"Limiter file must have zero size.");
+        // ie, '0' could be missing
+        if(files[0]!="0")
+            files.insert(files.begin(),"0");
+
+        // Populate all the Chunks
+        for(unsigned i=0; i < files.size()-1; i++){
+            File* f = new File(chunkName(std::atoi(files[i].c_str())));
+            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+            BasicTransaction* t= BasicTransaction::factory(m_url,r);
+            Chunk* c = new Chunk(t,f);
+            m_chunk.push_back(c);
+        }
+
+        // Start all the Chunks
+        // They should be started at last
+        for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
+            (*it)->txn()->start();
     }
 }
 
