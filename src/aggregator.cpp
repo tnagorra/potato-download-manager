@@ -31,13 +31,15 @@ int main(int ac, char* av[]) try {
             return 0;
         }
 
-        fancyprint("Download history",NOTIFY);
         // If session exists then print all the valid sessions
         std::vector<std::string> hash = session.list(Node::DIRECTORY);
+
+        bool empty = true;
         for(int i=0;i< hash.size();i++){
             std::string confname = hash[i]+"/" +localConfig;
             if(!File(confname).exists())
                 continue;
+            empty = false;
             LocalOptions l;
             l.store(confname);
             l.load();
@@ -52,6 +54,10 @@ int main(int ac, char* av[]) try {
             print( " " << round(agg.progress(),2) << "%\t");
 
             //agg.progressbar();
+        }
+        if(empty){
+            fancyprint("No download history.",WARNING);
+            return 0;
         }
 
     } else {

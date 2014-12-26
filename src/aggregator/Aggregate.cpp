@@ -97,7 +97,7 @@ unsigned Aggregate::displayChunks() {
         fancyprint(lower << ":" << down << ":"<< higher<< " ",myColor);
     }
 
-    std::cout << progressbar(progress(),COLOR(0,CC::PURPLE,CC::WHITE),COLOR(0,CC::WHITE,CC::PURPLE));
+    std::cout << progressbar(progress(),COLOR(0,CC::WHITE,CC::PURPLE),COLOR(0,CC::PURPLE,CC::WHITE));
     print( " " << round(progress(),2) << "%\t"
             << formatTime(timeRemaining()) << "\t"
             << formatByte(speed()) << "ps\t");
@@ -172,7 +172,7 @@ RemoteData::Partial Aggregate::isSplittable() const {
 bool Aggregate::isSplitReady() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         // TODO Some hifi algorithm
-        if ((*it)->txn()->speed()<=100 && !(*it)->txn()->isComplete())
+        if ((*it)->txn()->speed()<=10 && !(*it)->txn()->isComplete())
             return false;
     }
     return true;
@@ -246,14 +246,13 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     // Insert newly created Chunk in the vector after
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
-    // Start those BasicTransactions
-    newcell->txn()->start();
-
     // HACK
     boost::this_thread::sleep(boost::posix_time::millisec(100));
 
-    cell->txn()->play();
+    // Start those BasicTransactions
+    newcell->txn()->start();
 
+    cell->txn()->play();
 }
 
 void Aggregate::worker() try {
@@ -333,8 +332,8 @@ void Aggregate::splitter() try {
             std::vector<Chunk*>::size_type bneck = bottleNeck();
 
             // NOTE: Removing this showed the synronization bug
-            if(isSplitReady())
-                split(bneck);
+            //if(isSplitReady())
+            split(bneck);
         }
     }
 } catch (ex::aggregate::NoBottleneck e) {

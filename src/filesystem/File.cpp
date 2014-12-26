@@ -44,7 +44,7 @@ void File::streamCopy(std::istream& in, uintmax_t count) {
     }
     // TODO maybe the flush isn't required
     // if m_stream is deleted correctly
-    m_stream.flush();
+    //m_stream.flush();
 }
 
 // Constructor of the object.
@@ -228,7 +228,7 @@ void File::append(const std::string& data) {
 void File::append(File& data) {
     open(APPEND);
     data.open(READ);
-    m_stream << data.m_stream.rdbuf();
+    streamCopy(data.m_stream);
 }
 
 // Appends to a existing File using istream, B+T

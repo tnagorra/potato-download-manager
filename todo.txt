@@ -1,10 +1,10 @@
 # Todo
 
+(A) Take care of the HACK +Aggregate @split
 (A) Implement Mutexes
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
-(A) Take care of the HACK +Aggregate @split
 (B) Implement a GUI interface
 (B) Caputre cookie
 (B) Implement grabber
