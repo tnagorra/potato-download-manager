@@ -9,6 +9,20 @@
 
 using boost::asio::ip::tcp;
 
+class Redirect {
+    public:
+        HttpTransaction<SSLSock>* m_rstp_secure;
+        HttpTransaction<PlainSock>* m_rstp_plain;
+        Redirect(HttpTransaction<SSLSock>* restartp) {
+            m_rstp_secure = restartp;
+            m_rstp_plain = NULL;
+        }
+        Redirect(HttpTransaction<PlainSock>* restartp) {
+            m_rstp_plain = restartp;
+            m_rstp_secure = NULL;
+        }
+};
+
 // Constructor.
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
@@ -45,10 +59,12 @@ void HttpTransaction<SocketType>::workerMain() try {
     createAndSendRequest();
     receiveHeaders();
     writeOut();
-} catch (HttpTransaction<antiSockType>* radar) {
-    radar->workerMain();
-} catch (HttpTransaction<SocketType>* self) {
-    self->workerMain();
+} catch (Redirect& redir) {
+    if (redir.m_rstp_secure==NULL) {
+        redir.m_rstp_plain->workerMain();
+    } else {
+        redir.m_rstp_secure->workerMain();
+    }
 }
 
 // Create the http request headers and send them
@@ -196,7 +212,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     handleStatusCode(status_code);
 }
 
-// Handle an unexpected http status code
+// Handle an unexpected http status
 template <typename SocketType>
 void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
     unsigned int category = code/100;
@@ -226,7 +242,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
                 mptr_socket = SockTraits<SocketType>::transform();
             }
             // Throwout, to restart our workerMain
-            throw this;
+            throw Redirect(this);
         } else {
             RemoteDataHttp* rdx = dynamic_cast<RemoteDataHttp*>(rd);
 
@@ -237,7 +253,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
             *dynamic_cast<Transaction<antiSockType>*>(antiSock) =
                 *dynamic_cast<Transaction<SocketType>*>(&old);
 
-            throw antiSock;
+            throw Redirect(antiSock);
         }
         m_state = State::requesting;
     }

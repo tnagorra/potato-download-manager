@@ -87,6 +87,8 @@ class BadProtocolScheme : public Error {
         : Error("The protocol scheme "+scheme+" is not supported",o) {}
 
 };
+
+
 }; // end Namespace ex::download
 }; // end Namespace ex
 
