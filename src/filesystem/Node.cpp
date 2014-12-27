@@ -8,7 +8,7 @@
 // portable, and throws ex::Invalid if its not.
 void Node::assertClean(){
     if(m_name.string().length() <= 0)
-        Throw(ex::ZeroLength,"Node name");
+        Throw(ex::ZeroLength,"Path");
 
     m_name.make_preferred();
     m_name.normalize();
@@ -80,7 +80,7 @@ fs::path Node::filename() const {
 // Throws ex::Invalid
 fs::path Node::parentpath() const {
     if (!m_name.has_parent_path())
-        Throw(ex::Invalid,"Parent path");
+        return fs::path();
     return m_name.parent_path();
 }
 
@@ -116,7 +116,7 @@ uintmax_t Node::diskspace(Disk m) const {
         case CAPACITY: return sp.capacity;
         case AVAILABE: return sp.available;
         case FREE: return sp.free;
-        default: Throw(ex::Invalid,"Mode");
+        default: Throw(ex::InvalidMode);
     }
 }
 

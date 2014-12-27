@@ -13,7 +13,7 @@ void Directory::assertClean(){
        */
     Node::assertClean();
     if(exists() && what() != DIRECTORY)
-        Throw (ex::Not,"Directory",m_name.string());
+        Throw (ex::filesystem::NotDirectory,m_name.string());
 }
 
 // Constructor

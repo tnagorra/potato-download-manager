@@ -92,6 +92,15 @@ namespace ex{
                 */
             }
     };
+    // Class ex::Null
+    // Derives from Class Error and describes something as null.
+    class Null: public Error {
+
+        public:
+            // construct the error object, saying that pointer is null
+            Null(const std::string& name, const std::string& o)
+                : Error("\""+name+"\" pointer is null.", o) { }
+    };
 
     // Class ex::Invalid
     // Derives from Class Error and describes something as invalid.
@@ -110,6 +119,14 @@ namespace ex{
                 : Error("\""+type+"\" is invalid.", o) { }
     };
 
+    class InvalidMode: public Invalid {
+        public:
+            // construct the error object, saying that something of
+            // 'type' kind, with name 'name', is invalid.
+            InvalidMode( const std::string& o)
+                : Invalid("Mode", o) { }
+    };
+
     // Class ex::Not
     // Derives from Class Error and says that something is not
     // something else.
@@ -119,7 +136,7 @@ namespace ex{
             // construct the error object, saying that 'name' isn't
             // something of 'type' kind, when it should.
             Not(const std::string& type, const std::string& name,
-                   const std::string& o)
+                    const std::string& o)
                 : Error("\""+name+"\" is not a \""+type+"\".", o) { }
 
             // construct the error object, saying that some unnamed
@@ -127,6 +144,7 @@ namespace ex{
             Not(const std::string& type, const std::string& o)
                 : Error("Not a \""+type+"\".", o) { }
     };
+
 
     // Class ex::ZeroLength
     // Derives from Error and says that something has a zero length,

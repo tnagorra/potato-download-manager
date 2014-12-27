@@ -23,7 +23,7 @@ void File::assertClean() {
        */
     Node::assertClean();
     if(exists() && what() != FILE)
-        Throw(ex::Not,"File",m_name.string());
+        Throw(ex::filesystem::NotFile,m_name.string());
 }
 
 // Used to copy n bytes of data from input stream to m_stream
@@ -143,7 +143,7 @@ void File::close() {
 // Closes the opened file
 bool File::closeIfNot(State stat) {
     if (stat == CLOSED)
-        Throw(ex::Invalid,"Mode",m_name.string());
+        Throw(ex::InvalidMode);
     if (m_state == stat)
         return false;
     close();

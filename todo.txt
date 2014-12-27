@@ -5,6 +5,7 @@
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
+(B) Downgrade Options class, create new class for read/write INI files
 (B) Implement a GUI interface
 (B) Caputre cookie
 (B) Implement grabber
@@ -14,7 +15,6 @@
 (C) Don't use beenSplit, bytesTotal() +BasicTransaction
 (C) Use hifi algorithm for speed +BasicTransaction @speedWorker
 (C) Reset slow connections +Aggregate @worker
-(C) Use better derived exceptions
 (C) Add "transaction.date" in local.ini +LocalOptions @LocalOptions
 (C) Interactive UI design
 (C) Could use ncurses

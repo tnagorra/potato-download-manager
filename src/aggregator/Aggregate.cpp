@@ -41,10 +41,10 @@ Aggregate::Aggregate(const std::string& url, const std::string& heaven,
 
         // ie, the last file must not be with name "0"
         if(m_filesize==0)
-            Throw(ex::Error,"File size seems to be zero.");
+            Throw(ex::filesystem::ZeroSize);
         // ie, limiter file should be empty
         if( File(chunkName(m_filesize)).size() != 0 )
-            Throw(ex::Error,"Limiter file must have zero size.");
+            Throw(ex::filesystem::NonZeroSize,"limiter");
         // ie, '0' could be missing
         if(files[0]!="0")
             files.insert(files.begin(),"0");
@@ -165,7 +165,7 @@ RemoteData::Partial Aggregate::isSplittable() const {
         }
     }
     if(pcomplete)
-        Throw(ex::aggregate::NoBottleneck);
+        Throw(ex::aggregator::NoBottleneck);
     return RemoteData::Partial::unknown;
 }
 
@@ -198,7 +198,7 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 
     // If there is no bottleneck Chunk then throw exception
     if( it == m_chunk.size() ) {
-        Throw(ex::aggregate::NoBottleneck);
+        Throw(ex::aggregator::NoBottleneck);
     }
 
     // Now just get the real bottle neck
@@ -231,7 +231,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     uintmax_t midpoint = (upper+(lower+downloaded))/2;
 
     if( midpoint > upper || midpoint < lower)
-        Throw(ex::Error,"Midpoint lies outside of lower and upper bounds.");
+        Throw(ex::Invalid,"Midpoint");
 
     // Create a new cloned BasicTransaction instance and update values
     // Create a new File and Chunk objects
@@ -336,7 +336,7 @@ void Aggregate::splitter() try {
             split(bneck);
         }
     }
-} catch (ex::aggregate::NoBottleneck e) {
+} catch (ex::aggregator::NoBottleneck e) {
     // This isn't a bad thing, just signifies
     // that no further segmentation can occur.
     // It helps to get outside both of splitting
@@ -353,7 +353,7 @@ void Aggregate::merger() {
     // to the size of file downloaded then
     // do not merge the Chunks
     if( m_filesize != bytesTotal())
-        Throw(ex::Error,"Downloaded bytes is greater than total filesize.");
+        Throw(ex::Error,"Downloaded bytes greater than total filesize.");
 
     fancyprint("Merging!",NOTIFY);
 
