@@ -18,3 +18,4 @@
 (C) Add "transaction.date" in local.ini +LocalOptions @LocalOptions
 (C) Interactive UI design
 (C) Could use ncurses
+(C) take out "temp name" and "save name" outside of Aggregate

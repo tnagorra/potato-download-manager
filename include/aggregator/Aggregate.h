@@ -18,10 +18,11 @@
    When BasicTransaction is started and m_socket isn't empty,
    take it from m_socket and pop it
    if it is empty, create new inside the BasicTransaction
-*/
+   */
 
 class Aggregate{
     private:
+        //boost::mutex m_mutex;
         // store usable sockets for reuse
         //std::vector<Socket*> m_free_socket;
         // the working thread
@@ -70,6 +71,8 @@ class Aggregate{
 
         // Create a thread to start Chunk
         void start() {
+            //boost::mutex::scoped_lock l(m_mutex);
+
             // if m_thread represents a thread of execution
             // then don't start the thread again
             //if( m_thread.get_id() == boost::thread::id() )
@@ -82,25 +85,25 @@ class Aggregate{
         unsigned displayChunks();
 
         // Total data downloaded; includes already saved bytes
-        uintmax_t bytesDone() const;
+        uintmax_t bytesDone() ;
 
         // Total data that we are trying to download
-        uintmax_t bytesTotal() const;
+        uintmax_t bytesTotal();
 
         // Returns the total progress
-        double progress() const {
+        double progress() {
             if( m_filesize == 0 ) return 0;
             return 1.0*bytesDone()/m_filesize*100;
         }
 
         // Returns if all the Chunk in the vector are complete
-        bool isComplete() const;
+        bool isComplete() ;
 
         // Returns the total speed of the Chunks
-        double speed() const;
+        double speed() ;
 
         // Returns the total time Remaining
-        uintmax_t timeRemaining() const {
+        uintmax_t timeRemaining() {
             if(speed() <= .0000001 )
                 return std::numeric_limits<uintmax_t>::max();
             return bytesTotal() > bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
@@ -108,16 +111,17 @@ class Aggregate{
 
         // Returns the number of active BasicTransactions in the vector
         // active implies it has been started but isn't complete yet
-        unsigned activeChunks() const;
+        unsigned activeChunks() ;
 
         // Returns the number of total BasicTransactions in the vector
-        inline unsigned totalChunks() const {
+        inline unsigned totalChunks() {
             return m_chunk.size();
         }
 
-        inline bool hasFailed() const {
+        inline bool hasFailed() {
             return m_failed;
         }
+
     private:
         // Runs after start() in a thread
         void worker();
@@ -135,25 +139,29 @@ class Aggregate{
         void joinChunks();
 
         // Returns if any of the Chunk is splittable
-        RemoteData::Partial isSplittable() const;
+        RemoteData::Partial isSplittable() ;
 
         // Returns if all the BasicTransactions are downloading something
-        bool isSplitReady() const;
+        bool isSplitReady();
 
         // Returns the index of bottleneck Chunk
-        std::vector<Chunk*>::size_type bottleNeck() const;
+        std::vector<Chunk*>::size_type bottleNeck() ;
 
         // Split a Chunk and insert new Chunk after it
         void split(std::vector<Chunk*>::size_type split_index);
 
         // Returns name of the Chunk with starting byte num
-        inline std::string chunkName(uintmax_t num) const {
+        inline std::string chunkName(uintmax_t num) {
             // Choice of "/" or "\" is taken care of inside class File
             return m_hashedUrl+"/"+std::to_string(num);
         }
 
+        inline std::string tempName(){
+            return m_hashedUrl+"/tmp";
+        }
+
         // Returns a pretty name
-        inline std::string prettyName() const {
+        inline std::string prettyName() {
             return m_prettyUrl;
         }
 };

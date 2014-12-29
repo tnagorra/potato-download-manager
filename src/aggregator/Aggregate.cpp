@@ -28,7 +28,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& heaven,
     }
 
     // If no numeric files are found!
-    if( files.size()==0){
+    if( files.size()==0) {
 
         File* newfile = new File(chunkName(0));
         BasicTransaction* newtxn = BasicTransaction::factory(m_url);
@@ -76,10 +76,11 @@ void Aggregate::stop(){
 }
 
 unsigned Aggregate::displayChunks() {
+    int j;
     fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
 
-    int j = m_chunk.size();
-    for(auto i=0;i<j;i++){
+    j = m_chunk.size();
+    for(auto i=0;i<m_chunk.size();i++){
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
         uintmax_t down= m_chunk[i]->txn()->range().lb()+m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
@@ -106,21 +107,21 @@ unsigned Aggregate::displayChunks() {
 }
 
 
-uintmax_t Aggregate::bytesDone() const {
+uintmax_t Aggregate::bytesDone() {
     uintmax_t bytes = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         bytes += (*it)->bytesDone();
     return bytes;
 }
 
-uintmax_t Aggregate::bytesTotal() const {
+uintmax_t Aggregate::bytesTotal(){
     uintmax_t bytes = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         bytes += (*it)->bytesTotal();
     return bytes;
 }
 
-bool Aggregate::isComplete() const {
+bool Aggregate::isComplete() {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if( (*it)->txn()->isComplete() == false )
             return false;
@@ -128,14 +129,14 @@ bool Aggregate::isComplete() const {
     return true;
 }
 
-double Aggregate::speed() const {
+double Aggregate::speed() {
     double s = 0;
     for(auto it = m_chunk.begin();it != m_chunk.end();++it)
         s += (*it)->txn()->speed();
     return s;
 }
 
-unsigned Aggregate::activeChunks() const {
+unsigned Aggregate::activeChunks() {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if ((*it)->txn()->isRunning())
@@ -149,7 +150,7 @@ void Aggregate::joinChunks(){
         (*it)->txn()->join();
 }
 
-RemoteData::Partial Aggregate::isSplittable() const {
+RemoteData::Partial Aggregate::isSplittable() {
     // Iterate over all the transactions, if any of them has
     // started and it can be splitted then return yes
 
@@ -169,7 +170,8 @@ RemoteData::Partial Aggregate::isSplittable() const {
     return RemoteData::Partial::unknown;
 }
 
-bool Aggregate::isSplitReady() const {
+bool Aggregate::isSplitReady() {
+
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         // TODO Some hifi algorithm
         if ((*it)->txn()->speed()<=10 && !(*it)->txn()->isComplete())
@@ -178,7 +180,7 @@ bool Aggregate::isSplitReady() const {
     return true;
 }
 
-std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
+std::vector<Chunk*>::size_type Aggregate::bottleNeck() {
     // Initialize bottleneck such that it is the first chunk
     // which is splittable
     uintmax_t bbr = 0;
@@ -219,8 +221,8 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 
 // Split a Chunk and insert new Chunk after it
 void Aggregate::split(std::vector<Chunk*>::size_type split_index){
-    Chunk* cell = m_chunk[split_index];
 
+    Chunk* cell = m_chunk[split_index];
     cell->txn()->pause();
 
     // Calculate the split point ie midpoint
@@ -238,31 +240,29 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
     cell->txn()->updateRange(midpoint);
 
-    File* newfile = new File(chunkName(midpoint));
     Range newrange(upper,midpoint);
+    File* newfile = new File(chunkName(midpoint));
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
 
     // Insert newly created Chunk in the vector after
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
-    // HACK
-    boost::this_thread::sleep(boost::posix_time::millisec(100));
-
-    // Start those BasicTransactions
     newcell->txn()->start();
+
+    boost::this_thread::sleep(boost::posix_time::millisec(1000));
 
     cell->txn()->play();
 }
 
 void Aggregate::worker() try {
-    //fancyprint("STARTER",NOTIFY);
+    fancyprint("STARTER",NOTIFY);
     starter();
-    //fancyprint("SPLITTER",NOTIFY);
+    fancyprint("SPLITTER",NOTIFY);
     splitter();
-    //fancyprint("JOIN ALL",NOTIFY);
+    fancyprint("JOIN ALL",NOTIFY);
     joinChunks();
-    //fancyprint("MERGER",NOTIFY);
+    fancyprint("MERGER",NOTIFY);
     merger();
 } catch ( ex::Error e ) {
     m_failed = true;
@@ -274,7 +274,8 @@ void Aggregate::starter() {
 
     // If there is only one chunk then it is the first
     // download chunk so infomation must be gathered
-    if(m_chunk.size()==1){
+
+    if(m_filesize==0) {
 
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
@@ -285,6 +286,8 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
+
+
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -296,15 +299,16 @@ void Aggregate::starter() {
 
         // Create a limiter file
         File limiter(chunkName(m_filesize));
+
         limiter.write();
 
     } else {
-
         // Start all the Chunks
         // They should be started at last
         for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
             (*it)->txn()->start();
     }
+
 }
 
 void Aggregate::splitter() try {
@@ -328,6 +332,7 @@ void Aggregate::splitter() try {
 
         // Get the bottle neck and split
         //print( activeChunks() << " " << m_chunks);
+
         if(activeChunks() < m_chunks) {
             std::vector<Chunk*>::size_type bneck = bottleNeck();
 
@@ -352,19 +357,22 @@ void Aggregate::merger() {
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
+
     if( m_filesize != bytesTotal())
         Throw(ex::Error,"Downloaded bytes greater than total filesize.");
 
     fancyprint("Merging!",NOTIFY);
 
-    File merged(prettyName());
-    merged.write(Node::NEW);
-    // Append the content to "merged" and remove
+    File tmp(tempName());
+    tmp.write(Node::FORCE);
+
+    // Append the content to "tmp"
     for(unsigned i=0; i < m_chunk.size(); i++){
         std::cout << i+1  << " of " << m_chunk.size() <<std::endl;
-        merged.append(*(m_chunk[i]->file()));
+        tmp.append(*(m_chunk[i]->file()));
         std::cout << DELETE;
     }
+    tmp.move(prettyName(),Node::NEW);
 
     std::cout << DELETE;
     fancyprint("Merge Complete!",WARNING);

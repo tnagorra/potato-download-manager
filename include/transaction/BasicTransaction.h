@@ -8,7 +8,8 @@
 #include <istream>
 #include <limits>
 
-#include <boost/thread.hpp>
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
 #include <boost/asio.hpp>
 #include <boost/function.hpp>
 
