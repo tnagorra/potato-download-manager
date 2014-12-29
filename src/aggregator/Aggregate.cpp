@@ -235,10 +235,9 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     if( midpoint > upper || midpoint < lower)
         Throw(ex::Invalid,"Midpoint");
 
-    // Create a new cloned BasicTransaction instance and update values
-    // Create a new File and Chunk objects
-
-    cell->txn()->updateRange(midpoint);
+    // Update the upper byte of the byte range.
+    // no bytes beyond a certain point.
+    cell->txn()->range().ub(midpoint);
 
     Range newrange(upper,midpoint);
     File* newfile = new File(chunkName(midpoint));
@@ -253,6 +252,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     boost::this_thread::sleep(boost::posix_time::millisec(1000));
 
     cell->txn()->play();
+
 }
 
 void Aggregate::worker() try {

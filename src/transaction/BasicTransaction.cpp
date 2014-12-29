@@ -102,22 +102,6 @@ void BasicTransaction::join() const {
     mptr_speedThread->join();
 }
 
-// Update the upper byte of the byte range. updateRange is
-// called when you decide you no longer decide any more bytes
-// beyond a certain point. Used by Aggregator for splitting.
- void BasicTransaction::updateRange(uintmax_t u) {
-     /*
-    if (!m_range.uninitialized()) {
-        if (u<m_range.ub())
-            m_beenSplit = true;
-    } else {
-        if (u<m_bytesTotal)
-            m_beenSplit = true;
-    }
-    */
-    m_range.update(u,m_range.lb());
-    //m_bytesTotal = m_range.size();
-}
 
 // Getters and setters for the data members.
 
@@ -158,6 +142,10 @@ bool BasicTransaction::isComplete() const {
 
 // Get the byterange
 const Range& BasicTransaction::range() const {
+    return m_range;
+}
+
+Range& BasicTransaction::range() {
     return m_range;
 }
 

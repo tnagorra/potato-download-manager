@@ -29,6 +29,12 @@ class Range {
         // Throws ex::Invalid
         void update(uintmax_t ub,uintmax_t lb);
 
+        void check();
+
+        uintmax_t ub(uintmax_t u);
+
+        uintmax_t lb(uintmax_t l);
+
         // Returns the size of the range
         uintmax_t size() const;
 

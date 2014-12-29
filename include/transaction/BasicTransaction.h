@@ -131,11 +131,6 @@ class BasicTransaction {
         // Block until the download is finished or fails.
         void join() const;
 
-        // Update the upper byte of the byte range. updateRange is
-        // called when you decide you no longer decide any more bytes
-        // beyond a certain point. Used by Aggregator for splitting.
-        void updateRange(uintmax_t u);
-
         // Getters and setters for the data members.
 
         // Get state as BasicTransaction::State and as a string
@@ -147,6 +142,8 @@ class BasicTransaction {
 
         // Get the byterange
         const Range& range() const;
+
+        Range& range() ;
 
         // Get the remotedata reference
         const RemoteData& remoteData() const;

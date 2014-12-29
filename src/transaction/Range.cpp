@@ -10,18 +10,34 @@ Range::Range(uintmax_t ub, uintmax_t lb) {
     update(ub,lb);
 }
 
+void Range::check(){
+    if(m_ub < m_lb)
+        Throw(ex::Invalid, "Range", "("+std::to_string(m_ub)+","+std::to_string(m_lb)+")" );
+}
+
 // Updates the range value
 // Throws ex::Invalid
 void Range::update(uintmax_t ub,uintmax_t lb){
-    if( ub < lb)
-        Throw(ex::Invalid, "Range", "("+std::to_string(ub)+","+std::to_string(lb)+")" );
     m_lb = lb;
     m_ub = ub;
+    check();
 }
 
 // Returns the size of the range
 uintmax_t Range::size() const {
     return m_ub-m_lb;
+}
+
+uintmax_t Range::ub(uintmax_t u){
+    m_ub = u;
+    check();
+    return m_ub;
+}
+
+uintmax_t Range::lb(uintmax_t l){
+    m_lb = l;
+    check();
+    return m_lb;
 }
 
 // Returns the lower bound of the range
