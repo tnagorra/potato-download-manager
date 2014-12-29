@@ -269,6 +269,9 @@ void BasicTransaction::speedWorker() {
         m_hifiSpeed= (m_hifiSpeed*per+m_instSpeed)/(per+1);
         no++;
     }
+    m_instSpeed = 0;
+    m_avgSpeed = 0;
+    m_hifiSpeed = 0;
 }
 
 // End file BasicTransaction.cpp
