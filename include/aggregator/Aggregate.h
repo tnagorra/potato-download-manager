@@ -22,17 +22,12 @@
 
 class Aggregate{
     private:
-        //boost::mutex m_mutex;
         // store usable sockets for reuse
         //std::vector<Socket*> m_free_socket;
         // the working thread
         boost::thread* m_thread;
         // vector to save the chunks
         std::vector<Chunk*> m_chunk;
-        // the save folder of the file
-        std::string m_heaven;
-        // the temporary folder of the file
-        std::string m_purgatory;
         // the url of the file
         std::string m_url;
         // the hash of url
@@ -71,8 +66,6 @@ class Aggregate{
 
         // Create a thread to start Chunk
         void start() {
-            //boost::mutex::scoped_lock l(m_mutex);
-
             // if m_thread represents a thread of execution
             // then don't start the thread again
             //if( m_thread.get_id() == boost::thread::id() )
@@ -104,7 +97,8 @@ class Aggregate{
 
         // Returns the total time Remaining
         uintmax_t timeRemaining() {
-            if(speed() <= .0000001 )
+            // .99 is the precission limit
+            if(speed() <= .99 )
                 return std::numeric_limits<uintmax_t>::max();
             return bytesTotal() > bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
         }
@@ -118,6 +112,7 @@ class Aggregate{
             return m_chunk.size();
         }
 
+        // Return if the transaction has failed or not
         inline bool hasFailed() {
             return m_failed;
         }
@@ -152,10 +147,10 @@ class Aggregate{
 
         // Returns name of the Chunk with starting byte num
         inline std::string chunkName(uintmax_t num) {
-            // Choice of "/" or "\" is taken care of inside class File
             return m_hashedUrl+"/"+std::to_string(num);
         }
 
+        // Returns the temporary name
         inline std::string tempName(){
             return m_hashedUrl+"/tmp";
         }

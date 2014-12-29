@@ -1,20 +1,18 @@
 # Todo
 
 (A) Implement Mutexes
-(A) Take care of the HACK +Aggregate @split
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
 
 (B) Downgrade Options class, create new class for read/write INI files
-(B) Interactive UI design
-(B) Implement wait, retry, speed limit +BasicTransaction
-(B) Implement a GUI interface
-(B) Caputre cookie
-(B) Implement grabber
 (B) Reusing Sockets +Aggregate @Aggregate
 (B) Reset slow connections +Aggregate @worker
+(B) Implement wait, retry, speed limit +BasicTransaction
+(B) Interactive CLI design
+(B) Implement a GUI interface
+(B) Capture cookie
+(B) Implement grabber
 
 (C) Use hifi algorithm for speed +BasicTransaction @speedWorker
 (C) Add "transaction.date" in local.ini +LocalOptions @LocalOptions
-(C) take out "temp name" and "save name" outside of Aggregate

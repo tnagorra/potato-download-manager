@@ -2,20 +2,14 @@
 
 Aggregate::Aggregate(const std::string& url, const std::string& heaven,
         const std::string& purgatory, unsigned txns,uintmax_t split):
-    m_chunks(txns), m_url(url), m_splittable_size(split),m_purgatory(purgatory),
-    m_filesize(0), m_heaven(heaven), m_failed(false), m_thread(NULL)
+    m_chunks(txns), m_url(url), m_filesize(0), m_failed(false), m_thread(NULL),
+    m_splittable_size( (split>100*1024) ? split : 100*1024),
+    m_hashedUrl(purgatory+"/"+md5(m_url)), m_prettyUrl(heaven+"/"+prettify(m_url))
 {
-    // Check to ensure m_splittable_size is not less than 100 KiB
-    if(m_splittable_size < 100*1024)
-        m_splittable_size = 100*1024;
-    m_hashedUrl = m_purgatory+"/"+md5(m_url);
-    m_prettyUrl = m_heaven+"/"+prettify(m_url);
-
     // Directory session is used to find out about
     // previous download information
-    Directory session(m_hashedUrl);
     std::vector<std::string> files;
-
+    Directory session(m_hashedUrl);
     if ( session.exists() && !session.isEmpty() ) {
         files = session.list(Node::FILE,true);
         // Remove non-numeric names
@@ -27,9 +21,10 @@ Aggregate::Aggregate(const std::string& url, const std::string& heaven,
         sort(files.begin(),files.end(),numerically);
     }
 
-    // If no numeric files are found!
     if( files.size()==0) {
 
+        // If no numeric files are found!
+        // It means there is no previous session
         File* newfile = new File(chunkName(0));
         BasicTransaction* newtxn = BasicTransaction::factory(m_url);
         Chunk* researcher = new Chunk(newtxn,newfile);
@@ -37,15 +32,15 @@ Aggregate::Aggregate(const std::string& url, const std::string& heaven,
 
     } else {
 
+        // Get the file size from the last file
         m_filesize = std::atoi(files.back().c_str());
-
-        // ie, the last file must not be with name "0"
+        // the last file must not be with name "0"
         if(m_filesize==0)
             Throw(ex::filesystem::ZeroSize);
-        // ie, limiter file should be empty
+        // limiter file should be of zero size
         if( File(chunkName(m_filesize)).size() != 0 )
             Throw(ex::filesystem::NonZeroSize,"limiter");
-        // ie, '0' could be missing
+        // '0' could be missing, error correction
         if(files[0]!="0")
             files.insert(files.begin(),"0");
 
@@ -62,6 +57,8 @@ Aggregate::Aggregate(const std::string& url, const std::string& heaven,
 
 Aggregate::~Aggregate(){
     // Delete all Chunk and Socket
+    stop();
+
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         delete (*it);
     if(m_thread)
@@ -76,10 +73,9 @@ void Aggregate::stop(){
 }
 
 unsigned Aggregate::displayChunks() {
-    int j;
     fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
 
-    j = m_chunk.size();
+    int j = m_chunk.size();
     for(auto i=0;i<m_chunk.size();i++){
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
         uintmax_t down= m_chunk[i]->txn()->range().lb()+m_chunk[i]->txn()->bytesDone();
@@ -154,19 +150,15 @@ RemoteData::Partial Aggregate::isSplittable() {
     // Iterate over all the transactions, if any of them has
     // started and it can be splitted then return yes
 
-    // Stores if all Chunks was complete
-    bool pcomplete = true;
+    // Stores if all Chunks were complete
     for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
         if(!(*it)->txn()->isComplete()){
             if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::no)
                 return RemoteData::Partial::no;
             else if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::yes)
                 return RemoteData::Partial::yes;
-            pcomplete = false;
         }
     }
-    if(pcomplete)
-        Throw(ex::aggregator::NoBottleneck);
     return RemoteData::Partial::unknown;
 }
 
@@ -235,23 +227,20 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     if( midpoint > upper || midpoint < lower)
         Throw(ex::Invalid,"Midpoint");
 
+    // Update the upper byte of the byte range.
+    // no bytes beyond a certain point.
+    cell->txn()->range().ub(midpoint);
+    cell->txn()->play();
 
     Range newrange(upper,midpoint);
     File* newfile = new File(chunkName(midpoint));
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
-    newcell->txn()->start();
 
     // Insert newly created Chunk in the vector after
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
-
-    // Update the upper byte of the byte range.
-    // no bytes beyond a certain point.
-    cell->txn()->range().ub(midpoint);
-    boost::this_thread::sleep(boost::posix_time::millisec(1000));
-    cell->txn()->play();
-
+    newcell->txn()->start();
 }
 
 void Aggregate::worker() try {
@@ -275,18 +264,14 @@ void Aggregate::starter() {
     // download chunk so infomation must be gathered
 
     if(m_filesize==0) {
-
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
-        // NOTE: No range is sent to the BasicTransaction
         Chunk* researcher = m_chunk[0];
         researcher->txn()->start();
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-
-
         while (researcher->txn()->state() < BasicTransaction::State::downloading)
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -298,7 +283,6 @@ void Aggregate::starter() {
 
         // Create a limiter file
         File limiter(chunkName(m_filesize));
-
         limiter.write();
 
     } else {
@@ -311,21 +295,19 @@ void Aggregate::starter() {
 }
 
 void Aggregate::splitter() try {
-
     // Check if any of the Chunk is splittable
-    while (true){
-        // Sleep
-        boost::this_thread::sleep(boost::posix_time::millisec(100));
-
-        RemoteData::Partial p = isSplittable();
-        if (p == RemoteData::Partial::yes)
-            break;
-        else if (p == RemoteData::Partial::no)
+    RemoteData::Partial p = RemoteData::Partial::unknown;
+    do{
+        if(isComplete())
             return;
-    }
+        boost::this_thread::sleep(boost::posix_time::millisec(100));
+        p = isSplittable();
+        if(p == RemoteData::Partial::no)
+            return;
+    } while (p != RemoteData::Partial::yes);
 
     // Loop while a bottleneck exists
-    while (true){
+    while (!isComplete()) {
         // Sleep
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
@@ -356,22 +338,20 @@ void Aggregate::merger() {
     // If total size downloaded isn't equal
     // to the size of file downloaded then
     // do not merge the Chunks
-
     if( m_filesize != bytesTotal())
         Throw(ex::Error,"Downloaded bytes greater than total filesize.");
 
+    fancyprint("Merging!",NOTIFY);
     File tmp(tempName());
     tmp.write(Node::FORCE);
-
+    // TODO try binary appends and storing to "tmp"
     // Append the content to "tmp"
     for(unsigned i=0; i < m_chunk.size(); i++){
-        std::cout << "Merging! " <<  i+1  << " of " << m_chunk.size() <<std::endl;
+        print(i+1 << " of " << m_chunk.size());
         tmp.append(*(m_chunk[i]->file()));
         std::cout << DELETE;
     }
-
     tmp.move(prettyName(),Node::NEW);
-
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
 
