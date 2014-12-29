@@ -5,6 +5,8 @@
 #define __CO_RANGE__
 #include<iostream>
 #include "common/ex.h"
+#include <boost/thread/thread.hpp>
+#include <boost/thread/mutex.hpp>
 
 // Class Range
 // Represents a range or chunk of the file being downloaded.
@@ -18,18 +20,23 @@ class Range {
     private:
         uintmax_t m_lb;
         uintmax_t m_ub;
+        mutable boost::shared_mutex m_mutex;
 
+
+        void check();
     public:
         // Constructor. (0,0) is the default, means
         // entire file.
         // Throws ex::Invalid
         Range(uintmax_t ub=0, uintmax_t lb=0);
 
+        Range(const Range& r);
+        void operator=(const Range& r);
+
         // Updates the range value
         // Throws ex::Invalid
         void update(uintmax_t ub,uintmax_t lb);
 
-        void check();
 
         uintmax_t ub(uintmax_t u);
 

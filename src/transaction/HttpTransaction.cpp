@@ -202,7 +202,8 @@ void HttpTransaction<SocketType>::receiveHeaders() {
         else if (status_code==206)
             mptr_rdata->canPartial(RemoteData::Partial::yes);
     }
-    m_range.update(m_range.lb()+bytesTotal,m_range.lb());
+    if(m_range.uninitialized())
+        m_range.update(bytesTotal,0);
 
     // As a last resort, if the size of the incoming stream cannot
     // be determined, we set it to the largest possible value

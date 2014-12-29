@@ -246,10 +246,10 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
 
-    boost::this_thread::sleep(boost::posix_time::millisec(1000));
     // Update the upper byte of the byte range.
     // no bytes beyond a certain point.
     cell->txn()->range().ub(midpoint);
+    boost::this_thread::sleep(boost::posix_time::millisec(1000));
     cell->txn()->play();
 
 }
