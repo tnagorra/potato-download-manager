@@ -87,11 +87,11 @@ unsigned Aggregate::displayChunks() const {
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
         std::string myColor;
 
-        if(m_chunk[i]->txn()->state() == BasicTransaction::State::complete)
+        if(m_chunk[i]->txn()->isComplete())
             myColor = SUCCESS;
-        else if( m_chunk[i]->txn()->state() == BasicTransaction::State::failed)
+        else if(m_chunk[i]->txn()->hasFailed())
             myColor = ERROR;
-        else if( m_chunk[i]->txn()->state() == BasicTransaction::State::downloading)
+        else if(m_chunk[i]->txn()->isDownloading())
             myColor = WARNING;
         else
             myColor = NOTIFY;
@@ -124,26 +124,25 @@ uintmax_t Aggregate::bytesTotal() const {
 
 bool Aggregate::isComplete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if( (*it)->txn()->isComplete() == false )
+        if(!(*it)->txn()->isComplete())
             return false;
     }
     return true;
 }
 
 /*
-double Aggregate::speed() {
-    double s = 0;
-    for(auto it = m_chunk.begin();it != m_chunk.end();++it)
-        s += (*it)->txn()->speed();
-    return s;
-}
-*/
+   double Aggregate::speed() {
+   double s = 0;
+   for(auto it = m_chunk.begin();it != m_chunk.end();++it)
+   s += (*it)->txn()->speed();
+   return s;
+   }
+   */
 
 unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if((*it)->txn()->state()!=BasicTransaction::State::idle &&
-                (*it)->txn()->state()!=BasicTransaction::State::complete )
+        if( (*it)->txn()->isRunning())
             count++;
     }
     return count;
@@ -160,12 +159,10 @@ RemoteData::Partial Aggregate::isSplittable() const {
 
     // Stores if all Chunks were complete
     for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
-        if(!(*it)->txn()->isComplete()){
-            if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::no)
-                return RemoteData::Partial::no;
-            else if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::yes)
-                return RemoteData::Partial::yes;
-        }
+        if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::no)
+            return RemoteData::Partial::no;
+        else if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::yes)
+            return RemoteData::Partial::yes;
     }
     return RemoteData::Partial::unknown;
 }
@@ -174,8 +171,7 @@ bool Aggregate::isSplitReady() const {
     // It is split ready if inactive count is less than 4
     unsigned count=0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if((*it)->txn()->state()!=BasicTransaction::State::downloading &&
-                (*it)->txn()->state()!=BasicTransaction::State::complete )
+        if((*it)->txn()->isDownloading())
             count++;
         if(count > 3)
             return false;
@@ -283,10 +279,12 @@ void Aggregate::starter() {
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
         // and further process can be started
-        while (researcher->txn()->state() < BasicTransaction::State::downloading)
+        while( !researcher->txn()->isDownloading() &&
+                !researcher->txn()->isComplete() &&
+                !researcher->txn()->hasFailed() )
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
-        if(researcher->txn()->state() == BasicTransaction::State::failed)
+        if(researcher->txn()->hasFailed())
             Throw(ex::Error,"Starting transaction failed.");
 
         // Initialize m_filesize
@@ -323,8 +321,6 @@ void Aggregate::splitter() try {
         boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         // Get the bottle neck and split
-        //print( activeChunks() << " " << m_chunks);
-
         if(activeChunks() < m_chunks && isSplitReady() ) {
             // NOTE: Removing this showed the synronization bug
             std::vector<Chunk*>::size_type bneck = bottleNeck();

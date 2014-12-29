@@ -109,6 +109,7 @@ BasicTransaction::state() const {
     return m_state;
 }
 
+
 // and as a string
 std::string BasicTransaction::stateString () const{
     switch(m_state) {
@@ -133,9 +134,23 @@ std::string BasicTransaction::stateString () const{
     }
 }
 
+// Returns if download is started (success or failure)
+bool BasicTransaction::isDownloading() const {
+    return state()==State::downloading;
+}
+
+// Returns if download is started (success or failure)
+bool BasicTransaction::isRunning() const {
+    return state()!=State::idle && !isComplete();
+}
+
 // Returns if complete (success or failure)
 bool BasicTransaction::isComplete() const {
-    return state()==State::complete || state()==State::failed;
+    return state()==State::complete;
+}
+
+bool BasicTransaction::hasFailed() const {
+    return state()==State::failed;
 }
 
 // Get the byterange

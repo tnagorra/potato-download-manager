@@ -137,8 +137,15 @@ class BasicTransaction {
         State state() const;
         std::string stateString() const;
 
+        bool isRunning() const;
+
+        bool isDownloading() const;
+
         // Returns if complete (success or failure)
         bool isComplete() const;
+
+        // Return if transaction has failed
+        bool hasFailed() const;
 
         // Get the byterange
         const Range& range() const;
