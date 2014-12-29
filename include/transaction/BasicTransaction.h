@@ -162,10 +162,6 @@ class BasicTransaction {
         uintmax_t bytesDone() const;
         uintmax_t bytesRemaining() const;
 
-        // Return if the download is running, i.e. is not idle and
-        // not complete/failed
-        bool isRunning() const;
-
         // Getters for getting speed related values. All values
         // are returned in bytes per second.
         double avgSpeed() const;    // Average speed

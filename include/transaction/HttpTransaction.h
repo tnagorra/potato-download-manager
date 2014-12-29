@@ -43,7 +43,6 @@ class HttpTransaction : public Transaction<SocketType> {
     using Transaction<SocketType>::connectHost;
     using Transaction<SocketType>::resolveHost;
     using Transaction<SocketType>::resolveHostMain;
-    using Transaction<SocketType>::isRunning;
 
     // Private data members
     private:

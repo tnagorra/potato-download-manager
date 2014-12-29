@@ -13,7 +13,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range)
     m_bytesDone(0),
     //m_beenSplit(false),
     m_pauseRequest(false)
-     {
+{
 
     mptr_response = new boost::asio::streambuf;
     // If the range has a zero size but is not an unitialized range,
@@ -94,12 +94,10 @@ void BasicTransaction::play() {
 
 // Block until the download is finished or fails.
 void BasicTransaction::join() const {
-    if (m_state==State::idle || isComplete())
-        return;
-    if (mptr_thread==NULL || mptr_speedThread==NULL)
-        return;
-    mptr_thread->join();
-    mptr_speedThread->join();
+    if(mptr_thread)
+        mptr_thread->join();
+    if(mptr_speedThread)
+        mptr_speedThread->join();
 }
 
 
@@ -107,7 +105,7 @@ void BasicTransaction::join() const {
 
 // Get state as BasicTransaction::State
 typename BasicTransaction::State
-    BasicTransaction::state() const {
+BasicTransaction::state() const {
     return m_state;
 }
 
@@ -193,12 +191,6 @@ uintmax_t BasicTransaction::bytesTotal() const {
 uintmax_t BasicTransaction::bytesRemaining() const {
     return bytesTotal()-m_bytesDone;
     //return m_bytesTotal-m_bytesDone;
-}
-
-// Return if the download is running, i.e. is not idle and
-// not complete/failed
-bool BasicTransaction::isRunning() const {
-    return (m_state!=State::idle && !isComplete());
 }
 
 // Speed observation functions

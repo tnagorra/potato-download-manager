@@ -142,7 +142,8 @@ double Aggregate::speed() {
 unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if ((*it)->txn()->isRunning())
+        if((*it)->txn()->state()!=BasicTransaction::State::idle &&
+                (*it)->txn()->state()!=BasicTransaction::State::complete )
             count++;
     }
     return count;
@@ -170,10 +171,13 @@ RemoteData::Partial Aggregate::isSplittable() const {
 }
 
 bool Aggregate::isSplitReady() const {
-
+    // It is split ready if inactive count is less than 4
+    unsigned count=0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        // TODO Some hifi algorithm
-        if ((*it)->txn()->speed()<=10 && !(*it)->txn()->isComplete())
+        if((*it)->txn()->state()!=BasicTransaction::State::downloading &&
+                (*it)->txn()->state()!=BasicTransaction::State::complete )
+            count++;
+        if(count > 3)
             return false;
     }
     return true;
@@ -321,12 +325,12 @@ void Aggregate::splitter() try {
         // Get the bottle neck and split
         //print( activeChunks() << " " << m_chunks);
 
-        if(activeChunks() < m_chunks) {
-            std::vector<Chunk*>::size_type bneck = bottleNeck();
-
+        if(activeChunks() < m_chunks && isSplitReady() ) {
             // NOTE: Removing this showed the synronization bug
-            //if(isSplitReady())
+            std::vector<Chunk*>::size_type bneck = bottleNeck();
             split(bneck);
+            // Just sleep for a while
+            boost::this_thread::sleep(boost::posix_time::millisec(1000));
         }
     }
 } catch (ex::aggregator::NoBottleneck e) {

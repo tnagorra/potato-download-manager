@@ -45,10 +45,10 @@ void HttpTransaction<SocketType>::start() {
 // Stop the download if it is running.
 template <typename SocketType>
 void HttpTransaction<SocketType>::stop() {
-    if (isRunning()) {
+    if(this->mptr_thread && this->mptr_thread->joinable())
         this->mptr_thread->interrupt();
+    if(this->mptr_speedThread && this->mptr_speedThread->joinable())
         this->mptr_speedThread->interrupt();
-    }
 }
 
 // workerMain() is the entry point of the download Thread
