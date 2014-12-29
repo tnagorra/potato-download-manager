@@ -284,7 +284,7 @@ void HttpTransaction<SocketType>::writeOut() {
                     boost::posix_time::milliseconds(200));
         m_pauseRequest = false;
 
-        if (bufBytes+m_bytesDone>=m_range.size()) {
+        if (bufBytes+m_bytesDone >= m_range.size()) {
             if (m_bytesDone>m_range.size())
                 Throw(ex::Not, "recoverable situation");
             m_reader(writeStream,m_range.size()-m_bytesDone);

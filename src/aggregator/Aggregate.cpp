@@ -235,22 +235,21 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     if( midpoint > upper || midpoint < lower)
         Throw(ex::Invalid,"Midpoint");
 
-    // Update the upper byte of the byte range.
-    // no bytes beyond a certain point.
-    cell->txn()->range().ub(midpoint);
 
     Range newrange(upper,midpoint);
     File* newfile = new File(chunkName(midpoint));
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     Chunk* newcell = new Chunk(newtxn,newfile);
+    newcell->txn()->start();
 
     // Insert newly created Chunk in the vector after
     m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
 
-    newcell->txn()->start();
 
     boost::this_thread::sleep(boost::posix_time::millisec(1000));
-
+    // Update the upper byte of the byte range.
+    // no bytes beyond a certain point.
+    cell->txn()->range().ub(midpoint);
     cell->txn()->play();
 
 }

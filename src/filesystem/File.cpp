@@ -41,10 +41,10 @@ void File::streamCopy(std::istream& in, uintmax_t count) {
         }
         in.read(buffer, count);
         m_stream.write(buffer, count);
+        // TODO temporary as this will be called at last
+        // flushing will do good
+        m_stream.flush();
     }
-    // TODO maybe the flush isn't required
-    // if m_stream is deleted correctly
-    //m_stream.flush();
 }
 
 // Constructor of the object.
