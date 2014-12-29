@@ -3,8 +3,9 @@
 Aggregate::Aggregate(const std::string& url, const std::string& heaven,
         const std::string& purgatory, unsigned txns,uintmax_t split):
     m_chunks(txns), m_url(url), m_filesize(0), m_failed(false), m_thread(NULL),
-    m_splittable_size( (split>100*1024) ? split : 100*1024),
-    m_hashedUrl(purgatory+"/"+md5(m_url)), m_prettyUrl(heaven+"/"+prettify(m_url))
+    m_splittable_size( (split>100*1024) ? split : 100*1024), m_speed_thread(NULL),
+    m_hashedUrl(purgatory+"/"+md5(m_url)), m_prettyUrl(heaven+"/"+prettify(m_url)),
+    m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0)
 {
     // Directory session is used to find out about
     // previous download information
@@ -63,6 +64,8 @@ Aggregate::~Aggregate(){
         delete (*it);
     if(m_thread)
         delete m_thread;
+    if(m_speed_thread)
+        delete m_speed_thread;
 }
 
 void Aggregate::stop(){
@@ -70,9 +73,11 @@ void Aggregate::stop(){
         (*it)->txn()->stop();
     if(m_thread && m_thread->joinable())
         m_thread->interrupt();
+    if(m_speed_thread && m_speed_thread->joinable())
+        m_speed_thread->interrupt();
 }
 
-unsigned Aggregate::displayChunks() {
+unsigned Aggregate::displayChunks() const {
     fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
 
     int j = m_chunk.size();
@@ -103,21 +108,21 @@ unsigned Aggregate::displayChunks() {
 }
 
 
-uintmax_t Aggregate::bytesDone() {
+uintmax_t Aggregate::bytesDone() const {
     uintmax_t bytes = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         bytes += (*it)->bytesDone();
     return bytes;
 }
 
-uintmax_t Aggregate::bytesTotal(){
+uintmax_t Aggregate::bytesTotal() const {
     uintmax_t bytes = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         bytes += (*it)->bytesTotal();
     return bytes;
 }
 
-bool Aggregate::isComplete() {
+bool Aggregate::isComplete() const {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if( (*it)->txn()->isComplete() == false )
             return false;
@@ -125,14 +130,16 @@ bool Aggregate::isComplete() {
     return true;
 }
 
+/*
 double Aggregate::speed() {
     double s = 0;
     for(auto it = m_chunk.begin();it != m_chunk.end();++it)
         s += (*it)->txn()->speed();
     return s;
 }
+*/
 
-unsigned Aggregate::activeChunks() {
+unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         if ((*it)->txn()->isRunning())
@@ -141,12 +148,12 @@ unsigned Aggregate::activeChunks() {
     return count;
 }
 
-void Aggregate::joinChunks(){
+void Aggregate::joinChunks() {
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         (*it)->txn()->join();
 }
 
-RemoteData::Partial Aggregate::isSplittable() {
+RemoteData::Partial Aggregate::isSplittable() const {
     // Iterate over all the transactions, if any of them has
     // started and it can be splitted then return yes
 
@@ -162,7 +169,7 @@ RemoteData::Partial Aggregate::isSplittable() {
     return RemoteData::Partial::unknown;
 }
 
-bool Aggregate::isSplitReady() {
+bool Aggregate::isSplitReady() const {
 
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
         // TODO Some hifi algorithm
@@ -172,7 +179,7 @@ bool Aggregate::isSplitReady() {
     return true;
 }
 
-std::vector<Chunk*>::size_type Aggregate::bottleNeck() {
+std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     // Initialize bottleneck such that it is the first chunk
     // which is splittable
     uintmax_t bbr = 0;
@@ -356,4 +363,30 @@ void Aggregate::merger() {
     Directory(m_hashedUrl).remove(Node::FORCE);
 
     fancyprint("Complete!",SUCCESS);
+}
+
+double Aggregate::aggregateSpeed() const {
+    double s = 0;
+    for(auto it = m_chunk.begin();it != m_chunk.end();++it)
+        s += (*it)->txn()->speed();
+    return s;
+}
+
+void Aggregate::speed_worker() {
+    const double refresh = 0.1;
+    const unsigned persistance = 1/refresh;
+    uintmax_t no = 0;
+
+    while (!isComplete() && !hasFailed()){
+        boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
+        m_instSpeed = aggregateSpeed();
+        m_avgSpeed= (m_avgSpeed*no+m_instSpeed)/(no+1);
+        int per = (no < persistance)?no:persistance;
+        m_hifiSpeed= (m_hifiSpeed*per+m_instSpeed)/(per+1);
+        no++;
+    }
+
+    m_instSpeed = 0;
+    m_avgSpeed = 0;
+    m_hifiSpeed = 0;
 }

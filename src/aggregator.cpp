@@ -95,7 +95,7 @@ int main(int ac, char* av[]) try {
         }
         agg.join();
 
-        fancyprint("Why am I still here?",NOTIFY);
+        fancyprint("I don't know why but I wait here?",NOTIFY);
     }
     return 0;
 } catch (std::exception& ex){
