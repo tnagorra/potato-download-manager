@@ -182,11 +182,11 @@ void HttpTransaction<SocketType>::receiveHeaders() {
         //print(header);
     }
 
+    uintmax_t bytesTotal = 0;
     // Determine the size of the response body
     if (m_respHeaders.count("content-length")>0) {
-        m_bytesTotal = boost::lexical_cast<uintmax_t>(
+        bytesTotal = boost::lexical_cast<uintmax_t>(
                 m_respHeaders["content-length"]);
-        m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
     }
 
     // Find out whether byterange requests are supported
@@ -197,18 +197,19 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     } else if (!m_range.uninitialized()) {
         if (m_respHeaders.count("content-length")>0)
             mptr_rdata->canPartial(
-                (m_bytesTotal==m_range.size())?
-                RemoteData::Partial::yes : RemoteData::Partial::no);
+                    (bytesTotal==m_range.size())?
+                    RemoteData::Partial::yes : RemoteData::Partial::no);
         else if (status_code==206)
             mptr_rdata->canPartial(RemoteData::Partial::yes);
     }
+    m_range.update(m_range.lb()+bytesTotal,m_range.lb());
 
     // As a last resort, if the size of the incoming stream cannot
     // be determined, we set it to the largest possible value
     /*if (m_respHeaders.count("content-length")==0 && m_range.uninitialized()) {
-        m_bytesTotal = std::numeric_limits<uintmax_t>::max()/4);
-        m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
-    }*/
+      m_bytesTotal = std::numeric_limits<uintmax_t>::max()/4);
+      m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
+      }*/
     handleStatusCode(status_code);
 }
 
@@ -274,7 +275,7 @@ void HttpTransaction<SocketType>::writeOut() {
 
     boost::system::error_code error;
     while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
-                boost::asio::transfer_at_least(1), error))) {
+                    boost::asio::transfer_at_least(1), error))) {
 
         // This blocks prevents writing to a file
         // when splitting is performed
@@ -283,11 +284,11 @@ void HttpTransaction<SocketType>::writeOut() {
                     boost::posix_time::milliseconds(200));
         m_pauseRequest = false;
 
-        if (bufBytes+m_bytesDone>=m_bytesTotal) {
-            if (m_bytesDone>m_bytesTotal)
+        if (bufBytes+m_bytesDone>=m_range.size()) {
+            if (m_bytesDone>m_range.size())
                 Throw(ex::Not, "recoverable situation");
-            m_reader(writeStream,m_bytesTotal-m_bytesDone);
-            m_bytesDone = m_bytesTotal;
+            m_reader(writeStream,m_range.size()-m_bytesDone);
+            m_bytesDone = m_range.size();
             error=boost::asio::error::eof;
             break;
         } else
@@ -332,7 +333,7 @@ void HttpTransaction<SocketType>::clearProgress() {
     m_state = State::idle;
     m_bytesDone = 0;
     m_statusLine = "";
-    m_beenSplit = false;
+    //m_beenSplit = false;
     m_respHeaders = std::map<std::string,std::string>();
     delete mptr_response; mptr_response = new boost::asio::streambuf;
 }

@@ -9,9 +9,9 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range)
     mptr_thread(NULL),
     mptr_speedThread(NULL),
     m_state(State::idle),
-    m_bytesTotal(range.ub()-range.lb()),
+    //m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
-    m_beenSplit(false),
+    //m_beenSplit(false),
     m_pauseRequest(false)
      {
 
@@ -106,6 +106,7 @@ void BasicTransaction::join() const {
 // called when you decide you no longer decide any more bytes
 // beyond a certain point. Used by Aggregator for splitting.
  void BasicTransaction::updateRange(uintmax_t u) {
+     /*
     if (!m_range.uninitialized()) {
         if (u<m_range.ub())
             m_beenSplit = true;
@@ -113,8 +114,9 @@ void BasicTransaction::join() const {
         if (u<m_bytesTotal)
             m_beenSplit = true;
     }
+    */
     m_range.update(u,m_range.lb());
-    m_bytesTotal = m_range.size();
+    //m_bytesTotal = m_range.size();
 }
 
 // Getters and setters for the data members.
@@ -195,12 +197,14 @@ uintmax_t BasicTransaction::bytesDone() const {
 // is the size indicated by m_range, but will be different if
 // the server sends a differently sized response
 uintmax_t BasicTransaction::bytesTotal() const {
-    return m_bytesTotal;
+    return m_range.size();
+    //return m_bytesTotal;
 }
 
 // total-done
 uintmax_t BasicTransaction::bytesRemaining() const {
-    return m_bytesTotal-m_bytesDone;
+    return bytesTotal()-m_bytesDone;
+    //return m_bytesTotal-m_bytesDone;
 }
 
 // Return if the download is running, i.e. is not idle and

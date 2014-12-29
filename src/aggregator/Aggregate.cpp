@@ -256,13 +256,13 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker() try {
-    fancyprint("STARTER",NOTIFY);
+    //fancyprint("STARTER",NOTIFY);
     starter();
-    fancyprint("SPLITTER",NOTIFY);
+    //fancyprint("SPLITTER",NOTIFY);
     splitter();
-    fancyprint("JOIN ALL",NOTIFY);
+    //fancyprint("JOIN ALL",NOTIFY);
     joinChunks();
-    fancyprint("MERGER",NOTIFY);
+    //fancyprint("MERGER",NOTIFY);
     merger();
 } catch ( ex::Error e ) {
     m_failed = true;
@@ -361,25 +361,20 @@ void Aggregate::merger() {
     if( m_filesize != bytesTotal())
         Throw(ex::Error,"Downloaded bytes greater than total filesize.");
 
-    fancyprint("Merging!",NOTIFY);
-
     File tmp(tempName());
     tmp.write(Node::FORCE);
 
     // Append the content to "tmp"
     for(unsigned i=0; i < m_chunk.size(); i++){
-        std::cout << i+1  << " of " << m_chunk.size() <<std::endl;
+        std::cout << "Merging! " <<  i+1  << " of " << m_chunk.size() <<std::endl;
         tmp.append(*(m_chunk[i]->file()));
         std::cout << DELETE;
     }
-    tmp.move(prettyName(),Node::NEW);
 
-    std::cout << DELETE;
-    fancyprint("Merge Complete!",WARNING);
+    tmp.move(prettyName(),Node::NEW);
 
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
 
-    std::cout << DELETE;
     fancyprint("Complete!",SUCCESS);
 }

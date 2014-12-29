@@ -54,14 +54,14 @@ class BasicTransaction {
         // Endpoint iterator for hostname resolution
         tcp::resolver::iterator m_endpIterator;
         // Has the transaction been split (range-updated) externally?
-        bool m_beenSplit;
+        //bool m_beenSplit;
         // Has a pause request been issued?
         bool m_pauseRequest;
 
         // Total number of bytes to be downloaded. Initially this
         // member is set to the size indicated by m_range, but will
         // be updated if the server sends a differently sized response
-        uintmax_t m_bytesTotal;
+        //uintmax_t m_bytesTotal;
         // Total number of bytes that have been downloaded, and
         // actually written out through the callback m_reader()
         uintmax_t m_bytesDone;
