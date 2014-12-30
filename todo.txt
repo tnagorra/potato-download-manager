@@ -15,5 +15,4 @@
 (B) Capture cookie
 (B) Implement grabber
 
-(C) Add "transaction.date" in local.ini +LocalOptions @LocalOptions
-(C) Write proper readme.md file
+(C) Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
