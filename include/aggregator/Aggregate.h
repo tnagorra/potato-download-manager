@@ -26,6 +26,7 @@ class Aggregate{
         //std::vector<Socket*> m_free_socket;
         // the working thread
         boost::thread* m_thread;
+        // the speed managing thread
         boost::thread* m_speed_thread;
         // vector to save the chunks
         std::vector<Chunk*> m_chunk;
@@ -44,15 +45,17 @@ class Aggregate{
         // Failed or not, exceptions can't be
         // thrown outside the worker
         bool m_failed;
-
-        double m_avgSpeed;  // Average speed
-        double m_instSpeed; // 'Instantaneous' speed
-        double m_hifiSpeed; // 'Hifi' speed
+        // Gives the average speed
+        double m_avgSpeed;
+        // Gives the instantaneous speed
+        double m_instSpeed;
+        // Gives the hifi speed
+        double m_hifiSpeed;
 
     public:
         // Constructor
         Aggregate(const std::string& url,
-                const std::string& heaven="potatoes",
+                const std::string& destination="potatoes",
                 const std::string& purgatory="potas",
                 unsigned txns=8,uintmax_t split=500*1024);
 
@@ -187,7 +190,7 @@ class Aggregate{
 
         // Returns the temporary name
         inline std::string tempName(){
-            return m_hashedUrl+"/tmp";
+            return m_hashedUrl+"/purgatory";
         }
 
         // Returns a pretty name

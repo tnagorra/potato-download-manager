@@ -85,9 +85,7 @@ int main(int ac, char* av[]) try {
                 g.destination_purgatory(),l.segment_number(),
                 l.segment_threshold());
         agg.start();
-
         while (!agg.isComplete() && !agg.hasFailed()){
-
             unsigned all = agg.displayChunks();
             boost::this_thread::sleep(boost::posix_time::millisec(100));
             for(int i=0;i<all+1;i++)

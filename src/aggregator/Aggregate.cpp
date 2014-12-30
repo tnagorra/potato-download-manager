@@ -1,10 +1,10 @@
 #include"aggregator/Aggregate.h"
 
-Aggregate::Aggregate(const std::string& url, const std::string& heaven,
+Aggregate::Aggregate(const std::string& url, const std::string& destination,
         const std::string& purgatory, unsigned txns,uintmax_t split):
     m_chunks(txns), m_url(url), m_filesize(0), m_failed(false), m_thread(NULL),
     m_splittable_size( (split>100*1024) ? split : 100*1024), m_speed_thread(NULL),
-    m_hashedUrl(purgatory+"/"+md5(m_url)), m_prettyUrl(heaven+"/"+prettify(m_url)),
+    m_hashedUrl(purgatory+"/"+md5(m_url)), m_prettyUrl(destination+"/"+prettify(m_url)),
     m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0)
 {
     // Directory session is used to find out about
@@ -171,7 +171,7 @@ bool Aggregate::isSplitReady() const {
     // It is split ready if inactive count is less than 4
     unsigned count=0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if((*it)->txn()->isDownloading())
+        if(!(*it)->txn()->isDownloading())
             count++;
         if(count > 3)
             return false;
@@ -304,22 +304,19 @@ void Aggregate::starter() {
 }
 
 void Aggregate::splitter() try {
+
     // Check if any of the Chunk is splittable
-    RemoteData::Partial p = RemoteData::Partial::unknown;
-    do{
-        if(isComplete())
-            return;
-        boost::this_thread::sleep(boost::posix_time::millisec(100));
-        p = isSplittable();
+    while (!isComplete() && !hasFailed()) {
+        RemoteData::Partial p = isSplittable();
         if(p == RemoteData::Partial::no)
             return;
-    } while (p != RemoteData::Partial::yes);
+        else if(p==RemoteData::Partial::yes)
+            break;
+        boost::this_thread::sleep(boost::posix_time::millisec(100));
+    }
 
     // Loop while a bottleneck exists
-    while (!isComplete()) {
-        // Sleep
-        boost::this_thread::sleep(boost::posix_time::millisec(100));
-
+    while (!isComplete() && !hasFailed()) {
         // Get the bottle neck and split
         if(activeChunks() < m_chunks && isSplitReady() ) {
             // NOTE: Removing this showed the synronization bug
@@ -328,7 +325,9 @@ void Aggregate::splitter() try {
             // Just sleep for a while
             boost::this_thread::sleep(boost::posix_time::millisec(1000));
         }
+        boost::this_thread::sleep(boost::posix_time::millisec(100));
     }
+
 } catch (ex::aggregator::NoBottleneck e) {
     // This isn't a bad thing, just signifies
     // that no further segmentation can occur.
@@ -349,6 +348,7 @@ void Aggregate::merger() {
         Throw(ex::Error,"Downloaded bytes greater than total filesize.");
 
     fancyprint("Merging!",NOTIFY);
+    fancyprint("Do not close this window.",WARNING);
     File tmp(tempName());
     tmp.write(Node::FORCE);
     // TODO try binary appends and storing to "tmp"
@@ -358,6 +358,7 @@ void Aggregate::merger() {
         tmp.append(*(m_chunk[i]->file()));
         std::cout << DELETE;
     }
+    std::cout << DELETE;
     tmp.move(prettyName(),Node::NEW);
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
@@ -374,7 +375,7 @@ double Aggregate::aggregateSpeed() const {
 
 void Aggregate::speed_worker() {
     const double refresh = 0.1;
-    const unsigned persistance = 1/refresh;
+    const unsigned persistance = 1/refresh*5;
     uintmax_t no = 0;
 
     while (!isComplete() && !hasFailed()){

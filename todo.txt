@@ -5,8 +5,9 @@
 (A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
 
-(B) Downgrade Options class, create new class for read/write INI files
+(B) Downgrade Options class, create new class for read/write INI/JSON files
 (B) Reusing Sockets +Aggregate @Aggregate
+(B) Restart failed connections
 (B) Reset slow connections +Aggregate @worker
 (B) Implement wait, retry, speed limit +BasicTransaction
 (B) Interactive CLI design
