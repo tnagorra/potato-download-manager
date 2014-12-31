@@ -3,8 +3,8 @@ SRCDIR:=src
 OBJDIR:=bin/obj
 BINDIR:=bin
 
-#CC=g++
-CC=clang
+CC=g++
+#CC=clang
 CFLAGS=-c -I$(INCDIR)/ --std=c++11
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 
@@ -94,7 +94,7 @@ $(EXEC_AGGREGATE): $(FOBJECTS_AGGREGATE) $(MAINO_AGGREGATE) $(FOBJECTS_FILE)\
 
 ### Common parts to both
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp | $(OBJDIR) $(BINDIR)
-	$(CC) -o $@ $< $(CFLAGS)
+	$(CC) -o $@ $< $(CFLAGS) -g
 
 $(OBJDIR): | $(BINDIR)
 	mkdir $(OBJDIR) $(OBJDIR)/filesystem $(OBJDIR)/transaction\

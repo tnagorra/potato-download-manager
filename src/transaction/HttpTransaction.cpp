@@ -26,7 +26,8 @@ class Redirect {
 // Constructor.
 template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
-        const Range& range) : Transaction<SocketType>(rdata,range)
+        const Range& range, unsigned attempts, unsigned wait)
+        : Transaction<SocketType>(rdata,range, attempts, wait)
 { }
 
 // Start the downloader thread and return immediately

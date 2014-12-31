@@ -42,7 +42,8 @@ class Transaction : public BasicTransaction {
 
     public:
         // Constructor.
-        Transaction(RemoteData* rdata, const Range& range = Range(0,0));
+        Transaction(RemoteData* rdata, const Range& range = Range(0,0),
+                unsigned attempts = 5, unsigned wait = 5);
 
         // Destructor.
         virtual ~Transaction() {}

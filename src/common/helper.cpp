@@ -93,6 +93,20 @@ std::string prettify(std::string url){
     return decodeUrl(url.substr(last_slash,first_ques-last_slash+1));
 }
 
+// Remove the default port 80 from url
+std::string removeport80(std::string url) {
+    size_t colon = url.find(':');
+    size_t slash = url.find('/',colon);
+    if (colon==std::string::npos)
+        return url;
+    if (slash==std::string::npos)
+        slash = url.size();
+    if (url.substr(colon+1,slash-colon-1)!="80") {
+        return url;
+    }
+    return url.substr(0,colon)+url.substr(slash,url.size()-slash);
+}
+
 int charToHex(char x){
     if (x>='a')
         x -= 'a'-'A';

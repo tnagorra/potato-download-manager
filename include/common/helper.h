@@ -39,6 +39,9 @@ std::string md5(std::string text);
 // Returns a pretty name from a url
 std::string prettify(std::string url);
 
+// Remove the default port 80 from url 
+std::string removeport80(std::string url);
+
 // Returns a decoded url
 std::string decodeUrl(std::string url);
 

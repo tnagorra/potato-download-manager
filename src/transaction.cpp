@@ -30,7 +30,6 @@ int main(int argc, char* argv[]) try {
 
     bTrans->start();
     while (!bTrans->isComplete()) {
-        print(bTrans->timeRemaining());
         boost::this_thread::sleep(boost::posix_time::millisec(500));
     }
     return 0;

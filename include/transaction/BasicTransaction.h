@@ -58,6 +58,10 @@ class BasicTransaction {
         // Has a pause request been issued?
         bool m_pauseRequest;
 
+        // Attempts to connect if failures occur
+        unsigned m_connAttempts;
+        // Seconds to wait before retrying
+        unsigned m_attemptWait;
         // Total number of bytes to be downloaded. Initially this
         // member is set to the size indicated by m_range, but will
         // be updated if the server sends a differently sized response
@@ -76,7 +80,7 @@ class BasicTransaction {
     public:
         // Constructor. Default Range argument (0,0) means the
         // entire resource
-        BasicTransaction(RemoteData* rdata, const Range& range = Range(0,0));
+        BasicTransaction(RemoteData* rdata, const Range& range = Range(0,0), unsigned attempts = 5, unsigned wait = 5);
 
         // Destructor
         virtual ~BasicTransaction() {}
@@ -85,9 +89,11 @@ class BasicTransaction {
         // They can be provided with a RemoteData object or a url,
         // and an optional byterange.
         static BasicTransaction* factory(RemoteData* rdata,
-                const Range& range = Range(0,0));
+                const Range& range = Range(0,0), unsigned attempts = 5,
+                unsigned wait = 5);
         static BasicTransaction* factory(std::string url,
-                const Range& range = Range(0,0));
+                const Range& range = Range(0,0), unsigned attempts = 5,
+                unsigned wait = 5);
 
         // Register the byte-Reader callback function
         // The parameter must be a boost::function object of type

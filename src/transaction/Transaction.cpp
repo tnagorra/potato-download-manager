@@ -1,11 +1,11 @@
 #include "transaction/Transaction.h"
-#include <sys/time.h>
-#include <sys/socket.h>
+
+#include <string>
 
 // Constructor.
 template <typename SocketType>
-Transaction<SocketType>::Transaction(RemoteData* rdata, const Range& range)
-    : BasicTransaction(rdata,range), mptr_socket(NULL) { }
+Transaction<SocketType>::Transaction(RemoteData* rdata, const Range& range, unsigned attempts, unsigned wait)
+    : BasicTransaction(rdata,range,attempts,wait), mptr_socket(NULL) { }
 
 // An assignment operator for converting from a transaction of one
 // socket type to another. To be used **only** for redirects, nowhere
@@ -82,25 +82,41 @@ void Transaction<SSLSock>::resolveHost() {
 template <typename SocketType>
 void Transaction<SocketType>::resolveHostMain() {
     // Number of tries left
-    uint8_t triesleft = 2;
+    // If triesleft is zero, decrementing it will result in a very
+    // high value, which almost means an infinite number of
+    // retries.
+    uintmax_t triesleft = m_connAttempts;
+
     // In the 'resolving' state
     m_state = State::resolving;
 
     tcp::resolver resolver(mptr_socket->get_io_service());
-    tcp::resolver::query query(mptr_rdata->server(),
+    tcp::resolver::query* query;
+    size_t colon = mptr_rdata->server().find(':');
+    // If servername has a port number, use it
+    if (colon!=std::string::npos) {
+        std::string servername = mptr_rdata->server().substr(0,colon);
+        std::string port = mptr_rdata->server().substr(colon+1,mptr_rdata->server().size());
+        query = new tcp::resolver::query(servername,port,tcp::resolver::query::passive);
+    } else {
+        query = new tcp::resolver::query(mptr_rdata->server(),
             mptr_rdata->schemeCStr(), tcp::resolver::query::passive);
+    }
     tcp::resolver::iterator err_itr, temp_itr;
 
     // Lets try to resolve our hostname
     do {
         try {
-        m_endpIterator = resolver.resolve(query);
+        m_endpIterator = resolver.resolve(*query);
         boost::this_thread::interruption_point();
         } catch (boost::system::system_error& err) {
+            delete query;
             if (triesleft==1)
                 Throw(ex::download::HostNotFound,mptr_rdata->server());
         }
+        boost::this_thread::sleep(boost::posix_time::seconds(m_attemptWait));
     } while (m_endpIterator==err_itr && --triesleft);
+    delete query;
 }
 
 // Establish a tcp connection with the remote host.
@@ -114,7 +130,11 @@ void Transaction<SocketType>::connectHost() {
     }
 
     // Number of tries left
-    uint8_t triesleft = 2;
+    // If triesleft is zero, decrementing it will result in a very
+    // high value, which almost means an infinite number of
+    // retries.
+    uintmax_t triesleft = m_connAttempts;
+
     // In the 'connecting' state
     m_state = State::connecting;
 
@@ -124,7 +144,11 @@ void Transaction<SocketType>::connectHost() {
         try {
             temp_itr = boost::asio::connect(*mptr_socket,
                     m_endpIterator);
-        } catch (boost::system::system_error& err) { }
+        } catch (boost::system::system_error& err) {
+            if (triesleft==1)
+            Throw(ex::download::CouldNotConnect,mptr_rdata->server());
+        }
+        boost::this_thread::sleep(boost::posix_time::seconds(m_attemptWait));
     } while (temp_itr==err_itr && --triesleft);
 
     mptr_socket->set_option(tcp::no_delay(true));
@@ -146,7 +170,11 @@ void Transaction<SSLSock>::connectHost() {
     }
 
     // Number of tries left
-    uint8_t triesleft = 2;
+    // If triesleft is zero, decrementing it will result in a very
+    // high value, which almost means an infinite number of
+    // retries.
+    uintmax_t triesleft = m_connAttempts;
+
     // In the 'connecting' state
     m_state = State::connecting;
 
@@ -156,7 +184,11 @@ void Transaction<SSLSock>::connectHost() {
         try {
             temp_itr = boost::asio::connect(mptr_socket->lowest_layer()
                     , m_endpIterator);
-        } catch (boost::system::system_error& err) { }
+        } catch (boost::system::system_error& err) {
+            if (triesleft==1)
+            Throw(ex::download::CouldNotConnect,mptr_rdata->server());
+        }
+        boost::this_thread::sleep(boost::posix_time::seconds(m_attemptWait));
     } while (temp_itr==err_itr && --triesleft);
 
     if (temp_itr==err_itr)

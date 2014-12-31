@@ -30,6 +30,8 @@ class HttpTransaction : public Transaction<SocketType> {
     using typename Transaction<SocketType>::State;
     using Transaction<SocketType>::m_state;
     using Transaction<SocketType>::m_range;
+    using Transaction<SocketType>::m_attemptWait;
+    using Transaction<SocketType>::m_connAttempts;
     using Transaction<SocketType>::mptr_thread;
     using Transaction<SocketType>::mptr_speedThread;
     using Transaction<SocketType>::mptr_socket;
@@ -75,7 +77,9 @@ class HttpTransaction : public Transaction<SocketType> {
     typedef typename SockTraits<SocketType>::antiSock antiSockType;
 
    // Constructor.
-    HttpTransaction(RemoteDataHttp* rdata, const Range& range = Range(0,0));
+    HttpTransaction(RemoteDataHttp* rdata,
+            const Range& range = Range(0,0), unsigned attempts = 5,
+            unsigned wait = 5);
 
     // Start the downloader thread and return immediately.
     void start();

@@ -4,7 +4,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
         const std::string& purgatory, unsigned txns,uintmax_t split):
     m_chunks(txns), m_url(url), m_filesize(0), m_failed(false), m_thread(NULL),
     m_splittable_size( (split>100*1024) ? split : 100*1024), m_speed_thread(NULL),
-    m_hashedUrl(purgatory+"/"+md5(m_url)), m_prettyUrl(destination+"/"+prettify(m_url)),
+    m_hashedUrl(purgatory+"/"+md5(removeport80(m_url))), m_prettyUrl(destination+"/"+prettify(m_url)),
     m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0)
 {
     // Directory session is used to find out about
@@ -350,6 +350,7 @@ void Aggregate::merger() {
     fancyprint("Merging!",NOTIFY);
     fancyprint("Do not close this window.",WARNING);
     File tmp(tempName());
+    tmp.remove();
     tmp.write(Node::FORCE);
     // TODO try binary appends and storing to "tmp"
     // Append the content to "tmp"

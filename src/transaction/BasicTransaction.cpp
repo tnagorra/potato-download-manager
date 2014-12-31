@@ -3,15 +3,15 @@
 #include "transaction/HttpTransaction.h"
 
 // The constructor.
-BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range)
+BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range, unsigned attempts, unsigned wait)
     : m_range(range),
     mptr_rdata(rdata),
     mptr_thread(NULL),
     mptr_speedThread(NULL),
     m_state(State::idle),
-    //m_bytesTotal(range.ub()-range.lb()),
     m_bytesDone(0),
-    //m_beenSplit(false),
+    m_connAttempts(attempts),
+    m_attemptWait(wait),
     m_pauseRequest(false)
 {
 
@@ -26,7 +26,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range)
 // They can be provided with a RemoteData object or a url,
 // and an optional byterange.
 BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
-        const Range& range) {
+        const Range& range, unsigned attempts, unsigned wait) {
 
     if (!rdata) // Danger!! Null pointer
         Throw(ex::Invalid, "The RemoteData pointer passed");
@@ -35,11 +35,13 @@ BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
     switch (rdata->scheme()) {
         case RemoteData::Protocol::http:
             product = new HttpTransaction<PlainSock>(
-                    dynamic_cast<RemoteDataHttp*>(rdata),range);
+                    dynamic_cast<RemoteDataHttp*>(rdata),range,
+                    attempts, wait);
             break;
         case RemoteData::Protocol::https:
             product = new HttpTransaction<SSLSock>(
-                    dynamic_cast<RemoteDataHttp*>(rdata),range);
+                    dynamic_cast<RemoteDataHttp*>(rdata),range,
+                    attempts, wait);
             break;
         default:
             Throw(ex::download::BadProtocolScheme,rdata->schemeCStr());
@@ -48,9 +50,9 @@ BasicTransaction* BasicTransaction::factory(RemoteData* rdata,
 }
 
 BasicTransaction* BasicTransaction::factory(std::string url,
-        const Range& range) {
+        const Range& range, unsigned attempts, unsigned wait) {
     RemoteData* rdata_url = RemoteData::factory(url);
-    return factory(rdata_url, range);
+    return factory(rdata_url, range, attempts, wait);
 }
 
 // Register the byte-Reader callback function
