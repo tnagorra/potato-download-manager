@@ -47,8 +47,15 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
 
         // Populate all the Chunks
         for(unsigned i=0; i < files.size()-1; i++){
+            uintmax_t start =std::atoi(files[i].c_str());
+            uintmax_t end = std::atoi(files[i+1].c_str());
             File* f = new File(chunkName(std::atoi(files[i].c_str())));
-            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+            start += f->size();
+            // These kind of files may be created due to
+            // interruption in merging or faulty download
+            if(start > end)
+                start = end;
+            Range r(end,start);
             BasicTransaction* t= BasicTransaction::factory(m_url,r);
             Chunk* c = new Chunk(t,f);
             m_chunk.push_back(c);
@@ -349,6 +356,7 @@ void Aggregate::merger() {
 
     fancyprint("Merging!",NOTIFY);
     fancyprint("Do not close this window.",WARNING);
+    /*
     File tmp(tempName());
     tmp.write(Node::FORCE);
     // TODO try binary appends and storing to "tmp"
@@ -362,6 +370,53 @@ void Aggregate::merger() {
     tmp.move(prettyName(),Node::NEW);
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
+    */
+
+    /*
+
+    if(m_chunk.size()==0)
+        throw "this shouldn't be possible";
+    File* first = m_chunk[0]->file();
+    uintmax_t prev_size = first->size();
+    print("prev_size: " << prev_size);
+    // first and last file aren't processed
+    for(unsigned i=1; i < m_chunk.size();i++){
+
+        print(i+1 << " of " << m_chunk.size());
+        // this condition is for when prev_size
+        // is greater than expected_size
+        uintmax_t prev_size = first->size();
+        uintmax_t expected_size = std::atoi(
+                m_chunk[i]->file()->filename().c_str());
+        uintmax_t next_expected_size = std::atoi(
+                m_chunk[i+1]->file()->filename().c_str());
+        uintmax_t cur_size = m_chunk[i]->file()->size();
+
+        print("prev_size: " << prev_size);
+        print("expected_size: " << expected_size);
+        print("cur_size: " << cur_size);
+        print("next_expected_size: " << next_expected_size);
+
+        if( prev_size < expected_size)
+            throw "data missing";
+        // this offset is generally zero
+        uintmax_t offset = prev_size - expected_size;
+        uintmax_t total = next_expected_size - expected_size;
+
+        if(cur_size < total)
+            throw 1;
+
+        if( offset < total){
+            // here total shouldn't be zero
+            // as it implies to write 0 bytes but
+            // it will write until end
+            total -= offset;
+            first->append(*(m_chunk[i]->file()),total,offset);
+        }
+        m_chunk[i]->file()->remove();
+    }
+    */
+
 
     fancyprint("Complete!",SUCCESS);
 }

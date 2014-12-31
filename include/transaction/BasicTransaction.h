@@ -50,8 +50,7 @@ class BasicTransaction {
         // Streambuf for buffering the response
         boost::asio::streambuf* mptr_response;
         // function object callback used to write out received bytes
-        boost::function<void (std::istream&, uintmax_t)> m_reader;
-        // Endpoint iterator for hostname resolution
+        boost::function<void (std::istream&, uintmax_t, uintmax_t)> m_reader; // Endpoint iterator for hostname resolution
         tcp::resolver::iterator m_endpIterator;
         // Has the transaction been split (range-updated) externally?
         //bool m_beenSplit;
@@ -95,7 +94,7 @@ class BasicTransaction {
         // with two parameters : an istream to read from an the number
         // of bytes to read.
         void registerReader(boost::function<void
-                (std::istream&, uintmax_t)>&);
+                (std::istream&, uintmax_t, uintmax_t)>&);
 
         // Inject a tcp socket to the downloader. These may be called
         // if you have a live socket and want that to be used for the
@@ -160,7 +159,7 @@ class BasicTransaction {
         boost::thread* p_speedThread() const;
 
         // Return the writeout callback functor
-        boost::function<void (std::istream&,uintmax_t)> reader() const;
+        boost::function<void (std::istream&,uintmax_t,uintmax_t)> reader() const;
 
         // Returns the endpoint iterator
         tcp::resolver::iterator endpIterator() const;

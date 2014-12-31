@@ -59,7 +59,7 @@ BasicTransaction* BasicTransaction::factory(std::string url,
 // with two parameters : an istream to read from an the number
 // of bytes to read.
 void BasicTransaction::registerReader(
-        boost::function<void (std::istream&, uintmax_t)>& bytereader){
+        boost::function<void (std::istream&, uintmax_t,uintmax_t )>& bytereader){
     m_reader = bytereader;
 }
 
@@ -178,7 +178,7 @@ boost::thread* BasicTransaction::p_speedThread() const {
 }
 
 // Return the writeout callback functor
-boost::function<void (std::istream&, uintmax_t)>
+boost::function<void (std::istream&, uintmax_t,uintmax_t)>
 BasicTransaction::reader() const {
     return m_reader;
 }
