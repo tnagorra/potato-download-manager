@@ -47,8 +47,15 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
 
         // Populate all the Chunks
         for(unsigned i=0; i < files.size()-1; i++){
+            uintmax_t start =std::atoi(files[i].c_str());
+            uintmax_t end = std::atoi(files[i+1].c_str());
             File* f = new File(chunkName(std::atoi(files[i].c_str())));
-            Range r(std::atoi(files[i+1].c_str()),std::atoi(files[i].c_str())+f->size());
+            start += f->size();
+            // These kind of files may be created due to
+            // interruption in merging or faulty download
+            if(start > end)
+                start = end;
+            Range r(end,start);
             BasicTransaction* t= BasicTransaction::factory(m_url,r);
             Chunk* c = new Chunk(t,f);
             m_chunk.push_back(c);
@@ -341,26 +348,47 @@ void Aggregate::merger() {
     // Only for syncronization in main loop
     boost::this_thread::sleep(boost::posix_time::millisec(500));
 
-    // If total size downloaded isn't equal
-    // to the size of file downloaded then
-    // do not merge the Chunks
-    if( m_filesize != bytesTotal())
-        Throw(ex::Error,"Downloaded bytes greater than total filesize.");
-
     fancyprint("Merging!",NOTIFY);
-    fancyprint("Do not close this window.",WARNING);
-    File tmp(tempName());
-    tmp.remove();
-    tmp.write(Node::FORCE);
-    // TODO try binary appends and storing to "tmp"
-    // Append the content to "tmp"
-    for(unsigned i=0; i < m_chunk.size(); i++){
-        print(i+1 << " of " << m_chunk.size());
-        tmp.append(*(m_chunk[i]->file()));
+    if(m_chunk.size()==0) throw "this shouldn't be possible";
+
+    std::vector<File*> files;
+    File last(chunkName(m_filesize));
+    for(unsigned i=0; i < m_chunk.size();i++)
+        files.push_back(m_chunk[i]->file());
+    files.push_back(&last);
+
+    File* first = files[0];
+    // first and last file aren't processed
+    for(unsigned i=1; i < files.size()-1;i++){
+        print(i << " of " << files.size()-1);
+
+        uintmax_t prev_size = first->size();
+        uintmax_t current_size = files[i]->size();
+        uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
+        uintmax_t next_expected_size = std::atoi( files[i+1]->filename().c_str());
+
+        // prev_size must lies in range [current_expected_size,next_expected_size]
+        if( prev_size < current_expected_size)
+            Throw(ex::Error,"Data is missing.");
+        else if( prev_size > next_expected_size)
+            Throw(ex::Error,"Data is redundant. We don't truncate.");
+
+        uintmax_t offset = prev_size - current_expected_size;
+        uintmax_t totalBytes = next_expected_size - current_expected_size;
+        if (current_size < totalBytes)
+            Throw(ex::Error,"Data is missing. We don't truncate.");
+        // TODO do something with append()
+        // Here total=0 means that offset is equal to total
+        // which doesn't imply writing everything
+        totalBytes -= offset;
+        if(totalBytes!=0)
+            first->append(*files[i],totalBytes,offset);
+        files[i]->remove();
+
         std::cout << DELETE;
     }
-    std::cout << DELETE;
-    tmp.move(prettyName(),Node::NEW);
+    // Move the merged file to safe place
+    first->move(prettyName(),Node::NEW);
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
 

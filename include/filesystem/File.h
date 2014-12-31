@@ -52,7 +52,7 @@ class File : public Node {
 
         // Used to copy n bytes of data from input stream to m_stream
         // If n is 0, then total input stream is copied
-        void streamCopy(std::istream& in, uintmax_t n=0);
+        void streamCopy(std::istream& in, uintmax_t n=0,uintmax_t offset=0);
     public:
         // returns stream but risky
         std::fstream& ostream();
@@ -105,8 +105,11 @@ class File : public Node {
         // Appends to an existing File contents of another File, B
         void append(File& to);
 
+        void append(File& to,uintmax_t n=0, uintmax_t o=0);
+
         // Appends to an existing File contents of another File, B
-        void append(std::istream& data,uintmax_t n=0);
+        void append(std::istream& data,uintmax_t n=0, uintmax_t o=0);
+
 
         // Returns the line string from an existing File, T
         // Throw ex::Error, ex::End, ex::filesystem::NotThere

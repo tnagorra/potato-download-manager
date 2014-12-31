@@ -13,9 +13,9 @@ Chunk::Chunk(BasicTransaction* txnp, File* filep):
 
     // Bind and inject the append function of File
     // inside the BasicTransaction
-    boost::function<void (std::istream&,uintmax_t)> reader =
-        boost::bind(static_cast<void(File::*)(std::istream&,uintmax_t)>
-                (&File::append),mptr_file,_1,_2);
+    boost::function<void (std::istream&,uintmax_t,uintmax_t)> reader =
+        boost::bind(static_cast<void(File::*)(std::istream&,uintmax_t,uintmax_t)>
+                (&File::append),mptr_file,_1,_2,_3);
 
     txn()->registerReader(reader);
 }

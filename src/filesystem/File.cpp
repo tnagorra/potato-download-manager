@@ -28,23 +28,30 @@ void File::assertClean() {
 
 // Used to copy n bytes of data from input stream to m_stream
 // If n is 0, then total input stream is copied
-void File::streamCopy(std::istream& in, uintmax_t count) {
-    if (count == 0){
-        m_stream << in.rdbuf();
-    } else {
-        const uintmax_t bufferSize= 4096;
-        char buffer[bufferSize];
-        while(count > bufferSize){
+void File::streamCopy(std::istream& in, uintmax_t count, uintmax_t offset) {
+
+    const uintmax_t bufferSize= 4096;
+    char buffer[bufferSize];
+
+    if(offset!=0)
+        in.seekg(offset,in.beg);
+    if (count != 0) {
+        while (count > bufferSize){
             in.read(buffer, bufferSize);
             m_stream.write(buffer, bufferSize);
             count -= bufferSize;
         }
         in.read(buffer, count);
         m_stream.write(buffer, count);
-        // TODO temporary as this will be called at last
-        // flushing will do good
-        m_stream.flush();
+    } else {
+        while(!in.eof()){
+            in.read(buffer, bufferSize);
+            m_stream.write(buffer, in.gcount());
+        }
     }
+    // TODO temporary as this will be called at last
+    // flushing will do good
+    m_stream.flush();
 }
 
 // Constructor of the object.
@@ -231,10 +238,16 @@ void File::append(File& data) {
     streamCopy(data.m_stream);
 }
 
-// Appends to a existing File using istream, B+T
-void File::append(std::istream& data,uintmax_t n){
+void File::append(File& data,uintmax_t n, uintmax_t o){
     open(APPEND);
-    streamCopy(data, n);
+    data.open(READ);
+    streamCopy(data.m_stream,n,o);
+}
+
+// Appends to a existing File using istream, B+T
+void File::append(std::istream& data,uintmax_t n,uintmax_t o){
+    open(APPEND);
+    streamCopy(data, n, o);
 }
 
 // Returns the line string from an existing File, T

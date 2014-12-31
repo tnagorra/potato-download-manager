@@ -270,7 +270,7 @@ void HttpTransaction<SocketType>::writeOut() {
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
     if (bufBytes)
-        m_reader(writeStream,bufBytes);
+        m_reader(writeStream,bufBytes,0);
     m_bytesDone = bufBytes;
     m_state = State::downloading;
 
@@ -289,12 +289,12 @@ void HttpTransaction<SocketType>::writeOut() {
         if (bufBytes+m_bytesDone >= m_range.size()) {
             if (m_bytesDone>m_range.size())
                 Throw(ex::Not, "recoverable situation");
-            m_reader(writeStream,m_range.size()-m_bytesDone);
+            m_reader(writeStream,m_range.size()-m_bytesDone,0);
             m_bytesDone = m_range.size();
             error=boost::asio::error::eof;
             break;
         } else
-            m_reader(writeStream,bufBytes);
+            m_reader(writeStream,bufBytes,0);
 
         m_bytesDone += bufBytes;
 
