@@ -4,7 +4,6 @@
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
-(A) Add support for urls like http://somename:8023/filename +BasicTransaction
 
 (B) Downgrade Options class, create new class for read/write INI/JSON files
 (B) Reusing Sockets +Aggregate @Aggregate

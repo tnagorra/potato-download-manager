@@ -137,6 +137,14 @@ bool Aggregate::isComplete() const {
     return true;
 }
 
+bool Aggregate::isFinished() const {
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
+        if(!(*it)->txn()->isComplete() && !(*it)->txn()->hasFailed())
+            return false;
+    }
+    return true;
+}
+
 /*
    double Aggregate::speed() {
    double s = 0;
@@ -313,7 +321,7 @@ void Aggregate::starter() {
 void Aggregate::splitter() try {
 
     // Check if any of the Chunk is splittable
-    while (!isComplete() && !hasFailed()) {
+    while (!isFinished() && !hasFailed()) {
         RemoteData::Partial p = isSplittable();
         if(p == RemoteData::Partial::no)
             return;
@@ -323,7 +331,7 @@ void Aggregate::splitter() try {
     }
 
     // Loop while a bottleneck exists
-    while (!isComplete() && !hasFailed()) {
+    while (!isFinished() && !hasFailed()) {
         // Get the bottle neck and split
         if(activeChunks() < m_chunks && isSplitReady() ) {
             // NOTE: Removing this showed the synronization bug
@@ -407,7 +415,7 @@ void Aggregate::speed_worker() {
     const unsigned persistance = 1/refresh*5;
     uintmax_t no = 0;
 
-    while (!isComplete() && !hasFailed()){
+    while (!isFinished() && !hasFailed()){
         boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
         m_instSpeed = aggregateSpeed();
         m_avgSpeed= (m_avgSpeed*no+m_instSpeed)/(no+1);

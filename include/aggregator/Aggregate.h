@@ -106,6 +106,15 @@ class Aggregate{
         // Returns if all the Chunk in the vector are complete
         bool isComplete() const;
 
+        // Returns if the transactions are finished
+        // ie, either failed or complete
+        bool isFinished() const;
+
+        // Return if the transaction has failed or not
+        inline bool hasFailed() const {
+            return m_failed;
+        }
+
         // The average speed, in bytes per second. Average speed is
         // bytesDone/timeElapsed
         double avgSpeed() const {
@@ -145,11 +154,6 @@ class Aggregate{
             return m_chunk.size();
         }
 
-        // Return if the transaction has failed or not
-        inline bool hasFailed() const {
-            return m_failed;
-        }
-
     private:
         // Gets the sum of all speed
         double aggregateSpeed() const;
@@ -186,11 +190,6 @@ class Aggregate{
         // Returns name of the Chunk with starting byte num
         inline std::string chunkName(uintmax_t num) {
             return m_hashedUrl+"/"+std::to_string(num);
-        }
-
-        // Returns the temporary name
-        inline std::string tempName(){
-            return m_hashedUrl+"/purgatory";
         }
 
         // Returns a pretty name
