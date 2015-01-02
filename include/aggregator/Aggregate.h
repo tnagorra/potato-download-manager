@@ -175,9 +175,6 @@ class Aggregate{
         // Join all the BasicTransaction threads of Chunks in vector
         void joinChunks();
 
-        // Returns if any of the Chunk is splittable
-        RemoteData::Partial isSplittable() const;
-
         // Returns if all the BasicTransactions are downloading something
         bool isSplitReady() const;
 
