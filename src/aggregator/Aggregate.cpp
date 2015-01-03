@@ -23,6 +23,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
     }
 
     m_txnExBridge = new ExBridge;
+    // Note: Files with numeric names
     if( files.size()==0) {
 
         // If no numeric files are found!
@@ -37,13 +38,21 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
 
         // Get the file size from the last file
         m_filesize = std::atoi(files.back().c_str());
-        // the last file must not be with name "0"
-        if(m_filesize==0)
-            Throw(ex::filesystem::ZeroSize);
-        // limiter file should be of zero size
-        if( File(chunkName(m_filesize)).size() != 0 )
-            Throw(ex::filesystem::NonZeroSize,"limiter");
-        // '0' could be missing, error correction
+
+        // notifies that there is no limiter
+        // deducded if last file isn't of zero size
+        // or when there is only one file and which is 0;
+        // exception thrown if last file is deleted
+        // or if transaction isn't resumable;
+        // NONRECOVERABLE
+        // TODO delete everything and crash things
+        if( File(chunkName(m_filesize)).size() != 0 || m_filesize==0)
+            Throw(ex::filesystem::NotThere,"limiter");
+
+        // occurs if first file is deleted
+        // RECOVERABLE
+        // Start file must always be 0
+        // Insert a start file "0"
         if(files[0]!="0")
             files.insert(files.begin(),"0");
 
@@ -140,6 +149,14 @@ bool Aggregate::isComplete() const {
     return true;
 }
 
+bool Aggregate::isFinished() const {
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
+        if(!(*it)->txn()->isComplete() && !(*it)->txn()->hasFailed())
+            return false;
+    }
+    return true;
+}
+
 /*
    double Aggregate::speed() {
    double s = 0;
@@ -161,20 +178,6 @@ unsigned Aggregate::activeChunks() const {
 void Aggregate::joinChunks() {
     for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         (*it)->txn()->join();
-}
-
-RemoteData::Partial Aggregate::isSplittable() const {
-    // Iterate over all the transactions, if any of them has
-    // started and it can be splitted then return yes
-
-    // Stores if all Chunks were complete
-    for (auto it = m_chunk.begin(); it != m_chunk.end(); it++) {
-        if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::no)
-            return RemoteData::Partial::no;
-        else if ((*it)->txn()->remoteData().canPartial() == RemoteData::Partial::yes)
-            return RemoteData::Partial::yes;
-    }
-    return RemoteData::Partial::unknown;
 }
 
 bool Aggregate::isSplitReady() const {
@@ -262,9 +265,14 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
 void Aggregate::worker() try {
     //fancyprint("STARTER",NOTIFY);
-    starter();
-    //fancyprint("SPLITTER",NOTIFY);
-    splitter();
+    try {
+        starter();
+        //fancyprint("SPLITTER",NOTIFY);
+        splitter();
+    } catch (ex::aggregator::NonResumable& e){
+        // The download wansn't resumable
+        // so splitter() could be skipped
+    }
     //fancyprint("JOIN ALL",NOTIFY);
     joinChunks();
     //fancyprint("MERGER",NOTIFY);
@@ -277,9 +285,8 @@ void Aggregate::worker() try {
 
 void Aggregate::starter() {
 
-    // If there is only one chunk then it is the first
-    // download chunk so infomation must be gathered
-
+    // If m_filesize is zero, then it is the first time
+    // starting the transaction
     if(m_filesize==0) {
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
@@ -288,7 +295,6 @@ void Aggregate::starter() {
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
-        // and further process can be started
         while( !researcher->txn()->isDownloading() &&
                 !researcher->txn()->isComplete() &&
                 !researcher->txn()->hasFailed() )
@@ -299,10 +305,19 @@ void Aggregate::starter() {
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
-
-        // Create a limiter file
-        File limiter(chunkName(m_filesize));
-        limiter.write();
+        // TODO if no content-length then bytesTotal() must give zero and act accordingly inside
+        // If no content-length is given then bytesTotal should
+        // provide with zero size so it is non-resumable
+        if(m_filesize!=0 && researcher->txn()->remoteData().canPartial() == RemoteData::Partial::yes){
+            // Create a limiter file
+            // this indicates that file can be resumed
+            // as non-resumable downloads don't need
+            // a total size file
+            File limiter(chunkName(m_filesize));
+            limiter.write();
+        } else {
+            Throw(ex::aggregator::NonResumable);
+        }
 
     } else {
         // Start all the Chunks
@@ -310,23 +325,12 @@ void Aggregate::starter() {
         for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
             (*it)->txn()->start();
     }
-
 }
 
 void Aggregate::splitter() try {
 
-    // Check if any of the Chunk is splittable
-    while (!isComplete() && !hasFailed()) {
-        RemoteData::Partial p = isSplittable();
-        if(p == RemoteData::Partial::no)
-            return;
-        else if(p==RemoteData::Partial::yes)
-            break;
-        boost::this_thread::sleep(boost::posix_time::millisec(100));
-    }
-
     // Loop while a bottleneck exists
-    while (!isComplete() && !hasFailed()) {
+    while (!isFinished() && !hasFailed()) {
         // Get the bottle neck and split
         if(activeChunks() < m_chunks && isSplitReady() ) {
             // NOTE: Removing this showed the synronization bug
@@ -338,7 +342,7 @@ void Aggregate::splitter() try {
         boost::this_thread::sleep(boost::posix_time::millisec(100));
     }
 
-} catch (ex::aggregator::NoBottleneck e) {
+} catch (ex::aggregator::NoBottleneck& e) {
     // This isn't a bad thing, just signifies
     // that no further segmentation can occur.
     // It helps to get outside both of splitting
@@ -352,44 +356,56 @@ void Aggregate::merger() {
     boost::this_thread::sleep(boost::posix_time::millisec(500));
 
     fancyprint("Merging!",NOTIFY);
-    if(m_chunk.size()==0) throw "this shouldn't be possible";
+    if(m_chunk.size()==0)
+        Throw(ex::Error,"This shouldn't be possible");
 
     std::vector<File*> files;
-    File last(chunkName(m_filesize));
     for(unsigned i=0; i < m_chunk.size();i++)
         files.push_back(m_chunk[i]->file());
-    files.push_back(&last);
-
+    // first represents the "0" file and which is sure to
+    // exist
     File* first = files[0];
-    // first and last file aren't processed
-    for(unsigned i=1; i < files.size()-1;i++){
-        print(i << " of " << files.size()-1);
 
-        uintmax_t prev_size = first->size();
-        uintmax_t current_size = files[i]->size();
-        uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
-        uintmax_t next_expected_size = std::atoi( files[i+1]->filename().c_str());
+    File limiter(chunkName(m_filesize));
+    // If limiter doesn't exist then it implies that
+    // download shouldn't be resumed and that imples
+    // that nothing is splitted and hence no merging
+    if( limiter.exists() ){
 
-        // prev_size must lies in range [current_expected_size,next_expected_size]
-        if( prev_size < current_expected_size)
-            Throw(ex::Error,"Data is missing.");
-        else if( prev_size > next_expected_size)
-            Throw(ex::Error,"Data is redundant. We don't truncate.");
+        // limiter is also added for calculations
+        // but not processed
+        files.push_back(&limiter);
+        // first and last file aren't processed
+        for(unsigned i=1; i < files.size()-1;i++){
+            print(i << " of " << files.size()-1);
 
-        uintmax_t offset = prev_size - current_expected_size;
-        uintmax_t totalBytes = next_expected_size - current_expected_size;
-        if (current_size < totalBytes)
-            Throw(ex::Error,"Data is missing. We don't truncate.");
-        // TODO do something with append()
-        // Here total=0 means that offset is equal to total
-        // which doesn't imply writing everything
-        totalBytes -= offset;
-        if(totalBytes!=0)
-            first->append(*files[i],totalBytes,offset);
-        files[i]->remove();
+            uintmax_t prev_size = first->size();
+            uintmax_t current_size = files[i]->size();
+            uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
+            uintmax_t next_expected_size = std::atoi( files[i+1]->filename().c_str());
 
-        std::cout << DELETE;
+            // prev_size must lies in range [current_expected_size,next_expected_size]
+            if( prev_size < current_expected_size)
+                Throw(ex::Error,"Data is missing.");
+            else if( prev_size > next_expected_size)
+                Throw(ex::Error,"Data is redundant. We don't truncate.");
+
+            uintmax_t offset = prev_size - current_expected_size;
+            uintmax_t totalBytes = next_expected_size - current_expected_size;
+            if (current_size < totalBytes)
+                Throw(ex::Error,"Data is missing. We don't truncate.");
+            // TODO improve append()
+            // Here total=0 means that offset is equal to total
+            // which doesn't imply writing everything
+            totalBytes -= offset;
+            if(totalBytes!=0)
+                first->append(*files[i],totalBytes,offset);
+            files[i]->remove();
+
+            std::cout << DELETE;
+        }
     }
+
     // Move the merged file to safe place
     first->move(prettyName(),Node::NEW);
     // Remove the old directory
@@ -410,7 +426,7 @@ void Aggregate::speed_worker() {
     const unsigned persistance = 1/refresh*5;
     uintmax_t no = 0;
 
-    while (!isComplete() && !hasFailed()){
+    while (!isFinished() && !hasFailed()){
         boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
         m_instSpeed = aggregateSpeed();
         m_avgSpeed= (m_avgSpeed*no+m_instSpeed)/(no+1);
