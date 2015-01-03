@@ -96,14 +96,12 @@ void BasicTransaction::play() {
 
 // Block until the download is finished or fails.
 void BasicTransaction::join() const {
-    print("joinstart");
     if(mptr_thread)
         mptr_thread->join();
     if(mptr_speedThread) {
         mptr_speedThread->interrupt();
         mptr_speedThread->join();
     }
-    print("joinend");
 }
 
 // Getters and setters for the data members.

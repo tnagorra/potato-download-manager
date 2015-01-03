@@ -61,7 +61,6 @@ void HttpTransaction<SocketType>::workerMain() try {
     receiveHeaders();
     writeOut();
 } catch (Redirect& redir) {
-    print("Redirecting");
     if (redir.m_rstp_secure==NULL) {
         redir.m_rstp_plain->workerMain();
     } else {
