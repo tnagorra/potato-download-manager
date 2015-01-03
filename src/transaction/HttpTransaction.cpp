@@ -24,10 +24,10 @@ class Redirect {
 };
 
 // Constructor.
-template <typename SocketType>
+    template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
         const Range& range, unsigned attempts, unsigned wait)
-        : Transaction<SocketType>(rdata,range, attempts, wait)
+: Transaction<SocketType>(rdata,range, attempts, wait)
 { }
 
 // Start the downloader thread and return immediately
@@ -61,6 +61,7 @@ void HttpTransaction<SocketType>::workerMain() try {
     receiveHeaders();
     writeOut();
 } catch (Redirect& redir) {
+    print("Redirecting");
     if (redir.m_rstp_secure==NULL) {
         redir.m_rstp_plain->workerMain();
     } else {
@@ -109,7 +110,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     // Make the request!
     try {
         boost::asio::write(*mptr_socket, request);
-     } catch (boost::system::system_error& err) {
+    } catch (boost::system::system_error& err) {
         Throw(ex::download::ErrorSendingRequest,err.what());
     }
     m_state = State::waiting;
@@ -203,7 +204,10 @@ void HttpTransaction<SocketType>::receiveHeaders() {
         else if (status_code==206)
             mptr_rdata->canPartial(RemoteData::Partial::yes);
     }
-    if(m_range.uninitialized())
+    // NOTE
+    // bytesTotal is zero if content length isn't given
+    // and m_range is kept uninitialized
+    if(m_range.uninitialized() && bytesTotal!=0)
         m_range.update(bytesTotal,0);
 
     // As a last resort, if the size of the incoming stream cannot
@@ -269,11 +273,13 @@ void HttpTransaction<SocketType>::writeOut() {
 
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
+    // TODO a check must be kept here!
     if (bufBytes)
         m_reader(writeStream,bufBytes,0);
     m_bytesDone = bufBytes;
     m_state = State::downloading;
 
+    print(m_bytesDone);
 
     boost::system::error_code error;
     while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
@@ -286,20 +292,26 @@ void HttpTransaction<SocketType>::writeOut() {
                     boost::posix_time::milliseconds(200));
         m_pauseRequest = false;
 
-        if (bufBytes+m_bytesDone >= m_range.size()) {
-            if (m_bytesDone>m_range.size())
-                Throw(ex::Not, "recoverable situation");
-            m_reader(writeStream,m_range.size()-m_bytesDone,0);
-            m_bytesDone = m_range.size();
-            error=boost::asio::error::eof;
-            break;
-        } else
-            m_reader(writeStream,bufBytes,0);
-
+        if(m_range.uninitialized()) {
+            // when range is not resumable
+            if(bufBytes!=0)
+                m_reader(writeStream,bufBytes,0);
+        } else {
+            if (bufBytes+m_bytesDone >= m_range.size()) {
+                if (m_bytesDone>m_range.size())
+                    Throw(ex::Error, "not recoverable situation");
+                m_reader(writeStream,m_range.size()-m_bytesDone,0);
+                m_bytesDone = m_range.size();
+                error=boost::asio::error::eof;
+                break;
+            } else
+                m_reader(writeStream,bufBytes,0);
+        }
         m_bytesDone += bufBytes;
 
         boost::this_thread::interruption_point();
     }
+    print(m_bytesDone);
 
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;

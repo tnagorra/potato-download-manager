@@ -352,9 +352,6 @@ void Aggregate::merger() {
     // Only for syncronization in main loop
     boost::this_thread::sleep(boost::posix_time::millisec(500));
 
-    fancyprint("Merging!",NOTIFY);
-    if(m_chunk.size()==0)
-        Throw(ex::Error,"This shouldn't be possible");
 
     std::vector<File*> files;
     for(unsigned i=0; i < m_chunk.size();i++)
@@ -368,6 +365,7 @@ void Aggregate::merger() {
     // download shouldn't be resumed and that imples
     // that nothing is splitted and hence no merging
     if( limiter.exists() ){
+        fancyprint("Merging!",NOTIFY);
 
         // limiter is also added for calculations
         // but not processed
@@ -402,7 +400,6 @@ void Aggregate::merger() {
             std::cout << DELETE;
         }
     }
-
     // Move the merged file to safe place
     first->move(prettyName(),Node::NEW);
     // Remove the old directory

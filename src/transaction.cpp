@@ -22,16 +22,14 @@ int main(int argc, char* argv[]) try {
         r.update(boost::lexical_cast<uintmax_t>(argv[3]),0);
     BasicTransaction* bTrans = BasicTransaction::factory(argv[1],r);
 
-    File potato(filename);
-    boost::function<void (std::istream&, uintmax_t)> rdr;
+    File potato(filename,File::BINARY);
+    boost::function<void (std::istream&, uintmax_t,uintmax_t)> rdr;
     rdr = boost::bind(static_cast<void(File::*)(std::istream&,
-                uintmax_t)>(&File::append), &potato, _1, _2);
+                uintmax_t,uintmax_t)>(&File::append), &potato, _1, _2, _3);
     bTrans->registerReader(rdr);
 
     bTrans->start();
-    while (!bTrans->isComplete()) {
-        boost::this_thread::sleep(boost::posix_time::millisec(500));
-    }
+    bTrans->join();
     return 0;
 
 } catch (std::exception& ex) {

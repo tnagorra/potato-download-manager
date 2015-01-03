@@ -2,9 +2,9 @@
 
 (A) Implement Mutexes
 (A) Prevent Ctrl+C corruption and duplicate processes
-(A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
 
+(B) Get name and extension of file from the header +RemoteTransaction
 (B) Downgrade Options class, create new class for read/write INI/JSON files
 (B) Reusing Sockets +Aggregate @Aggregate
 (B) Restart failed connections
