@@ -13,6 +13,8 @@
 #include "filesystem/File.h"
 #include "filesystem/Directory.h"
 
+#include "common/ExBridge.h"
+
 int main(int argc, char* argv[]) try {
     Range r;
     std::string filename="potato";
@@ -20,7 +22,9 @@ int main(int argc, char* argv[]) try {
         filename = argv[2];
     if (argc>3)
         r.update(boost::lexical_cast<uintmax_t>(argv[3]),0);
+    ExBridge* eb = new ExBridge;
     BasicTransaction* bTrans = BasicTransaction::factory(argv[1],r);
+    bTrans->exbridge(eb);
 
     File potato(filename,File::BINARY);
     boost::function<void (std::istream&, uintmax_t,uintmax_t)> rdr;

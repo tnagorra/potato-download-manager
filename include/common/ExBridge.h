@@ -30,7 +30,7 @@ class ExBridge {
         // Returns the number of exceptions that have been logged
         uintmax_t number();
         // Register an exception
-        void log(std::exception exc);
+        void log(std::exception& exc);
         // Returns the exception vector
         std::vector<std::exception> all();
         // Pops an exception from m_exceptions;
