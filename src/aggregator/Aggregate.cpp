@@ -262,7 +262,14 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 
 void Aggregate::worker() try {
     //fancyprint("STARTER",NOTIFY);
-    starter();
+    try {
+        starter();
+        //fancyprint("SPLITTER",NOTIFY);
+        splitter();
+    } catch (ex::aggregator::NonResumable& e){
+        // The download wansn't resumable
+        // so splitter() could be skipped
+    }
     //fancyprint("JOIN ALL",NOTIFY);
     joinChunks();
     //fancyprint("MERGER",NOTIFY);
@@ -275,9 +282,8 @@ void Aggregate::worker() try {
 
 void Aggregate::starter() {
 
-    // If there is only one chunk then it is the first
-    // download chunk so infomation must be gathered
-
+    // If m_filesize is zero, then it is the first time
+    // starting the transaction
     if(m_filesize==0) {
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
@@ -286,7 +292,6 @@ void Aggregate::starter() {
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
-        // and further process can be started
         while( !researcher->txn()->isDownloading() &&
                 !researcher->txn()->isComplete() &&
                 !researcher->txn()->hasFailed() )
@@ -308,8 +313,7 @@ void Aggregate::starter() {
             File limiter(chunkName(m_filesize));
             limiter.write();
         } else {
-            // Skip splitter() for non-resumables
-            return;
+            Throw(ex::aggregator::NonResumable);
         }
 
     } else {
@@ -318,8 +322,6 @@ void Aggregate::starter() {
         for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
             (*it)->txn()->start();
     }
-
-    splitter();
 }
 
 void Aggregate::splitter() try {
@@ -337,7 +339,7 @@ void Aggregate::splitter() try {
         boost::this_thread::sleep(boost::posix_time::millisec(100));
     }
 
-} catch (ex::aggregator::NoBottleneck e) {
+} catch (ex::aggregator::NoBottleneck& e) {
     // This isn't a bad thing, just signifies
     // that no further segmentation can occur.
     // It helps to get outside both of splitting

@@ -22,6 +22,11 @@ namespace ex{
                     : Error("No bottleneck found.",o) { }
         };
 
+        class NonResumable: public Error {
+            public:
+                NonResumable(const std::string& o)
+                    :Error("Non resumable download",o) { }
+        };
     };
 };
 
