@@ -37,6 +37,7 @@ class HttpTransaction : public Transaction<SocketType> {
     using Transaction<SocketType>::mptr_socket;
     using Transaction<SocketType>::mptr_response;
     using Transaction<SocketType>::mptr_rdata;
+    using Transaction<SocketType>::mptr_exbridge;
     using Transaction<SocketType>::m_bytesDone;
     using Transaction<SocketType>::m_reader;
     using Transaction<SocketType>::m_pauseRequest;

@@ -283,4 +283,12 @@ void BasicTransaction::speedWorker() {
     m_hifiSpeed = 0;
 }
 
+void BasicTransaction::exbridge(ExBridge* exb) {
+    mptr_exbridge = exb;
+}
+
+ExBridge* BasicTransaction::exbridge() const {
+    return mptr_exbridge;
+}
+
 // End file BasicTransaction.cpp

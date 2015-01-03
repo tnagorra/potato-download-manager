@@ -67,6 +67,9 @@ void HttpTransaction<SocketType>::workerMain() try {
     } else {
         redir.m_rstp_secure->workerMain();
     }
+} catch (std::exception& exc) {
+    m_state = State::failed;
+    mptr_exbridge->log(exc);
 }
 
 // Create the http request headers and send them

@@ -22,6 +22,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
         sort(files.begin(),files.end(),numerically);
     }
 
+    m_txnExBridge = new ExBridge;
     // Note: Files with numeric names
     if( files.size()==0) {
 
@@ -29,6 +30,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
         // It means there is no previous session
         File* newfile = new File(chunkName(0));
         BasicTransaction* newtxn = BasicTransaction::factory(m_url);
+        newtxn->exbridge(m_txnExBridge);
         Chunk* researcher = new Chunk(newtxn,newfile);
         m_chunk.push_back(researcher);
 
@@ -66,6 +68,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
                 start = end;
             Range r(end,start);
             BasicTransaction* t= BasicTransaction::factory(m_url,r);
+            t->exbridge(m_txnExBridge);
             Chunk* c = new Chunk(t,f);
             m_chunk.push_back(c);
         }

@@ -12,6 +12,7 @@
 #include "aggregator/Chunk.h"
 #include "aggregator/ex.h"
 #include "common/helper.h"
+#include "common/ExBridge.h"
 
 /*
    When BasicTransaction is complete, push those to m_socket
@@ -51,6 +52,8 @@ class Aggregate{
         double m_instSpeed;
         // Gives the hifi speed
         double m_hifiSpeed;
+        // The ExBridge object to pass to transactions
+        ExBridge* m_txnExBridge;
 
     public:
         // Constructor

@@ -3,6 +3,8 @@
 (A) Implement Mutexes
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Catch exceptions +BasicTransaction @worker
+(A) Add support for urls like http://somename:8023/filename +BasicTransaction [check]
+(A) Encapsulate the many settings passed to +BasicTransaction in a bucket
 
 (B) Get name and extension of file from the header +RemoteTransaction
 (B) Downgrade Options class, create new class for read/write INI/JSON files

@@ -14,6 +14,7 @@
 #include <boost/function.hpp>
 
 #include "common/ex.h"
+#include "common/ExBridge.h"
 #include "transaction/ex.h"
 #include "transaction/RemoteData.h"
 #include "transaction/Range.h"
@@ -43,6 +44,8 @@ class BasicTransaction {
         Range m_range;
         // A RemoteData Object pointer
         RemoteData* mptr_rdata;
+        // Pointer to an ExBridge object in which to log exceptions
+        ExBridge* mptr_exbridge;
         // The thread in which the download will run
         boost::thread* mptr_thread;
         // The thread which will do the speed observation work
@@ -50,7 +53,9 @@ class BasicTransaction {
         // Streambuf for buffering the response
         boost::asio::streambuf* mptr_response;
         // function object callback used to write out received bytes
-        boost::function<void (std::istream&, uintmax_t, uintmax_t)> m_reader; // Endpoint iterator for hostname resolution
+        boost::function<void (std::istream&, uintmax_t, uintmax_t)>
+            m_reader;
+        // Endpoint iterator for hostname resolution
         tcp::resolver::iterator m_endpIterator;
         // Has the transaction been split (range-updated) externally?
         //bool m_beenSplit;
@@ -185,6 +190,11 @@ class BasicTransaction {
 
         // Worker function for calculating the speeds
         void speedWorker();
+
+        // Inject the ExBridge object
+        void exbridge(ExBridge* exb);
+        // Return the ExBridge object
+        ExBridge* exbridge() const;
 };
 
 #endif
