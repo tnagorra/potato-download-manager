@@ -16,11 +16,14 @@ uintmax_t ExBridge::number() {
 }
 
 // Register an exception
-void ExBridge::log(std::exception exc) {
+void ExBridge::log(std::exception& exc) {
+    print("logstart");
     boost::upgrade_lock<boost::shared_mutex> lock(m_mutex);
     boost::upgrade_to_unique_lock<boost::shared_mutex> uLock(lock);
     m_exNumber++;
     m_exceptions.push_back(exc);
+    print(exc.what());
+    print("logend");
 }
 
 

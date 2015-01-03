@@ -70,6 +70,7 @@ void HttpTransaction<SocketType>::workerMain() try {
 } catch (std::exception& exc) {
     m_state = State::failed;
     mptr_exbridge->log(exc);
+    print(exc.what());
 }
 
 // Create the http request headers and send them
@@ -166,13 +167,9 @@ void HttpTransaction<SocketType>::receiveHeaders() {
         Throw(ex::download::BadResponse);
     }
 
-    // Do this handling more elegantly
-    //if (status_code!=200)
-    //    Throw(ex::download::BadStatusCode,status_code);
-
     m_statusLine = http_version+" "+
         boost::lexical_cast<std::string>(status_code)+status_message;
-    //print(m_statusLine);
+    print(m_statusLine);
 
     // Read of all the headers to the buffer
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n\r\n");
@@ -181,10 +178,18 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     std::string header; size_t colon;
     while(std::getline(resp_strm, header) && header!="\r") {
         if ((colon = header.find(':'))!=std::string::npos) {
-            m_respHeaders[boost::to_lower_copy(header.substr(0,colon))]
+            m_respHeaders[boost::to_lower_copy(header.substr(
+                        0,colon))]
                 = header.substr(colon+2,header.size()-colon-3);
         }
         //print(header);
+    }
+
+    // If the transfer encoding is chunked, bail out.
+    if (m_respHeaders.count("transfer-encoding")>0) {
+        if (m_respHeaders["transfer-encoding"]=="chunked" ||
+            m_respHeaders["transfer-encoding"]=="Chunked")
+            Throw(ex::download::BadResponse);
     }
 
     uintmax_t bytesTotal = 0;

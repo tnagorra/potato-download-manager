@@ -96,12 +96,15 @@ void BasicTransaction::play() {
 
 // Block until the download is finished or fails.
 void BasicTransaction::join() const {
+    print("joinstart");
     if(mptr_thread)
         mptr_thread->join();
-    if(mptr_speedThread)
+    if(mptr_speedThread) {
+        mptr_speedThread->interrupt();
         mptr_speedThread->join();
+    }
+    print("joinend");
 }
-
 
 // Getters and setters for the data members.
 
@@ -265,9 +268,10 @@ void BasicTransaction::speedWorker() {
     const double refresh = 0.1;
     const unsigned persistance = 1/refresh;
     uintmax_t no = 0;
-    while( state() != State::downloading && state() !=State::complete)
+    while( state() != State::downloading &&
+            state() !=State::complete && state()!=State::failed)
         boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
-    while (state() != State::complete) {
+    while (state() != State::complete || state() != State::failed) {
         uintmax_t bytes_downloaded = bytesDone();
         boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
         uintmax_t delta = bytesDone() - bytes_downloaded;
