@@ -3,9 +3,13 @@
 (A) Implement Mutexes
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Catch exceptions +BasicTransaction @worker
-(A) Add support for urls like http://somename:8023/filename +BasicTransaction [check]
+(A) Bug fix in undefined content-length +BasicTransaction
 (A) Encapsulate the many settings passed to +BasicTransaction in a bucket
+(A) Add license and installer script
+(A) Get filename from the headers
 
+(B) Add Ftp support
+(B) Support chunked download
 (B) Get name and extension of file from the header +RemoteTransaction
 (B) Downgrade Options class, create new class for read/write INI/JSON files
 (B) Reusing Sockets +Aggregate @Aggregate
@@ -16,5 +20,8 @@
 (B) Implement a GUI interface
 (B) Capture cookie
 (B) Implement grabber
+(B) Add functionality to update url
+(B) Scheduled download
 
 (C) Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
+(C) Do something about removePort80()

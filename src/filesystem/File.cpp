@@ -28,26 +28,23 @@ void File::assertClean() {
 
 // Used to copy n bytes of data from input stream to m_stream
 // If n is 0, then total input stream is copied
-void File::streamCopy(std::istream& in, uintmax_t count, uintmax_t offset) {
+void File::streamCopy(std::istream& in, uintmax_t offset, uintmax_t count) {
 
     const uintmax_t bufferSize= 4096;
     char buffer[bufferSize];
 
+    // Get desired offset
     if(offset!=0)
         in.seekg(offset,in.beg);
-    if (count != 0) {
-        while (count > bufferSize){
-            in.read(buffer, bufferSize);
-            m_stream.write(buffer, bufferSize);
-            count -= bufferSize;
-        }
-        in.read(buffer, count);
-        m_stream.write(buffer, count);
-    } else {
-        while(!in.eof()){
-            in.read(buffer, bufferSize);
-            m_stream.write(buffer, in.gcount());
-        }
+
+    while (count > 0){
+        uintmax_t readSize = count % bufferSize;
+        in.read(buffer, bufferSize);
+        uintmax_t getBytes = in.gcount();
+        if(getBytes==0)
+            break;
+        m_stream.write(buffer, getBytes);
+        count -= getBytes;
     }
     // TODO temporary as this will be called at last
     // flushing will do good
@@ -202,27 +199,15 @@ void File::write(Conflict c) {
 // Creates a File using string, B+T
 // Throws ex::filesystem::AlreadyThere
 void File::write(const std::string& data,Conflict c) {
-    if( exists() ){
-        if(c == LEAVE)
-            Throw(ex::filesystem::AlreadyThere,m_name.string());
-        else if(c == NEW)
-            path(newpath());
-    }
-    open(WRITE);
+    write();
     m_stream << data;
 }
 
 // Creates a File using istream, B+T ??
 // Throws ex::filesystem::AlreadyThere
-void File::write(std::istream& data,Conflict c,uintmax_t n){
-    if( exists() ){
-        if(c == LEAVE)
-            Throw(ex::filesystem::AlreadyThere,m_name.string());
-        else if(c == NEW)
-            path(newpath());
-    }
-    open(WRITE);
-    streamCopy(data, n);
+void File::write(std::istream& data,Conflict c,uintmax_t offset,uintmax_t count){
+    write();
+    streamCopy(data, offset, count);
 }
 
 // Appends to a existing File using string, B+T
@@ -231,23 +216,16 @@ void File::append(const std::string& data) {
     m_stream << data;
 }
 
-// Appends to a existing File using File, B+T
-void File::append(File& data) {
-    open(APPEND);
-    data.open(READ);
-    streamCopy(data.m_stream);
-}
-
-void File::append(File& data,uintmax_t n, uintmax_t o){
-    open(APPEND);
-    data.open(READ);
-    streamCopy(data.m_stream,n,o);
-}
-
 // Appends to a existing File using istream, B+T
-void File::append(std::istream& data,uintmax_t n,uintmax_t o){
+void File::append(std::istream& data,uintmax_t offset, uintmax_t count){
     open(APPEND);
-    streamCopy(data, n, o);
+    streamCopy(data, offset, count);
+}
+
+// Appends to a istream, B+T
+void File::append(File& data,uintmax_t offset, uintmax_t count){
+    data.open(READ);
+    append(data.m_stream,offset,count);
 }
 
 // Returns the line string from an existing File, T

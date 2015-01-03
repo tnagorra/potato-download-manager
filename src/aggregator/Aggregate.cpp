@@ -7,6 +7,8 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
     m_hashedUrl(purgatory+"/"+md5(removeport80(m_url))), m_prettyUrl(destination+"/"+prettify(m_url)),
     m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0)
 {
+    m_txnExBridge = new ExBridge;
+
     // Directory session is used to find out about
     // previous download information
     std::vector<std::string> files;
@@ -22,7 +24,6 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
         sort(files.begin(),files.end(),numerically);
     }
 
-    m_txnExBridge = new ExBridge;
     // Note: Files with numeric names
     if( files.size()==0) {
 
@@ -157,15 +158,6 @@ bool Aggregate::isFinished() const {
     return true;
 }
 
-/*
-   double Aggregate::speed() {
-   double s = 0;
-   for(auto it = m_chunk.begin();it != m_chunk.end();++it)
-   s += (*it)->txn()->speed();
-   return s;
-   }
-   */
-
 unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
@@ -211,9 +203,8 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     }
 
     // If there is no bottleneck Chunk then throw exception
-    if( it == m_chunk.size() ) {
+    if(it == m_chunk.size())
         Throw(ex::aggregator::NoBottleneck);
-    }
 
     // Now just get the real bottle neck
     for (; it < m_chunk.size(); ++it){
@@ -255,6 +246,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     Range newrange(upper,midpoint);
     File* newfile = new File(chunkName(midpoint));
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
+    newtxn->exbridge(m_txnExBridge);
     Chunk* newcell = new Chunk(newtxn,newfile);
 
     // Insert newly created Chunk in the vector after
@@ -305,7 +297,6 @@ void Aggregate::starter() {
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
-        // TODO if no content-length then bytesTotal() must give zero and act accordingly inside
         // If no content-length is given then bytesTotal should
         // provide with zero size so it is non-resumable
         if(m_filesize!=0 && researcher->txn()->remoteData().canPartial() == RemoteData::Partial::yes){
