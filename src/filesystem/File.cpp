@@ -29,25 +29,19 @@ void File::assertClean() {
 // Used to copy n bytes of data from input stream to m_stream
 // If n is 0, then total input stream is copied
 void File::streamCopy(std::istream& in, uintmax_t offset, uintmax_t count) {
-
     const uintmax_t bufferSize= 4096;
     char buffer[bufferSize];
 
-    // Get desired offset
     if(offset!=0)
         in.seekg(offset,in.beg);
 
-    while (count > 0){
-        uintmax_t readSize = count % bufferSize;
-        in.read(buffer, bufferSize);
+    while (count > 0 && !in.eof()) {
+        uintmax_t readSize = count>bufferSize ? bufferSize : count;
+        in.read(buffer,readSize);
         uintmax_t getBytes = in.gcount();
-        if(getBytes==0)
-            break;
         m_stream.write(buffer, getBytes);
         count -= getBytes;
     }
-    // TODO temporary as this will be called at last
-    // flushing will do good
     m_stream.flush();
 }
 

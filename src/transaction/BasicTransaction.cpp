@@ -96,14 +96,12 @@ void BasicTransaction::play() {
 
 // Block until the download is finished or fails.
 void BasicTransaction::join() const {
-    print("joinstart");
     if(mptr_thread)
         mptr_thread->join();
     if(mptr_speedThread) {
         mptr_speedThread->interrupt();
         mptr_speedThread->join();
     }
-    print("joinend");
 }
 
 // Getters and setters for the data members.
@@ -247,24 +245,6 @@ uintmax_t BasicTransaction::timeRemaining() const {
 // The function that runs on m_speedThread and does the speed
 // calculation work.
 void BasicTransaction::speedWorker() {
-    /*
-       uintmax_t tick=0;
-       uintmax_t oldBytes,delta;
-
-       while (state()!=State::downloading)
-       boost::this_thread::sleep(
-       boost::posix_time::milliseconds(100));
-
-       while (!isComplete()) {
-       oldBytes = bytesDone();
-       boost::this_thread::sleep(
-       boost::posix_time::milliseconds(500));
-       delta = bytesDone()-oldBytes;
-       tick++;
-       m_avgSpeed = (1.0*bytesDone())/(10*tick);
-       m_instSpeed = (1.0*delta)/10;
-       }
-       */
     const double refresh = 0.1;
     const unsigned persistance = 1/refresh;
     uintmax_t no = 0;

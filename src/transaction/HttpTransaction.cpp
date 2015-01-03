@@ -61,7 +61,6 @@ void HttpTransaction<SocketType>::workerMain() try {
     receiveHeaders();
     writeOut();
 } catch (Redirect& redir) {
-    print("Redirecting");
     if (redir.m_rstp_secure==NULL) {
         redir.m_rstp_plain->workerMain();
     } else {
@@ -70,7 +69,7 @@ void HttpTransaction<SocketType>::workerMain() try {
 } catch (std::exception& exc) {
     m_state = State::failed;
     mptr_exbridge->log(exc);
-    print(exc.what());
+    //print(exc.what());
 }
 
 // Create the http request headers and send them
@@ -169,7 +168,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     m_statusLine = http_version+" "+
         boost::lexical_cast<std::string>(status_code)+status_message;
-    print(m_statusLine);
+    //print(m_statusLine);
 
     // Read of all the headers to the buffer
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n\r\n");
@@ -283,15 +282,13 @@ void HttpTransaction<SocketType>::writeOut() {
     std::istream writeStream(mptr_response);
     // TODO a check must be kept here!
     if (bufBytes)
-        m_reader(writeStream,bufBytes,0);
+        m_reader(writeStream,0,bufBytes);
     m_bytesDone = bufBytes;
     m_state = State::downloading;
 
-    print(m_bytesDone);
-
+    //print(m_bytesDone);
     boost::system::error_code error;
-    while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response,
-                    boost::asio::transfer_at_least(1), error))) {
+    while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response, boost::asio::transfer_at_least(1), error))) {
 
         // This blocks prevents writing to a file
         // when splitting is performed
@@ -300,26 +297,22 @@ void HttpTransaction<SocketType>::writeOut() {
                     boost::posix_time::milliseconds(200));
         m_pauseRequest = false;
 
-        if(m_range.uninitialized()) {
-            // when range is not resumable
-            if(bufBytes!=0)
-                m_reader(writeStream,bufBytes,0);
+        // when range is not resumable
+        if (!m_range.uninitialized() && bufBytes+m_bytesDone >= m_range.size()) {
+            if (m_bytesDone>m_range.size())
+                Throw(ex::Error, "not recoverable situation");
+            m_reader(writeStream,0,m_range.size()-m_bytesDone);
+            m_bytesDone = m_range.size();
+            error=boost::asio::error::eof;
+            break;
         } else {
-            if (bufBytes+m_bytesDone >= m_range.size()) {
-                if (m_bytesDone>m_range.size())
-                    Throw(ex::Error, "not recoverable situation");
-                m_reader(writeStream,m_range.size()-m_bytesDone,0);
-                m_bytesDone = m_range.size();
-                error=boost::asio::error::eof;
-                break;
-            } else
-                m_reader(writeStream,bufBytes,0);
+            m_reader(writeStream,0,bufBytes);
         }
         m_bytesDone += bufBytes;
 
         boost::this_thread::interruption_point();
     }
-    print(m_bytesDone);
+    //print(m_bytesDone);
 
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;

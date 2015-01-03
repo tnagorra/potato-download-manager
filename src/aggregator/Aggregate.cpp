@@ -365,10 +365,10 @@ void Aggregate::merger() {
         // but not processed
         files.push_back(&limiter);
         // first and last file aren't processed
+        uintmax_t prev_size = first->size();
         for(unsigned i=1; i < files.size()-1;i++){
             print(i << " of " << files.size()-1);
 
-            uintmax_t prev_size = first->size();
             uintmax_t current_size = files[i]->size();
             uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
             uintmax_t next_expected_size = std::atoi( files[i+1]->filename().c_str());
@@ -383,12 +383,9 @@ void Aggregate::merger() {
             uintmax_t totalBytes = next_expected_size - current_expected_size;
             if (current_size < totalBytes)
                 Throw(ex::Error,"Data is missing. We don't truncate.");
-            // TODO improve append()
-            // Here total=0 means that offset is equal to total
-            // which doesn't imply writing everything
             totalBytes -= offset;
-            if(totalBytes!=0)
-                first->append(*files[i],totalBytes,offset);
+            first->append(*files[i],offset,totalBytes);
+            prev_size += current_size;
             files[i]->remove();
 
             std::cout << DELETE;
