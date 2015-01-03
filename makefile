@@ -20,8 +20,8 @@ FOBJECTS_FILE:=$(addprefix $(OBJDIR)/filesystem/,$(OBJECTS_FILE))
 LDFLAGS_FILE=-lboost_system -lboost_filesystem -lcrypto
 
 ## Variables and rules for common
-SOURCES_COMM:= helper.cpp
-HEADERS_COMM:=helper.h ex.h
+SOURCES_COMM:= helper.cpp ExBridge.cpp
+HEADERS_COMM:=helper.h ex.h ExBridge.h
 OBJECTS_COMM:=$(SOURCES_COMM:.cpp=.o)
 FSOURCES_FILE:=$(addprefix $(SRCDIR)/common/,$(SOURCES_COMM))
 FHEADERS_COMM:=$(addprefix $(INCDIR)/common/,$(HEADERS_COMM))

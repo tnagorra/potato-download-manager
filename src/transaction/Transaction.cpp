@@ -154,9 +154,10 @@ void Transaction<SocketType>::connectHost() {
             if (triesleft==1)
             Throw(ex::download::CouldNotConnect,mptr_rdata->server());
         }
-        if (temp_itr==err_itr)
+        if (temp_itr==err_itr) {
             boost::this_thread::sleep(boost::posix_time::seconds(
                     m_attemptWait));
+        }
     } while (temp_itr==err_itr && --triesleft);
 
     mptr_socket->set_option(tcp::no_delay(true));
@@ -196,9 +197,10 @@ void Transaction<SSLSock>::connectHost() {
             if (triesleft==1)
             Throw(ex::download::CouldNotConnect,mptr_rdata->server());
         }
-        if (temp_itr==err_itr)
+        if (temp_itr==err_itr) {
             boost::this_thread::sleep(boost::posix_time::seconds(
                     m_attemptWait));
+        }
     } while (temp_itr==err_itr && --triesleft);
 
     if (temp_itr==err_itr)

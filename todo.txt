@@ -1,10 +1,11 @@
 # Todo
 
-(A) Implement Mutexes
-(A) Prevent Ctrl+C corruption and duplicate processes
+(A) Implement Mutexes [check]
+(A) Prevent Ctrl+C corruption and duplicate processes [check]
 (A) Consider the case where server doesn't provide size info +Aggregate
 (A) Catch exceptions +BasicTransaction @worker
-(A) Add support for urls like http://somename:8023/filename +BasicTransaction
+(A) Add support for urls like http://somename:8023/filename +BasicTransaction [check]
+(A) Encapsulate the many settings passed to +BasicTransaction in a bucket
 
 (B) Downgrade Options class, create new class for read/write INI/JSON files
 (B) Reusing Sockets +Aggregate @Aggregate
