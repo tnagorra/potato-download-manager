@@ -5,7 +5,9 @@ A multipart downloader that downloads potatoes from the internet. It supports do
 
 ##Building from git
 Check out the latest sources with:
+
     git clone --recursive https://github.com/tnagorra/potato-download-manager
+
 Make sure to install the dependencies first.
 ```bash
 #Install dependencies
