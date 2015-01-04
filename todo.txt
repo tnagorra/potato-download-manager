@@ -3,11 +3,12 @@
 (*) Implement Mutexes
 (A) Prevent Ctrl+C corruption and duplicate processes
 (A) Catch exceptions +BasicTransaction @worker
-(A) Bug fix in undefined content-length +BasicTransaction
+(*) Bug fix in undefined content-length +BasicTransaction
 (*) Catch exceptions +BasicTransaction @worker
 (*) Add support for urls like http://somename:8023/filename +BasicTransaction [check]
 (A) Encapsulate the many settings passed to +BasicTransaction in a bucket
-(A) Add license and installer script
+(*) Add license
+(A) Add installer script
 (A) Get filename from the headers
 
 (B) Add Ftp support
