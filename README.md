@@ -24,4 +24,4 @@ make
 It is distributed under [GNU GPL][1]. A copy of the license is available in the distributed LICENSE file.
 
 
-[1] http://www.gnu.org/licenses/gpl.txt
+[1]: http://www.gnu.org/licenses/gpl.txt
