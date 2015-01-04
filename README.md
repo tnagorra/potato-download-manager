@@ -5,7 +5,9 @@ A multipart downloader that downloads potatoes from the internet. It supports do
 
 ##Building from git
 Check out the latest sources with:
+
     git clone --recursive https://github.com/tnagorra/potato-download-manager
+
 Make sure to install the dependencies first.
 ```bash
 #Install dependencies
@@ -18,5 +20,8 @@ make
 #Run the application
 ./bin/aggregator
 ```
-#License
-It is distributed under GNU GENERAL PUBLIC LICENSE. A copy of the license is available in the distributed LICENSE file.
+##License
+It is distributed under [GNU GPL][1]. A copy of the license is available in the distributed LICENSE file.
+
+
+[1] http://www.gnu.org/licenses/gpl.txt
