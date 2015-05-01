@@ -7,8 +7,8 @@
 #include <iostream>
 #include <string>
 
-const std::string globalConfig = "potas/global.ini";
-const std::string localConfig= "local.ini";
+const std::string globalConfig ="global.ini";
+const std::string localConfig = "local.ini";
 
 int main(int ac, char* av[]) try {
     // Get Global Options

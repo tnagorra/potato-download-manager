@@ -1,30 +1,47 @@
 # Todo
 
-(*) Implement Mutexes
-(A) Prevent Ctrl+C corruption and duplicate processes
 (A) Catch exceptions +BasicTransaction @worker
+(A) Encapsulate the many settings passed to +BasicTransaction in a bucket
+(A) Get filename from the headers +Aggregate @Aggregate +HttpTransaction
+    Note: The filename shouldn't be used for hashed-folder-name
+        Url should be used for hashed-folder-name to avoid conflict
+(*) Add installer script
+(*) Implement Mutexes
 (*) Bug fix in undefined content-length +BasicTransaction
 (*) Catch exceptions +BasicTransaction @worker
-(*) Add support for urls like http://somename:8023/filename +BasicTransaction [check]
-(A) Encapsulate the many settings passed to +BasicTransaction in a bucket
+(*) Add support for urls like http://somename:8023/filename +BasicTransaction
 (*) Add license
-(A) Add installer script
-(A) Get filename from the headers
 
 (B) Add Ftp support
-(B) Support chunked download
-(B) Get name and extension of file from the header +RemoteTransaction
-(B) Downgrade Options class, create new class for read/write INI/JSON files
-(B) Reusing Sockets +Aggregate @Aggregate
-(B) Restart failed connections
-(B) Reset slow connections +Aggregate @worker
-(B) Implement speed limit +BasicTransaction
-(B) Interactive CLI design
-(B) Implement a GUI interface
 (B) Capture cookie
 (B) Implement grabber
-(B) Add functionality to update url
-(B) Scheduled download
+(B) Implement a GUI interface
+(B) Interactive CLI design
+    1. Add functionality to update url (incase url is changed)
+    2. Scheduled download
+    3. Support chunked download
+(B) Eliminate Options class, create new class for R/W using INI/JSON files
+    1. Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
+(B) Prevent Ctrl+C and duplicate processes
+    Note: Problem with cross platform compatibility
+(B) Implement speed limit +BasicTransaction
 
-(C) Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
-(C) Do something about removePort80()
+(C) Restart failed connections +Aggregate @worker
+(C) Reset slow connections +Aggregate @worker
+(C) Reusing Sockets +Aggregate @Aggregate
+(C) Flush after completion and not before +File @streamCopy
+    Note: Flushing in destructor can save IO write
+(C) Look into removeport80() +Aggregate @Aggregate
+    Note: 80 is the default port.
+
+
+# Test File
+
+Default Test File
+"http://onlinekaraoke.tv/assets/songs/29000-29999/29660-i-will-always-love-you-whitney-houston--1411573135.mp3"
+
+Uses port address
+http://cache2.animepremium.tv:8880/downloadcache/AtJTYKYZLm1pi8GEQYSKkg/1419447086/exapaslvn6vy.html.mp4/One-Piece-Episode-675-chia-anime.com.mp4
+
+File size isn't specified
+http://www.woo55.pk/adata/10618/12.%20The%20Monster%20Ft.%20Rihanna%20-%20%28www.SongsLover.com%29.mp3

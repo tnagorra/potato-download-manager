@@ -16,7 +16,7 @@ class GlobalOptions : public CommonOptions {
         std::string destination_purgatory() const {
             if (m_vm.count("destination.purgatory"))
                 return m_vm["destination.purgatory"].as<std::string>();
-            return "potas";
+            return "incomplet";
         }
 
 };

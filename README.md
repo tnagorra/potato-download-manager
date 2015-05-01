@@ -8,17 +8,17 @@ Check out the latest sources with:
 
     git clone --recursive https://github.com/tnagorra/potato-download-manager
 
-Make sure to install the dependencies first.
+Run install.sh to install podoman.
 ```bash
-#Install dependencies
-sudo apt-get install libssl-dev libboost-program-options-dev libboost-thread-dev libboost-filesystem-dev -y
-
-#Build it
 cd potato-download-manager
-make
+# Make sure to make script executable
+chmod +x install.sh
+# Running the script
+./install.sh
 
-#Run the application
-./bin/aggregator
+# Executing the program
+cd ~/potato/
+./podoman
 ```
 ##License
 It is distributed under [GNU GPL][1]. A copy of the license is available in the distributed LICENSE file.

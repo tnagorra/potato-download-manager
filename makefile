@@ -5,7 +5,7 @@ BINDIR:=bin
 
 CC=g++
 #CC=clang
-CFLAGS=-c -I$(INCDIR)/ --std=c++11
+CFLAGS=-c --std=c++11 -I$(INCDIR)/
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 
 all: filesystem transaction aggregator options

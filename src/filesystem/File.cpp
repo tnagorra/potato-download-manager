@@ -42,6 +42,10 @@ void File::streamCopy(std::istream& in, uintmax_t offset, uintmax_t count) {
         m_stream.write(buffer, getBytes);
         count -= getBytes;
     }
+    /* TODO
+       Is flush really required here?
+       Can't this be done in the destructor/
+       */
     m_stream.flush();
 }
 

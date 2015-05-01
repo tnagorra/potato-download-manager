@@ -58,8 +58,8 @@ class Aggregate{
     public:
         // Constructor
         Aggregate(const std::string& url,
-                const std::string& destination="potatoes",
-                const std::string& purgatory="potas",
+                const std::string& destination,
+                const std::string& purgatory,
                 unsigned txns=8,uintmax_t split=500*1024);
 
         // Destructor

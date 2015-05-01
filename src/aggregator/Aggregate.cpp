@@ -346,7 +346,6 @@ void Aggregate::merger() {
     // Only for syncronization in main loop
     boost::this_thread::sleep(boost::posix_time::millisec(500));
 
-
     std::vector<File*> files;
     for(unsigned i=0; i < m_chunk.size();i++)
         files.push_back(m_chunk[i]->file());

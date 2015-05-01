@@ -1,6 +1,6 @@
 ## Files/Folders to ignore
-.*.swp
+*.swp
 bin
 resources
 potatoes
-potas
+incomplet
