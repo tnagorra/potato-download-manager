@@ -198,6 +198,28 @@ void HttpTransaction<SocketType>::receiveHeaders() {
                 m_respHeaders["content-length"]);
     }
 
+    // Find filename
+    if(m_respHeaders.count("Content-Disposition")>0) {
+        std::string disposition = boost::lexical_cast<std::string>(
+                    m_respHeaders["Content-Disposition"]);
+
+        int equalto = disposition.find_first_of('=');
+        int length = disposition.length();
+        int first = disposition.find_first_of('"',equalto);
+        int last = disposition.find_first_of('"',first+1);
+
+        // Format: Content-Disposition: attachment; filename="fname.ext"
+        // If apostrophe is present
+        if(first>0 && last>0)
+            // Offset of to exclude the apostrophe
+            disposition = disposition.substr(first +1,last-first+1 -2);
+        else
+            // Offset to exclude the equalto
+            disposition = disposition.substr(equalto +1, length-equalto+1 -1);
+
+        mptr_rdata->filename(disposition);
+    }
+
     // Find out whether byterange requests are supported
     if (m_respHeaders.count("accept-ranges")>0) {
         mptr_rdata->canPartial(

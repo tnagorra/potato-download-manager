@@ -20,7 +20,7 @@ int main(int ac, char * av[]) try {
     g.store(globalConfig);
     g.load();
 
-    // if nothing is specified then show things
+    // if nothing is specified then display history
     if ( ac <= 1 ) {
         // Find the purgatory and look for sessions
         Directory session(g.destination_purgatory());
@@ -84,10 +84,12 @@ int main(int ac, char * av[]) try {
                       l.segment_threshold());
         agg.start();
         while (!agg.isComplete() && !agg.hasFailed()) {
-            unsigned all = agg.displayChunks();
+            // unsigned all = agg.displayChunks();
             boost::this_thread::sleep(boost::posix_time::millisec(100));
+            /*
             for (int i = 0; i < all + 1; i++)
                 std::cout << DELETE;
+                */
         }
         agg.join();
 

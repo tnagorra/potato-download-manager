@@ -25,6 +25,7 @@ RemoteData* RemoteData::factory(const std::string& fUrl) {
 RemoteData::RemoteData(const std::string& fUrl) {
     fullUrl(fUrl);
     m_canPartial = Partial::unknown;
+    m_filename = "";
 }
 
 // Getters
@@ -69,6 +70,11 @@ std::string RemoteData::prettyName() const {
     return m_prettyName;
 }
 
+// Returns the fileName
+std::string RemoteData::filename() const {
+    return m_filename;
+}
+
 // Returns whether partial downloads are allowed
 RemoteData::Partial RemoteData::canPartial() const {
     return m_canPartial;
@@ -93,6 +99,11 @@ RemoteData::Protocol RemoteData::schemeFromString(const std::string&
 // Sets whether partial downloads are allowed
 void RemoteData::canPartial(RemoteData::Partial can_partial) {
     m_canPartial = can_partial;
+}
+
+// Sets whether partial downloads are allowed
+void RemoteData::filename(const std::string& file_name) {
+    m_filename  = file_name;
 }
 
 // Set the Full Url of the resource. This method needs to do

@@ -195,6 +195,7 @@ class BasicTransaction {
         void exbridge(ExBridge* exb);
         // Return the ExBridge object
         ExBridge* exbridge() const;
+
 };
 
 #endif

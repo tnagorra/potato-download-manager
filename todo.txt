@@ -1,8 +1,11 @@
+# Check
+(A) Looks like prettyName inside RemoteData isn't even initialized
+
 # Todo
 
 (A) Catch exceptions +BasicTransaction @worker
 (A) Encapsulate the many settings passed to +BasicTransaction in a bucket
-(A) Get filename from the headers +Aggregate @Aggregate +HttpTransaction
+(*) Get filename from the headers +Aggregate @Aggregate +HttpTransaction
     Note: The filename shouldn't be used for hashed-folder-name
         Url should be used for hashed-folder-name to avoid conflict
 (*) Add installer script
@@ -13,18 +16,17 @@
 (*) Add license
 
 (B) Add Ftp support
-(B) Capture cookie
-(B) Implement grabber
-(B) Implement a GUI interface
-(B) Interactive CLI design
-    1. Add functionality to update url (incase url is changed)
-    2. Scheduled download
-    3. Support chunked download
-(B) Eliminate Options class, create new class for R/W using INI/JSON files
-    1. Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
+(B) Capture cookie & implement grabber
+(B) Implement speed limit +BasicTransaction
 (B) Prevent Ctrl+C and duplicate processes
     Note: Problem with cross platform compatibility
-(B) Implement speed limit +BasicTransaction
+(B) Interactive CLI design (Ncurses)
+    1. Add functionality to update url (incase url is changed)
+        Note: change url in local.ini
+    2. Scheduled download and Queued download
+    3. Support chunked download
+(B) Implement a GUI interface
+
 
 (C) Restart failed connections +Aggregate @worker
 (C) Reset slow connections +Aggregate @worker
@@ -33,7 +35,8 @@
     Note: Flushing in destructor can save IO write
 (C) Look into removeport80() +Aggregate @Aggregate
     Note: 80 is the default port.
-
+(C) Eliminate Options class, create new class for R/W using INI/JSON files
+    1. Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
 
 # Test File
 
@@ -45,3 +48,9 @@ http://cache2.animepremium.tv:8880/downloadcache/AtJTYKYZLm1pi8GEQYSKkg/14194470
 
 File size isn't specified
 http://www.woo55.pk/adata/10618/12.%20The%20Monster%20Ft.%20Rihanna%20-%20%28www.SongsLover.com%29.mp3
+
+Webpage
+http://en.wikipedia.org/wiki/Soybean_cyst_nematode
+    Error: Starting Transaction failed.
+
+Require links where filenames are different from name extracted from url.

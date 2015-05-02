@@ -256,7 +256,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
 }
 
 void Aggregate::worker() try {
-    //fancyprint("STARTER",NOTIFY);
+    // fancyprint("STARTER",NOTIFY);
     try {
         starter();
         //fancyprint("SPLITTER",NOTIFY);
@@ -297,6 +297,16 @@ void Aggregate::starter() {
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
+
+        // TODO This is not saved and if the aggregate is interrupted while
+        // such that this part of code doesn't execute while continuing
+        // then the generated prettyUrl is used.
+        if (researcher->txn()->remoteData().filename() != ""){
+            int lastslash = m_prettyUrl.find_last_of('/');
+            // Remove the filename-from-url and append filename-from-header
+            m_prettyUrl = m_prettyUrl.substr(0, lastslash) + researcher->txn()->remoteData().filename();
+        }
+
         // If no content-length is given then bytesTotal should
         // provide with zero size so it is non-resumable
         if(m_filesize!=0 && researcher->txn()->remoteData().canPartial() == RemoteData::Partial::yes){
@@ -381,7 +391,7 @@ void Aggregate::merger() {
             uintmax_t offset = prev_size - current_expected_size;
             uintmax_t totalBytes = next_expected_size - current_expected_size;
             if (current_size < totalBytes)
-                Throw(ex::Error,"Data is missing. We don't truncate.");
+                Throw(ex::Error,"Data is missing.");
             totalBytes -= offset;
             first->append(*files[i],offset,totalBytes);
             prev_size += current_size;

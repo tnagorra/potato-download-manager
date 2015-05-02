@@ -33,6 +33,8 @@ class RemoteData {
         std::string m_path;
         // Pretty name
         std::string m_prettyName;
+        // filename
+        std::string m_filename;
     private:
         // Are partial requests allowed?
         Partial m_canPartial;
@@ -60,8 +62,13 @@ class RemoteData {
         std::string path() const;
         // Returns the prettyName
         std::string prettyName() const;
+
         // Returns whether partial downloads are allowed
         Partial canPartial() const;
+        // Returns the download filename
+        std::string filename() const;
+
+        void filename(const std::string& file_name);
 
         // Return the Protocol:: enum from a string
         Protocol schemeFromString(const std::string& sch) const;
