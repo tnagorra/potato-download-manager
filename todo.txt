@@ -5,6 +5,7 @@
 
 (A) Catch exceptions +BasicTransaction @worker
 (A) Encapsulate the many settings passed to +BasicTransaction in a bucket
+(A) Inject LocalOptions inside Aggregate, Save response-filename in ini file
 (*) Get filename from the headers +Aggregate @Aggregate +HttpTransaction
     Note: The filename shouldn't be used for hashed-folder-name
         Url should be used for hashed-folder-name to avoid conflict

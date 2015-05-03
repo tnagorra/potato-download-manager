@@ -1,38 +1,44 @@
 #include"aggregator/Aggregate.h"
 
 Aggregate::Aggregate(const std::string& url, const std::string& destination,
-        const std::string& purgatory, unsigned txns,uintmax_t split):
-    m_chunks(txns), m_url(url), m_filesize(0), m_failed(false), m_thread(NULL),
-    m_splittable_size( (split>100*1024) ? split : 100*1024), m_speed_thread(NULL),
-    m_hashedUrl(purgatory+"/"+md5(removeport80(m_url))), m_prettyUrl(destination+"/"+prettify(m_url)),
-    m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0)
-{
+                     const std::string& purgatory, unsigned txns, uintmax_t split):
+    m_failed(false),
+    m_chunks(txns),
+    m_inactive_chunks(4),
+    m_thread(NULL), m_speed_thread(NULL),
+    m_splittable_size((split > 100 * 1024) ? split : 100 * 1024),
+    m_url(url),
+    m_hashedUrl(purgatory + "/" + md5(removeport80(m_url))),
+    m_prettyUrl(destination + "/" + prettify(m_url)),
+    m_filesize(0),
+    m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0) {
     m_txnExBridge = new ExBridge;
 
     // Directory session is used to find out about
     // previous download information
     std::vector<std::string> files;
-    Directory session(m_hashedUrl);
-    if ( session.exists() && !session.isEmpty() ) {
-        files = session.list(Node::FILE,true);
-        // Remove non-numeric names
-        for(unsigned i=0;i<files.size();i++){
-            if(!isNumeric(files[i]))
-                files.erase(files.begin()+i);
+    {
+        Directory session(m_hashedUrl);
+        if ( session.exists() && !session.isEmpty() ) {
+            files = session.list(Node::FILE, true);
+            // Remove non-numeric names
+            for (unsigned i = 0; i < files.size(); i++) {
+                if (!isNumeric(files[i]))
+                    files.erase(files.begin() + i);
+            }
+            // sort the files numerically
+            sort(files.begin(), files.end(), numerically);
         }
-        // sort the files numerically
-        sort(files.begin(),files.end(),numerically);
     }
 
     // Note: Files with numeric names
-    if( files.size()==0) {
+    if ( files.size() <= 0) {
 
-        // If no numeric files are found!
-        // It means there is no previous session
+        // If no numeric files are found, there is no previous session
         File* newfile = new File(chunkName(0));
         BasicTransaction* newtxn = BasicTransaction::factory(m_url);
         newtxn->exbridge(m_txnExBridge);
-        Chunk* researcher = new Chunk(newtxn,newfile);
+        Chunk* researcher = new Chunk(newtxn, newfile);
         m_chunk.push_back(researcher);
 
     } else {
@@ -40,91 +46,83 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
         // Get the file size from the last file
         m_filesize = std::atoi(files.back().c_str());
 
-        // notifies that there is no limiter
-        // deducded if last file isn't of zero size
-        // or when there is only one file and which is 0;
-        // exception thrown if last file is deleted
-        // or if transaction isn't resumable;
-        // NONRECOVERABLE
-        // TODO delete everything and crash things
-        if( File(chunkName(m_filesize)).size() != 0 || m_filesize==0)
-            Throw(ex::filesystem::NotThere,"limiter");
+        // Check for valid limiter, limiter should have zero size
+        // and it must not be the first file
+        // NONRECOVERABLE : occurs if last file is deleted
+        if ( File(chunkName(m_filesize)).size() != 0 || m_filesize == 0)
+            Throw(ex::filesystem::NotThere, "limiter");
 
-        // occurs if first file is deleted
-        // RECOVERABLE
-        // Start file must always be 0
-        // Insert a start file "0"
-        if(files[0]!="0")
-            files.insert(files.begin(),"0");
+        // Check if start file is "0" else insert one
+        // RECOVERABLE : occurs if first file is deleted
+        if (files[0] != "0")
+            files.insert(files.begin(), "0");
 
         // Populate all the Chunks
-        for(unsigned i=0; i < files.size()-1; i++){
-            uintmax_t start =std::atoi(files[i].c_str());
-            uintmax_t end = std::atoi(files[i+1].c_str());
-            File* f = new File(chunkName(std::atoi(files[i].c_str())));
+        for (unsigned i = 0; i < files.size() - 1; i++) {
+            uintmax_t start = std::atoi(files[i].c_str());
+            uintmax_t end = std::atoi(files[i + 1].c_str());
+            File* f = new File(chunkName(start));
             start += f->size();
-            // These kind of files may be created due to
-            // interruption in merging or faulty download
-            if(start > end)
-                start = end;
-            Range r(end,start);
-            BasicTransaction* t= BasicTransaction::factory(m_url,r);
+
+            // RECOVERABLE: occurs if interruption in merging
+            Range r(end, min(start,end));
+            BasicTransaction* t = BasicTransaction::factory(m_url, r);
             t->exbridge(m_txnExBridge);
-            Chunk* c = new Chunk(t,f);
+            Chunk* c = new Chunk(t, f);
             m_chunk.push_back(c);
         }
     }
 }
 
-Aggregate::~Aggregate(){
+Aggregate::~Aggregate() {
     // Delete all Chunk and Socket
     stop();
 
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         delete (*it);
-    if(m_thread)
+    if (m_thread)
         delete m_thread;
-    if(m_speed_thread)
+    if (m_speed_thread)
         delete m_speed_thread;
 }
 
-void Aggregate::stop(){
-    for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
+void Aggregate::stop() {
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         (*it)->txn()->stop();
-    if(m_thread && m_thread->joinable())
+    if (m_thread && m_thread->joinable())
         m_thread->interrupt();
-    if(m_speed_thread && m_speed_thread->joinable())
+    if (m_speed_thread && m_speed_thread->joinable())
         m_speed_thread->interrupt();
 }
 
 unsigned Aggregate::displayChunks() const {
-    fancyprint(activeChunks() << "/" << totalChunks(),NOTIFY);
+    fancyprint(activeChunks() << "/" << totalChunks(), NOTIFY);
 
     int j = m_chunk.size();
-    for(auto i=0;i<m_chunk.size();i++){
+    for (auto i = 0; i < m_chunk.size(); i++) {
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
-        uintmax_t down= m_chunk[i]->txn()->range().lb()+m_chunk[i]->txn()->bytesDone();
+        uintmax_t down = m_chunk[i]->txn()->range().lb() + m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
         std::string myColor;
 
-        if(m_chunk[i]->txn()->isComplete())
+        if (m_chunk[i]->txn()->isComplete())
             myColor = SUCCESS;
-        else if(m_chunk[i]->txn()->hasFailed())
+        else if (m_chunk[i]->txn()->hasFailed())
             myColor = ERROR;
-        else if(m_chunk[i]->txn()->isDownloading())
+        else if (m_chunk[i]->txn()->isDownloading())
             myColor = WARNING;
         else
             myColor = NOTIFY;
 
-        fancyprint(lower << ":" << down << ":"<< higher<< " ",myColor);
+        fancyprint(lower << ":" << down << ":" << higher << " ", myColor);
     }
 
-    std::cout << progressbar(progress(),COLOR(0,CC::WHITE,CC::PURPLE),COLOR(0,CC::PURPLE,CC::WHITE));
-    print( " " << round(progress(),2) << "%\t"
-            << formatTime(timeRemaining()) << "\t"
-            << formatByte(speed()) << "ps\t");
+    std::cout << progressbar(progress(), COLOR(0, CC::WHITE, CC::PURPLE), COLOR(0, CC::PURPLE, CC::WHITE));
+    print( " " << round(progress(), 2) << "%\t"
+           << formatTime(timeRemaining()) << "\t"
+           << formatByte(speed()) << "ps\t");
 
-    return j+1;
+    return j + 1;
 }
 
 
@@ -143,16 +141,16 @@ uintmax_t Aggregate::bytesTotal() const {
 }
 
 bool Aggregate::isComplete() const {
-    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->isComplete())
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it) {
+        if (!(*it)->txn()->isComplete())
             return false;
     }
     return true;
 }
 
 bool Aggregate::isFinished() const {
-    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->isComplete() && !(*it)->txn()->hasFailed())
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it) {
+        if (!(*it)->txn()->isComplete() && !(*it)->txn()->hasFailed())
             return false;
     }
     return true;
@@ -160,25 +158,25 @@ bool Aggregate::isFinished() const {
 
 unsigned Aggregate::activeChunks() const {
     unsigned count = 0;
-    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if( (*it)->txn()->isRunning())
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it) {
+        if ( (*it)->txn()->isRunning())
             count++;
     }
     return count;
 }
 
 void Aggregate::joinChunks() {
-    for(auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         (*it)->txn()->join();
 }
 
 bool Aggregate::isSplitReady() const {
     // It is split ready if inactive count is less than 4
-    unsigned count=0;
-    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it){
-        if(!(*it)->txn()->isDownloading())
+    unsigned count = 0;
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it) {
+        if (!(*it)->txn()->isDownloading())
             count++;
-        if(count > 3)
+        if (count >= m_inactive_chunks)
             return false;
     }
     return true;
@@ -187,13 +185,21 @@ bool Aggregate::isSplitReady() const {
 std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
     // Initialize bottleneck such that it is the first chunk
     // which is splittable
-    uintmax_t bbr = 0;
-    uintmax_t btr = 0;
+
+    // Bottleneck index
     std::vector<Chunk*>::size_type bneck = 0;
+    // Iterator
     std::vector<Chunk*>::size_type it = 0;
-    for (;it < m_chunk.size();++it){
+
+    // Bottleneck Bytes Remaining
+    uintmax_t bbr = 0;
+    // Bottleneck Time Remaining
+    uintmax_t btr = 0;
+
+    // Get the first candidate for bottleneck
+    for (; it < m_chunk.size(); ++it) {
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
-        if(ibr <= m_splittable_size)
+        if (ibr <= m_splittable_size)
             continue;
         // If it is splittable, it is the bottleneck
         bneck = it;
@@ -202,17 +208,17 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
         break;
     }
 
-    // If there is no bottleneck Chunk then throw exception
-    if(it == m_chunk.size())
+    // If there is no bottleneck candidate then throw exception
+    if (it == m_chunk.size())
         Throw(ex::aggregator::NoBottleneck);
 
-    // Now just get the real bottle neck
-    for (; it < m_chunk.size(); ++it){
+    // Now get the real bottle neck
+    for (; it < m_chunk.size(); ++it) {
         uintmax_t ibr = m_chunk[it]->txn()->bytesRemaining();
-        if( ibr <= m_splittable_size)
+        if ( ibr <= m_splittable_size)
             continue;
         uintmax_t itr = m_chunk[it]->txn()->timeRemaining();
-        if((btr < itr) || (btr==itr && bbr<ibr)){
+        if ((btr < itr) || (btr == itr && bbr < ibr)) {
             bneck = it;
             bbr = m_chunk[bneck]->txn()->bytesRemaining();
             btr = m_chunk[bneck]->txn()->timeRemaining();
@@ -223,7 +229,7 @@ std::vector<Chunk*>::size_type Aggregate::bottleNeck() const {
 }
 
 // Split a Chunk and insert new Chunk after it
-void Aggregate::split(std::vector<Chunk*>::size_type split_index){
+void Aggregate::split(std::vector<Chunk*>::size_type split_index) {
 
     Chunk* cell = m_chunk[split_index];
     cell->txn()->pause();
@@ -233,24 +239,24 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index){
     uintmax_t downloaded = cell->txn()->bytesDone();
     uintmax_t lower = cell->txn()->range().lb();
     uintmax_t upper = cell->txn()->range().ub();
-    uintmax_t midpoint = (upper+(lower+downloaded))/2;
+    uintmax_t midpoint = (upper + (lower + downloaded)) / 2;
 
-    if( midpoint > upper || midpoint < lower)
-        Throw(ex::Invalid,"Midpoint");
+    if ( midpoint > upper || midpoint < lower)
+        Throw(ex::Invalid, "Midpoint");
 
     // Update the upper byte of the byte range.
     // no bytes beyond a certain point.
     cell->txn()->range().ub(midpoint);
     cell->txn()->play();
 
-    Range newrange(upper,midpoint);
+    Range newrange(upper, midpoint);
     File* newfile = new File(chunkName(midpoint));
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     newtxn->exbridge(m_txnExBridge);
-    Chunk* newcell = new Chunk(newtxn,newfile);
+    Chunk* newcell = new Chunk(newtxn, newfile);
 
     // Insert newly created Chunk in the vector after
-    m_chunk.insert(m_chunk.begin()+split_index+1, newcell);
+    m_chunk.insert(m_chunk.begin() + split_index + 1, newcell);
 
     newcell->txn()->start();
 }
@@ -261,7 +267,7 @@ void Aggregate::worker() try {
         starter();
         //fancyprint("SPLITTER",NOTIFY);
         splitter();
-    } catch (ex::aggregator::NonResumable& e){
+    } catch (ex::aggregator::NonResumable& e) {
         // The download wansn't resumable
         // so splitter() could be skipped
     }
@@ -279,7 +285,7 @@ void Aggregate::starter() {
 
     // If m_filesize is zero, then it is the first time
     // starting the transaction
-    if(m_filesize==0) {
+    if (m_filesize == 0) {
         // Researcher finds about the necessary information
         // about the download file; filesize, resumability
         Chunk* researcher = m_chunk[0];
@@ -287,29 +293,30 @@ void Aggregate::starter() {
 
         // Wait for researcher until downloading starts,
         // Now we get the proper information about the file
-        while( !researcher->txn()->isDownloading() &&
+        while ( !researcher->txn()->isDownloading() &&
                 !researcher->txn()->isComplete() &&
                 !researcher->txn()->hasFailed() )
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
-        if(researcher->txn()->hasFailed())
-            Throw(ex::Error,"Starting transaction failed.");
+        if (researcher->txn()->hasFailed())
+            Throw(ex::Error, "Starting transaction failed.");
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
 
-        // TODO This is not saved and if the aggregate is interrupted while
-        // such that this part of code doesn't execute while continuing
-        // then the generated prettyUrl is used.
-        if (researcher->txn()->remoteData().filename() != ""){
+        // TODO: response-filename must be saved somewhere, an interrupted download
+        // will not retain the response-filename
+        // If no filename is given then the default url-generated filename is used
+        if (researcher->txn()->remoteData().filename() != "") {
             int lastslash = m_prettyUrl.find_last_of('/');
             // Remove the filename-from-url and append filename-from-header
-            m_prettyUrl = m_prettyUrl.substr(0, lastslash) + researcher->txn()->remoteData().filename();
+            m_prettyUrl = m_prettyUrl.substr(0, lastslash) +
+                researcher->txn()->remoteData().filename();
         }
 
         // If no content-length is given then bytesTotal should
         // provide with zero size so it is non-resumable
-        if(m_filesize!=0 && researcher->txn()->remoteData().canPartial() == RemoteData::Partial::yes){
+        if (m_filesize != 0 && researcher->txn()->remoteData().canPartial() == RemoteData::Partial::yes) {
             // Create a limiter file
             // this indicates that file can be resumed
             // as non-resumable downloads don't need
@@ -323,7 +330,7 @@ void Aggregate::starter() {
     } else {
         // Start all the Chunks
         // They should be started at last
-        for(auto it = m_chunk.begin();it != m_chunk.end(); it++)
+        for (auto it = m_chunk.begin(); it != m_chunk.end(); it++)
             (*it)->txn()->start();
     }
 }
@@ -333,7 +340,7 @@ void Aggregate::splitter() try {
     // Loop while a bottleneck exists
     while (!isFinished() && !hasFailed()) {
         // Get the bottle neck and split
-        if(activeChunks() < m_chunks && isSplitReady() ) {
+        if (activeChunks() < m_chunks && isSplitReady() ) {
             // NOTE: Removing this showed the synronization bug
             std::vector<Chunk*>::size_type bneck = bottleNeck();
             split(bneck);
@@ -357,7 +364,7 @@ void Aggregate::merger() {
     boost::this_thread::sleep(boost::posix_time::millisec(500));
 
     std::vector<File*> files;
-    for(unsigned i=0; i < m_chunk.size();i++)
+    for (unsigned i = 0; i < m_chunk.size(); i++)
         files.push_back(m_chunk[i]->file());
     // first represents the "0" file and which is sure to
     // exist
@@ -367,33 +374,33 @@ void Aggregate::merger() {
     // If limiter doesn't exist then it implies that
     // download shouldn't be resumed and that imples
     // that nothing is splitted and hence no merging
-    if( limiter.exists() ){
-        fancyprint("Merging!",NOTIFY);
+    if ( limiter.exists() ) {
+        fancyprint("Merging!", NOTIFY);
 
         // limiter is also added for calculations
         // but not processed
         files.push_back(&limiter);
         // first and last file aren't processed
         uintmax_t prev_size = first->size();
-        for(unsigned i=1; i < files.size()-1;i++){
-            print(i << " of " << files.size()-1);
+        for (unsigned i = 1; i < files.size() - 1; i++) {
+            print(i << " of " << files.size() - 1);
 
             uintmax_t current_size = files[i]->size();
             uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
-            uintmax_t next_expected_size = std::atoi( files[i+1]->filename().c_str());
+            uintmax_t next_expected_size = std::atoi( files[i + 1]->filename().c_str());
 
             // prev_size must lies in range [current_expected_size,next_expected_size]
-            if( prev_size < current_expected_size)
-                Throw(ex::Error,"Data is missing.");
-            else if( prev_size > next_expected_size)
-                Throw(ex::Error,"Data is redundant. We don't truncate.");
+            if ( prev_size < current_expected_size)
+                Throw(ex::Error, "Data is missing.");
+            else if ( prev_size > next_expected_size)
+                Throw(ex::Error, "Data is redundant. We don't truncate.");
 
             uintmax_t offset = prev_size - current_expected_size;
             uintmax_t totalBytes = next_expected_size - current_expected_size;
             if (current_size < totalBytes)
-                Throw(ex::Error,"Data is missing.");
+                Throw(ex::Error, "Data is missing.");
             totalBytes -= offset;
-            first->append(*files[i],offset,totalBytes);
+            first->append(*files[i], offset, totalBytes);
             prev_size += current_size;
             files[i]->remove();
 
@@ -401,31 +408,31 @@ void Aggregate::merger() {
         }
     }
     // Move the merged file to safe place
-    first->move(prettyName(),Node::NEW);
+    first->move(prettyName(), Node::NEW);
     // Remove the old directory
     Directory(m_hashedUrl).remove(Node::FORCE);
 
-    fancyprint("Complete!",SUCCESS);
+    fancyprint("Complete!", SUCCESS);
 }
 
 double Aggregate::aggregateSpeed() const {
     double s = 0;
-    for(auto it = m_chunk.begin();it != m_chunk.end();++it)
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         s += (*it)->txn()->speed();
     return s;
 }
 
 void Aggregate::speed_worker() {
     const double refresh = 0.1;
-    const unsigned persistance = 1/refresh*5;
+    const unsigned persistance = 1 / refresh * 5;
     uintmax_t no = 0;
 
-    while (!isFinished() && !hasFailed()){
-        boost::this_thread::sleep(boost::posix_time::millisec(refresh*1000));
+    while (!isFinished() && !hasFailed()) {
+        boost::this_thread::sleep(boost::posix_time::millisec(refresh * 1000));
         m_instSpeed = aggregateSpeed();
-        m_avgSpeed= (m_avgSpeed*no+m_instSpeed)/(no+1);
-        int per = (no < persistance)?no:persistance;
-        m_hifiSpeed= (m_hifiSpeed*per+m_instSpeed)/(per+1);
+        m_avgSpeed = (m_avgSpeed * no + m_instSpeed) / (no + 1);
+        int per = (no < persistance) ? no : persistance;
+        m_hifiSpeed = (m_hifiSpeed * per + m_instSpeed) / (per + 1);
         no++;
     }
 
@@ -433,3 +440,5 @@ void Aggregate::speed_worker() {
     m_avgSpeed = 0;
     m_hifiSpeed = 0;
 }
+
+

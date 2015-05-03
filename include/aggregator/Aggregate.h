@@ -39,6 +39,8 @@ class Aggregate{
         std::string m_prettyUrl;
         // maximum number of Chunks
         unsigned m_chunks;
+        // maximum number of inactive Chunks
+        unsigned m_inactive_chunks;
         // Minimum size to be splittable
         uintmax_t m_splittable_size;
         // Size of the download file
@@ -153,7 +155,7 @@ class Aggregate{
         unsigned activeChunks() const ;
 
         // Returns the number of total BasicTransactions in the vector
-        inline unsigned totalChunks() const {
+        unsigned totalChunks() const {
             return m_chunk.size();
         }
 
@@ -188,12 +190,12 @@ class Aggregate{
         void split(std::vector<Chunk*>::size_type split_index);
 
         // Returns name of the Chunk with starting byte num
-        inline std::string chunkName(uintmax_t num) {
+        std::string chunkName(uintmax_t num) {
             return m_hashedUrl+"/"+std::to_string(num);
         }
 
         // Returns a pretty name
-        inline std::string prettyName() {
+        std::string prettyName() {
             return m_prettyUrl;
         }
 };

@@ -41,22 +41,6 @@
 #define Throw(...) GET_MACRO(__VA_ARGS__, Throw3, Throw2, Throw1)\
         (__VA_ARGS__)
 
-// FOR colors
-
-enum CC {BLACK,RED,GREEN,YELLOW,BLUE,PURPLE,TEAL,WHITE,GRAY};
-#define COLOR(bold,fore,back) "\033["+std::to_string(bold)+";"+std::to_string(30+fore)+";"+std::to_string(40+back)+"m"
-#define DISCOLOR "\033[0m"
-#define DELETE "\033[A\033[2K"
-
-#define SUCCESS COLOR(0,CC::GREEN,CC::BLACK)
-#define NOTIFY COLOR(0,CC::BLUE,CC::BLACK)
-#define WARNING COLOR(0,CC::YELLOW,CC::BLACK)
-#define ERROR COLOR(0,CC::RED,CC::BLACK)
-
-#define print(thing) std::cout<<thing<<std::endl
-#define fancyprint(thing,color) std::cout << color << thing << DISCOLOR << std::endl
-
-#define fancycout(thing,color) std::cout << color << thing << DISCOLOR
 
 // Namesepace ex
 // This is the namespace which contains all exception classes.
