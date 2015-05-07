@@ -22,48 +22,52 @@ int main(int ac, char * av[]) try {
     // if nothing is specified then display sessions
     if ( ac <= 1 ) {
         // Find the purgatory and look for sessions
-        Directory session(g.destination_purgatory());
         bool empty = true;
 
-        if ( session.exists() && !session.isEmpty()) {
+        // If session exists then show all the valid sessions
+        std::vector<std::string> sessionlist = Directory(g.destination_purgatory()).list(Node::DIRECTORY);
 
-            // If session exists then show all the valid sessions
-            std::vector<std::string> sessionlist = session.list(Node::DIRECTORY);
+        for (int i = 0; i < sessionlist.size(); i++) {
+            std::string confname = sessionlist[i] + "/" + localConfig;
+            if (!File(confname).exists())
+                continue;
 
-            for (int i = 0; i < sessionlist.size(); i++) {
-                std::string confname = sessionlist[i] + "/" + localConfig;
-                if (!File(confname).exists())
-                    continue;
-
-                LocalOptions l;
-                l.store(confname);
-                l.load();
-
-                show(l.transaction_filename());
-                try {
+            LocalOptions l;
+            l.store(confname);
+            l.load();
+            show(l.transaction_filename());
+            try {
                 Aggregate agg(l.transaction_path(), g.destination_path(),
                               g.destination_purgatory(), l.segment_number(),
                               l.segment_threshold());
                 show(progressbar(agg.progress(), BARONE, BARTWO));
-                } catch (ex::filesystem::NotThere& e) {
-                    // These are files that aren't resumable
-                    show(progressbar(0.00, BARONE, BARTWO));
-                }
-                empty = false;
+            } catch (ex::filesystem::NotThere& e) {
+                // These are files that aren't resumable
+                show(progressbar(0.00, BARONE, BARTHREE));
             }
+            empty = false;
         }
 
-        if (empty)
-            fancyshow("No download history.", WARNING);
+        std::vector<std::string> session = Directory(g.destination_path()).list(Node::FILE);
+        for (int i = 0; i < session.size(); i++) {
+            show(session[i]);
+            show(progressbar(100.00, BARFOUR, BARONE));
+            empty = false;
+        }
+
+    if (empty)
+        fancyshow("No download history.", WARNING);
 
     } else {
 
         LocalOptions l;
         try {
-            // Load local config
+            // Load immediate config
             l.store(ac, av);
             // Load global config
             l.store(globalConfig);
+
+
             // If it contains -h then show help immediately
             if (l.help()) {
                 show(l.content());
@@ -81,6 +85,9 @@ int main(int ac, char * av[]) try {
                       g.destination_purgatory(), l.segment_number(),
                       l.segment_threshold());
 
+        // Load Local config or else some data may disappear
+        l.store(agg.purgatoryFilename()+"/"+localConfig);
+        l.load();
         // Save local config
         l.unload(agg.purgatoryFilename() + "/" + localConfig);
 

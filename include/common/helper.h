@@ -31,6 +31,8 @@ enum CC {BLACK,RED,GREEN,YELLOW,BLUE,PURPLE,TEAL,WHITE,GRAY};
 
 #define BARONE COLOR(0, CC::WHITE, CC::BLUE)
 #define BARTWO COLOR(0, CC::BLUE, CC::WHITE)
+#define BARTHREE COLOR(0, CC::BLUE, CC::RED)
+#define BARFOUR COLOR(0, CC::BLUE, CC::GREEN)
 
 #define show(thing) std::cout<<thing<<std::endl
 #define fancyshow(thing,color) std::cout << color << thing << DISCOLOR << std::endl

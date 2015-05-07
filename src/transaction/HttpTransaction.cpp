@@ -206,9 +206,6 @@ void HttpTransaction<SocketType>::receiveHeaders() {
         std::string disposition = boost::lexical_cast<std::string>(
                                       m_respHeaders["content-disposition"]);
 
-        File f("newfile");
-        f.append(disposition);
-
         size_t equalto = disposition.find_first_of('=');
         size_t length = disposition.length();
         size_t first = disposition.find_first_of('"',equalto);

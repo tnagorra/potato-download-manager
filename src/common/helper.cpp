@@ -145,7 +145,7 @@ bool isNumeric(const std::string& s) {
 std::string progressbar(float progress,std::string yes, std::string no,unsigned len) {
     std::stringstream stream;
     unsigned place = progress/100*len;
-    if(len-place > 0)
+    if(len-place >= 0)
         stream << std::fixed << std::setprecision(2)
             << yes << std::string(place,' ')
             << no << std::string(len-place,' ')

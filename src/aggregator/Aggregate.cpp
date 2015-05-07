@@ -100,7 +100,6 @@ unsigned Aggregate::displayChunks() const {
 
     int j = m_chunk.size();
 
-
     // Width of the maximum number
     int width = std::log10(m_chunk[j-1]->txn()->range().ub())+1;
 
@@ -122,10 +121,8 @@ unsigned Aggregate::displayChunks() const {
         fancyshow(std::setfill('0') << std::setw(width) << lower << ":" << std::setw(width) << down << ":" << std::setw(width) << higher, myColor);
     }
 
-
-    std::cout << progressbar(progress(), BARONE, BARTWO);
-    show( formatTime(timeRemaining()) << "\t"
-          << formatByte(speed()) << "ps\t");
+    std::cout << progressbar(progress(), BARONE, BARTWO) << formatTime(timeRemaining()) << "\t"
+          << formatByte(speed()) << "ps\t"<< std::endl;
 
     // Two more lines for Status and progressbar.
     return j + 2;
