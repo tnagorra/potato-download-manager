@@ -3,22 +3,22 @@
 Aggregate::Aggregate(const std::string& url, const std::string& destination,
                      const std::string& purgatory, unsigned txns, uintmax_t split):
     m_failed(false),
-    m_chunks(txns),
-    m_inactive_chunks(4),
-    m_thread(NULL), m_speed_thread(NULL),
-    m_splittable_size((split > 100 * 1024) ? split : 100 * 1024),
+    m_chunks(txns), m_inactive_chunks(4),
+    mptr_thread(NULL), mptr_speed_thread(NULL),
+    m_splittable_size( max(split, 100 * 1024) ),
     m_url(url),
-    m_hashedUrl(purgatory + "/" + md5(removeport80(m_url))),
-    m_prettyUrl(destination + "/" + prettify(m_url)),
+    m_purgatory_filename(purgatory + "/" + md5(removeport80(url))),
+    m_destination_filename(destination + "/" + prettify(url)),
     m_filesize(0),
     m_avgSpeed(0), m_instSpeed(0), m_hifiSpeed(0) {
+
     m_txnExBridge = new ExBridge;
 
     // Directory session is used to find out about
     // previous download information
     std::vector<std::string> files;
     {
-        Directory session(m_hashedUrl);
+        Directory session(purgatoryFilename());
         if ( session.exists() && !session.isEmpty() ) {
             files = session.list(Node::FILE, true);
             // Remove non-numeric names
@@ -35,7 +35,7 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
     if ( files.size() <= 0) {
 
         // If no numeric files are found, there is no previous session
-        File* newfile = new File(chunkName(0));
+        File* newfile = new File(chunkFilename(0));
         BasicTransaction* newtxn = BasicTransaction::factory(m_url);
         newtxn->exbridge(m_txnExBridge);
         Chunk* researcher = new Chunk(newtxn, newfile);
@@ -43,14 +43,14 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
 
     } else {
 
-        // Get the file size from the last file
+        // Get the filesize from the filename of last file
         m_filesize = std::atoi(files.back().c_str());
 
         // Check for valid limiter, limiter should have zero size
         // and it must not be the first file
         // NONRECOVERABLE : occurs if last file is deleted
-        if ( File(chunkName(m_filesize)).size() != 0 || m_filesize == 0)
-            Throw(ex::filesystem::NotThere, "limiter");
+        if ( File(chunkFilename(m_filesize)).size() != 0 || m_filesize == 0)
+            Throw(ex::filesystem::NotThere, "Limiter");
 
         // Check if start file is "0" else insert one
         // RECOVERABLE : occurs if first file is deleted
@@ -61,11 +61,11 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
         for (unsigned i = 0; i < files.size() - 1; i++) {
             uintmax_t start = std::atoi(files[i].c_str());
             uintmax_t end = std::atoi(files[i + 1].c_str());
-            File* f = new File(chunkName(start));
+            File* f = new File(chunkFilename(start));
             start += f->size();
 
             // RECOVERABLE: occurs if interruption in merging
-            Range r(end, min(start,end));
+            Range r(end, min(start, end));
             BasicTransaction* t = BasicTransaction::factory(m_url, r);
             t->exbridge(m_txnExBridge);
             Chunk* c = new Chunk(t, f);
@@ -75,31 +75,36 @@ Aggregate::Aggregate(const std::string& url, const std::string& destination,
 }
 
 Aggregate::~Aggregate() {
-    // Delete all Chunk and Socket
+    // Delete all Chunks
     stop();
 
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         delete (*it);
-    if (m_thread)
-        delete m_thread;
-    if (m_speed_thread)
-        delete m_speed_thread;
+    if (mptr_thread)
+        delete mptr_thread;
+    if (mptr_speed_thread)
+        delete mptr_speed_thread;
 }
 
 void Aggregate::stop() {
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
         (*it)->txn()->stop();
-    if (m_thread && m_thread->joinable())
-        m_thread->interrupt();
-    if (m_speed_thread && m_speed_thread->joinable())
-        m_speed_thread->interrupt();
+    if (mptr_thread && mptr_thread->joinable())
+        mptr_thread->interrupt();
+    if (mptr_speed_thread && mptr_speed_thread->joinable())
+        mptr_speed_thread->interrupt();
 }
 
 unsigned Aggregate::displayChunks() const {
-    fancyprint(activeChunks() << "/" << totalChunks(), NOTIFY);
+    fancyshow(activeChunks() << " of " << totalChunks(), NOTIFY);
 
     int j = m_chunk.size();
-    for (auto i = 0; i < m_chunk.size(); i++) {
+
+
+    // Width of the maximum number
+    int width = std::log10(m_chunk[j-1]->txn()->range().ub())+1;
+
+    for (auto i = 0; i < j; i++) {
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
         uintmax_t down = m_chunk[i]->txn()->range().lb() + m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
@@ -114,15 +119,16 @@ unsigned Aggregate::displayChunks() const {
         else
             myColor = NOTIFY;
 
-        fancyprint(lower << ":" << down << ":" << higher << " ", myColor);
+        fancyshow(std::setfill('0') << std::setw(width) << lower << ":" << std::setw(width) << down << ":" << std::setw(width) << higher, myColor);
     }
 
-    std::cout << progressbar(progress(), COLOR(0, CC::WHITE, CC::PURPLE), COLOR(0, CC::PURPLE, CC::WHITE));
-    print( " " << round(progress(), 2) << "%\t"
-           << formatTime(timeRemaining()) << "\t"
-           << formatByte(speed()) << "ps\t");
 
-    return j + 1;
+    std::cout << progressbar(progress(), BARONE, BARTWO);
+    show( formatTime(timeRemaining()) << "\t"
+          << formatByte(speed()) << "ps\t");
+
+    // Two more lines for Status and progressbar.
+    return j + 2;
 }
 
 
@@ -250,7 +256,7 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index) {
     cell->txn()->play();
 
     Range newrange(upper, midpoint);
-    File* newfile = new File(chunkName(midpoint));
+    File* newfile = new File(chunkFilename(midpoint));
     BasicTransaction* newtxn = cell->txn()->clone(newrange);
     newtxn->exbridge(m_txnExBridge);
     Chunk* newcell = new Chunk(newtxn, newfile);
@@ -262,23 +268,30 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index) {
 }
 
 void Aggregate::worker() try {
-    // fancyprint("STARTER",NOTIFY);
+    //fancyshow("STARTER",NOTIFY);
     try {
         starter();
-        //fancyprint("SPLITTER",NOTIFY);
+        //fancyshow("SPLITTER",NOTIFY);
         splitter();
     } catch (ex::aggregator::NonResumable& e) {
         // The download wansn't resumable
         // so splitter() could be skipped
     }
-    //fancyprint("JOIN ALL",NOTIFY);
+    //fancyshow("JOIN ALL",NOTIFY);
     joinChunks();
-    //fancyprint("MERGER",NOTIFY);
+    //fancyshow("MERGER",NOTIFY);
     merger();
 } catch ( ex::Error e ) {
     m_failed = true;
-    //fancyprint(e.what(),ERROR);
-    std::cout << e.what() << std::endl;
+    fancyshow(e.what(), ERROR);
+
+    // TODO
+    // To show all the expections in exception bridge
+    // Output of what() gives bad result.
+    /*
+    for(int i=0;i<m_txnExBridge->number();i++)
+        show( m_txnExBridge->pop().what() );
+        */
 }
 
 void Aggregate::starter() {
@@ -299,7 +312,7 @@ void Aggregate::starter() {
             boost::this_thread::sleep(boost::posix_time::millisec(100));
 
         if (researcher->txn()->hasFailed())
-            Throw(ex::Error, "Starting transaction failed.");
+            Throw(ex::Failed, "Transaction start");
 
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
@@ -308,24 +321,33 @@ void Aggregate::starter() {
         // will not retain the response-filename
         // If no filename is given then the default url-generated filename is used
         if (researcher->txn()->remoteData().filename() != "") {
-            int lastslash = m_prettyUrl.find_last_of('/');
             // Remove the filename-from-url and append filename-from-header
-            m_prettyUrl = m_prettyUrl.substr(0, lastslash) +
-                researcher->txn()->remoteData().filename();
+            int lastslash = m_destination_filename.find_last_of('/');
+            m_destination_filename = m_destination_filename.substr(0, lastslash + 1) +
+                                     researcher->txn()->remoteData().filename();
         }
 
         // If no content-length is given then bytesTotal should
         // provide with zero size so it is non-resumable
         if (m_filesize != 0 && researcher->txn()->remoteData().canPartial() == RemoteData::Partial::yes) {
-            // Create a limiter file
-            // this indicates that file can be resumed
-            // as non-resumable downloads don't need
-            // a total size file
-            File limiter(chunkName(m_filesize));
+            // Create a limiter file, indicates resumable file
+            File limiter(chunkFilename(m_filesize));
             limiter.write();
         } else {
             Throw(ex::aggregator::NonResumable);
         }
+
+        LocalOptions l;
+        l.store(purgatoryFilename() + "/" + localConfig);
+        l.load();
+        // l.variablesMap().at("transaction.filename").value() = m_destination_filename;
+
+        // NOTE: Resumability and Filesize saved using file arrangement
+        // so these values aren't saved in local ini.
+        l.variablesMap().insert(std::make_pair("transaction.filename",
+            po::variable_value(m_destination_filename, true)));
+
+        l.unload(purgatoryFilename() + "/" + localConfig);
 
     } else {
         // Start all the Chunks
@@ -366,16 +388,15 @@ void Aggregate::merger() {
     std::vector<File*> files;
     for (unsigned i = 0; i < m_chunk.size(); i++)
         files.push_back(m_chunk[i]->file());
-    // first represents the "0" file and which is sure to
-    // exist
+    // first represents the "0" file and which is sure to exist
     File* first = files[0];
 
-    File limiter(chunkName(m_filesize));
+    File limiter(chunkFilename(m_filesize));
     // If limiter doesn't exist then it implies that
     // download shouldn't be resumed and that imples
     // that nothing is splitted and hence no merging
     if ( limiter.exists() ) {
-        fancyprint("Merging!", NOTIFY);
+        fancyshow("Merging!", NOTIFY);
 
         // limiter is also added for calculations
         // but not processed
@@ -383,7 +404,7 @@ void Aggregate::merger() {
         // first and last file aren't processed
         uintmax_t prev_size = first->size();
         for (unsigned i = 1; i < files.size() - 1; i++) {
-            print(i << " of " << files.size() - 1);
+            show(i << " of " << files.size() - 1);
 
             uintmax_t current_size = files[i]->size();
             uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
@@ -408,11 +429,11 @@ void Aggregate::merger() {
         }
     }
     // Move the merged file to safe place
-    first->move(prettyName(), Node::NEW);
+    first->move(destinationFilename(), Node::NEW);
     // Remove the old directory
-    Directory(m_hashedUrl).remove(Node::FORCE);
+    Directory(purgatoryFilename()).remove(Node::FORCE);
 
-    fancyprint("Complete!", SUCCESS);
+    fancyshow("Complete!", SUCCESS);
 }
 
 double Aggregate::aggregateSpeed() const {
@@ -436,9 +457,11 @@ void Aggregate::speed_worker() {
         no++;
     }
 
+    // Speed must be reset to zero after download is complete.
     m_instSpeed = 0;
     m_avgSpeed = 0;
     m_hifiSpeed = 0;
 }
+
 
 

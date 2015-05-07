@@ -41,6 +41,10 @@ void CommonOptions::load() {
 }
 
 void CommonOptions::unload(const std::string& filename){
+
+
+    // m_vm.at("segment.number").value() = 100;
+
     pt::ptree root;
     pt::ptree branch = pt::ptree();
     std::string old;

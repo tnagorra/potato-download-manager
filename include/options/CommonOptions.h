@@ -20,6 +20,9 @@
 namespace po = boost::program_options;
 namespace pt = boost::property_tree;
 
+const std::string globalConfig = "global.ini";
+const std::string localConfig = "local.ini";
+
 class CommonOptions {
     protected:
         po::options_description m_desc;
@@ -34,7 +37,7 @@ class CommonOptions {
         // Gets variables map from the config file
         void store(const std::string& filename);
 
-        // Notifes and checks everything
+        // Notifies and checks everything
         void load();
 
         // Saves the variables map to a config file
@@ -43,6 +46,10 @@ class CommonOptions {
         // Displays the values of variables map
         // For debugging
          void display();
+
+        po::variables_map& variablesMap() {
+            return m_vm;
+        }
 
          bool help() const {
              if (m_vm.count("help"))

@@ -29,8 +29,11 @@ enum CC {BLACK,RED,GREEN,YELLOW,BLUE,PURPLE,TEAL,WHITE,GRAY};
 #define WARNING COLOR(0,CC::YELLOW,CC::BLACK)
 #define ERROR COLOR(0,CC::RED,CC::BLACK)
 
-#define print(thing) std::cout<<thing<<std::endl
-#define fancyprint(thing,color) std::cout << color << thing << DISCOLOR << std::endl
+#define BARONE COLOR(0, CC::WHITE, CC::BLUE)
+#define BARTWO COLOR(0, CC::BLUE, CC::WHITE)
+
+#define show(thing) std::cout<<thing<<std::endl
+#define fancyshow(thing,color) std::cout << color << thing << DISCOLOR << std::endl
 #define fancycout(thing,color) std::cout << color << thing << DISCOLOR
 
 // Infinity ∞ unicode

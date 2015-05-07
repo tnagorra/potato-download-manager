@@ -13,31 +13,29 @@
 #include "aggregator/ex.h"
 #include "common/helper.h"
 #include "common/ExBridge.h"
-
-/*
-   When BasicTransaction is complete, push those to m_socket
-   When BasicTransaction is started and m_socket isn't empty,
-   take it from m_socket and pop it
-   if it is empty, create new inside the BasicTransaction
-   */
+#include "options/LocalOptions.h"
 
 class Aggregate{
     private:
+        // TODO
         // store usable sockets for reuse
         //std::vector<Socket*> m_free_socket;
+
         // the working thread
-        boost::thread* m_thread;
+        boost::thread* mptr_thread;
         // the speed managing thread
-        boost::thread* m_speed_thread;
+        boost::thread* mptr_speed_thread;
         // vector to save the chunks
         std::vector<Chunk*> m_chunk;
+
         // the url of the file
         std::string m_url;
         // the hash of url
-        std::string m_hashedUrl;
+        std::string m_purgatory_filename;
         // the proper filename from url
-        std::string m_prettyUrl;
+        std::string m_destination_filename;
         // maximum number of Chunks
+
         unsigned m_chunks;
         // maximum number of inactive Chunks
         unsigned m_inactive_chunks;
@@ -45,17 +43,18 @@ class Aggregate{
         uintmax_t m_splittable_size;
         // Size of the download file
         uintmax_t m_filesize;
-        // Failed or not, exceptions can't be
-        // thrown outside the worker
-        bool m_failed;
+
         // Gives the average speed
         double m_avgSpeed;
         // Gives the instantaneous speed
         double m_instSpeed;
         // Gives the hifi speed
         double m_hifiSpeed;
+
         // The ExBridge object to pass to transactions
         ExBridge* m_txnExBridge;
+        // Failed or not, exceptions can't be thrown outside the worker
+        bool m_failed;
 
     public:
         // Constructor
@@ -71,29 +70,30 @@ class Aggregate{
         void join(){
             // If the thread has completed or represents Not-A-Thread
             // it just returns
-            if(m_thread)
-                m_thread->join();
-            if(m_speed_thread)
-                m_speed_thread->join();
+            if(mptr_thread)
+                mptr_thread->join();
+            if(mptr_speed_thread)
+                mptr_speed_thread->join();
+        }
+
+        // Create a thread to start Chunk
+        void start() {
+            // if mptr_thread represents a thread of execution
+            // then don't start the thread again
+            //if( mptr_thread.get_id() == boost::thread::id() )
+            if (!mptr_thread || !mptr_thread->joinable())
+                mptr_thread = new boost::thread(&Aggregate::worker,this);
+
+            if (!mptr_speed_thread || !mptr_speed_thread->joinable()){
+                mptr_speed_thread = new boost::thread(&Aggregate::speed_worker,this);
+            }
         }
 
         // Stop the downloads
         void stop();
 
-        // Create a thread to start Chunk
-        void start() {
-            // if m_thread represents a thread of execution
-            // then don't start the thread again
-            //if( m_thread.get_id() == boost::thread::id() )
-            if (!m_thread || !m_thread->joinable())
-                m_thread = new boost::thread(&Aggregate::worker,this);
-
-            if (!m_speed_thread || !m_speed_thread->joinable()){
-                m_speed_thread = new boost::thread(&Aggregate::speed_worker,this);
-            }
-        }
-
         // Displays cool information about stuffs
+        // and returns no. of lines showed.
         unsigned displayChunks() const;
 
         // Total data downloaded; includes already saved bytes
@@ -142,10 +142,25 @@ class Aggregate{
             return instSpeed();
         }
 
+        // Returns a pretty name
+        std::string destinationFilename() const {
+            return m_destination_filename;
+        }
+
+        // Returns the hashed name
+        std::string purgatoryFilename() const {
+            return m_purgatory_filename;
+        }
+
+        // Returns name of the Chunk with starting byte num
+        std::string chunkFilename(uintmax_t num) const {
+            return m_purgatory_filename+"/"+std::to_string(num);
+        }
+
         // Returns the total time Remaining
         uintmax_t timeRemaining() const {
-            // .99 is the precission limit
-            if(speed() <= .99 )
+            // 0.1 is the precission limit
+            if(speed() < 0.99 )
                 return std::numeric_limits<uintmax_t>::max();
             return bytesTotal() > bytesDone() ? (bytesTotal() - bytesDone()) / speed() : 0;
         }
@@ -189,15 +204,6 @@ class Aggregate{
         // Split a Chunk and insert new Chunk after it
         void split(std::vector<Chunk*>::size_type split_index);
 
-        // Returns name of the Chunk with starting byte num
-        std::string chunkName(uintmax_t num) {
-            return m_hashedUrl+"/"+std::to_string(num);
-        }
-
-        // Returns a pretty name
-        std::string prettyName() {
-            return m_prettyUrl;
-        }
 };
 
 #endif

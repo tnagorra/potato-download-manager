@@ -12,8 +12,6 @@
 #include <options/LocalOptions.h>
 #include <options/GlobalOptions.h>
 
-const std::string globalConfig = "global.ini";
-const std::string localConfig = "local.ini";
 
 int main(int ac, char * av[]) try {
     // Get Global Options
@@ -21,82 +19,85 @@ int main(int ac, char * av[]) try {
     g.store(globalConfig);
     g.load();
 
-    // if nothing is specified then display history
+    // if nothing is specified then display sessions
     if ( ac <= 1 ) {
         // Find the purgatory and look for sessions
         Directory session(g.destination_purgatory());
-        if ( !session.exists() || session.isEmpty()) {
-            fancyprint("No download history.", WARNING);
-            return 0;
-        }
-
-        // If session exists then print all the valid sessions
-        std::vector<std::string> hash = session.list(Node::DIRECTORY);
-
         bool empty = true;
-        for (int i = 0; i < hash.size(); i++) {
-            std::string confname = hash[i] + "/" + localConfig;
-            if (!File(confname).exists())
-                continue;
-            empty = false;
-            LocalOptions l;
-            l.store(confname);
-            l.load();
 
-            print( g.destination_path() << "/" << prettify(l.transaction_path()) );
+        if ( session.exists() && !session.isEmpty()) {
 
-            Aggregate agg(l.transaction_path(), g.destination_path(),
-                          g.destination_purgatory(), l.segment_number(),
-                          l.segment_threshold());
+            // If session exists then show all the valid sessions
+            std::vector<std::string> sessionlist = session.list(Node::DIRECTORY);
 
-            std::cout << progressbar(agg.progress(), COLOR(0, CC::WHITE, CC::BLUE), COLOR(0, CC::BLUE, CC::WHITE));
-            print( " " << round(agg.progress(), 2) << "%\t");
+            for (int i = 0; i < sessionlist.size(); i++) {
+                std::string confname = sessionlist[i] + "/" + localConfig;
+                if (!File(confname).exists())
+                    continue;
 
-            //agg.progressbar();
+                LocalOptions l;
+                l.store(confname);
+                l.load();
+
+                show(l.transaction_filename());
+                try {
+                Aggregate agg(l.transaction_path(), g.destination_path(),
+                              g.destination_purgatory(), l.segment_number(),
+                              l.segment_threshold());
+                show(progressbar(agg.progress(), BARONE, BARTWO));
+                } catch (ex::filesystem::NotThere& e) {
+                    // These are files that aren't resumable
+                    show(progressbar(0.00, BARONE, BARTWO));
+                }
+                empty = false;
+            }
         }
-        if (empty) {
-            fancyprint("No download history.", WARNING);
-            return 0;
-        }
+
+        if (empty)
+            fancyshow("No download history.", WARNING);
 
     } else {
 
         LocalOptions l;
         try {
+            // Load local config
             l.store(ac, av);
-            // If it contains -h then show help immediately
-            if (l.help()) {
-                print(l.content());
-                return 0;
-            }
             // Load global config
             l.store(globalConfig);
+            // If it contains -h then show help immediately
+            if (l.help()) {
+                show(l.content());
+                return 0;
+            }
+            // Notify
             l.load();
         } catch ( std::exception & ex) {
-            print( ex.what() );
-            fancyprint("Try \'aggregator -h\' for more information.", WARNING);
+            show( ex.what() );
+            fancyshow("Try \'aggregator -h\' for more information.", WARNING);
             return 0;
         }
-        // Save local config
-        l.unload(g.destination_purgatory() + "/" + md5(l.transaction_path()) + "/" + localConfig);
 
         Aggregate agg(l.transaction_path(), g.destination_path(),
                       g.destination_purgatory(), l.segment_number(),
                       l.segment_threshold());
+
+        // Save local config
+        l.unload(agg.purgatoryFilename() + "/" + localConfig);
+
         agg.start();
         while (!agg.isComplete() && !agg.hasFailed()) {
-            // unsigned all = agg.displayChunks();
+            unsigned count = agg.displayChunks();
             boost::this_thread::sleep(boost::posix_time::millisec(100));
-            /*
-            for (int i = 0; i < all + 1; i++)
+            for (int i = 0; i < count; i++)
                 std::cout << DELETE;
-                */
         }
         agg.join();
 
-        fancyprint("I don't know why but I wait here?", NOTIFY);
+        // TODO No idea why there program waits after this statement
+        // Could be because of writing process or keep-alive connection.
+        fancyshow("Just Wait.", NOTIFY);
     }
     return 0;
 } catch (std::exception & ex) {
-    std::cout << ex.what() << std::endl;
+    fancyshow(ex.what(),ERROR);
 }

@@ -12,7 +12,10 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range, unsign
     m_bytesDone(0),
     m_connAttempts(attempts),
     m_attemptWait(wait),
-    m_pauseRequest(false)
+    m_pauseRequest(false),
+    m_instSpeed(0),
+    m_avgSpeed(0),
+    m_hifiSpeed(0)
 {
 
     mptr_response = new boost::asio::streambuf;

@@ -24,22 +24,20 @@ class Chunk {
         // Destructor
         ~Chunk();
 
-        // Returns reference of BasicTransaction
+        // Returns pointer of BasicTransaction
         inline BasicTransaction* txn(){
             return mptr_txn;
         }
-
-        // Returns const reference of BasicTransaction
+        // Returns const pointer of BasicTransaction
         inline const BasicTransaction* txn() const {
             return mptr_txn;
         }
 
-        // Returns reference of File
+        // Returns pointer of File
         inline File* file(){
             return mptr_file;
         }
-
-        // Returns const reference of File
+        // Returns const pointer of File
         inline const File* file() const {
             return mptr_file;
         }

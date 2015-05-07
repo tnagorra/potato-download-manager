@@ -28,7 +28,7 @@ int main(int ac, char* av[]) try {
 
         std::cout << g.destination_purgatory() << "/" << std::endl;
 
-        // If session exists then print all the valid sessions
+        // If session exists then show all the valid sessions
         std::vector<std::string> hash = session.list(Node::DIRECTORY);
         int c=1;
         for(int i=0;i< hash.size();i++){

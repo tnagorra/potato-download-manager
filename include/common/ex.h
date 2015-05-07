@@ -76,6 +76,7 @@ namespace ex{
                 */
             }
     };
+
     // Class ex::Null
     // Derives from Class Error and describes something as null.
     class Null: public Error {
@@ -110,6 +111,17 @@ namespace ex{
             InvalidMode( const std::string& o)
                 : Invalid("Mode", o) { }
     };
+
+    // Class ex::Null
+    // Derives from Class Error and describes something as null.
+    class Failed: public Error {
+
+        public:
+            // construct the error object, saying that pointer is null
+            Failed(const std::string& name, const std::string& o)
+                : Error("\""+name+"\" failed.", o) { }
+    };
+
 
     // Class ex::Not
     // Derives from Class Error and says that something is not

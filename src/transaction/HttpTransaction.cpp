@@ -4,31 +4,31 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/chrono.hpp>
-
+#include "common/helper.h"
 #include "transaction/HttpTransaction.h"
 
 using boost::asio::ip::tcp;
 
 class Redirect {
-    public:
-        HttpTransaction<SSLSock>* m_rstp_secure;
-        HttpTransaction<PlainSock>* m_rstp_plain;
-        Redirect(HttpTransaction<SSLSock>* restartp) {
-            m_rstp_secure = restartp;
-            m_rstp_plain = NULL;
-        }
-        Redirect(HttpTransaction<PlainSock>* restartp) {
-            m_rstp_plain = restartp;
-            m_rstp_secure = NULL;
-        }
+public:
+    HttpTransaction<SSLSock>* m_rstp_secure;
+    HttpTransaction<PlainSock>* m_rstp_plain;
+    Redirect(HttpTransaction<SSLSock>* restartp) {
+        m_rstp_secure = restartp;
+        m_rstp_plain = NULL;
+    }
+    Redirect(HttpTransaction<PlainSock>* restartp) {
+        m_rstp_plain = restartp;
+        m_rstp_secure = NULL;
+    }
 };
 
 // Constructor.
-    template <typename SocketType>
+template <typename SocketType>
 HttpTransaction<SocketType>::HttpTransaction(RemoteDataHttp* rdata,
         const Range& range, unsigned attempts, unsigned wait)
-: Transaction<SocketType>(rdata,range, attempts, wait)
-{ }
+    : Transaction<SocketType>(rdata,range, attempts, wait) {
+}
 
 // Start the downloader thread and return immediately
 template <typename SocketType>
@@ -38,9 +38,9 @@ void HttpTransaction<SocketType>::start() {
     if (mptr_socket==NULL)
         mptr_socket = SockTraits<SocketType>::transform();
     this->mptr_thread = new boost::thread(
-            &HttpTransaction<SocketType>::workerMain, this);
+        &HttpTransaction<SocketType>::workerMain, this);
     this->mptr_speedThread = new boost::thread(
-            &BasicTransaction::speedWorker, this);
+        &BasicTransaction::speedWorker, this);
 }
 
 // Stop the download if it is running.
@@ -61,15 +61,18 @@ void HttpTransaction<SocketType>::workerMain() try {
     receiveHeaders();
     writeOut();
 } catch (Redirect& redir) {
+    m_state = State::requesting;
     if (redir.m_rstp_secure==NULL) {
         redir.m_rstp_plain->workerMain();
     } else {
         redir.m_rstp_secure->workerMain();
     }
+
 } catch (std::exception& exc) {
     m_state = State::failed;
     mptr_exbridge->log(exc);
-    //print(exc.what());
+    // TODO: don't show here but the exception bridge isn't working
+    show(exc.what());
 }
 
 // Create the http request headers and send them
@@ -85,7 +88,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
 
     // Write the starting line
     rqstream<<dynamic_cast<RemoteDataHttp*>(mptr_rdata)->method()<<
-        " "<<mptr_rdata->path()<<" HTTP/1.1\r\n";
+            " "<<mptr_rdata->path()<<" HTTP/1.1\r\n";
     // And the host-line
     rqstream<<"Host: "<<mptr_rdata->server()<<"\r\n";
 
@@ -98,7 +101,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     //rqstream<<"Connection: \r\n";
     if (!m_range.uninitialized())
         rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()-1
-            <<"\r\n";
+                <<"\r\n";
 
     // Now spew the given headers
     std::map<std::string,std::string> headers_map;
@@ -128,7 +131,7 @@ void HttpTransaction<SocketType>::waitData() {
     while (!mptr_socket->available()) {
         // a sleep_for call is also an interruption point.
         boost::this_thread::sleep(
-                boost::posix_time::milliseconds(100));
+            boost::posix_time::milliseconds(100));
     }
 }
 
@@ -138,7 +141,7 @@ void HttpTransaction<SSLSock>::waitData() {
     while (!mptr_socket->lowest_layer().available()) {
         // a sleep_for call is also an interruption point.
         boost::this_thread::sleep(
-                boost::posix_time::milliseconds(100));
+            boost::posix_time::milliseconds(100));
     }
 }
 
@@ -155,6 +158,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
 
     // Extract parts from the status line
     std::istream resp_strm(mptr_response);
+
     std::string http_version;
     resp_strm>>http_version;
     unsigned int status_code;
@@ -162,74 +166,80 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     std::string status_message;
     std::getline(resp_strm, status_message);
 
-    if (!resp_strm || http_version.substr(0,5)!="HTTP/") {
-        Throw(ex::download::BadResponse);
-    }
-
     m_statusLine = http_version+" "+
-        boost::lexical_cast<std::string>(status_code)+status_message;
-    //print(m_statusLine);
+                   boost::lexical_cast<std::string>(status_code)+status_message;
+
+    if (!resp_strm || http_version.substr(0,5)!="HTTP/")
+        Throw(ex::download::BadResponse);
 
     // Read of all the headers to the buffer
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n\r\n");
     boost::this_thread::interruption_point();
 
-    std::string header; size_t colon;
+    std::string header;
     while(std::getline(resp_strm, header) && header!="\r") {
-        if ((colon = header.find(':'))!=std::string::npos) {
-            m_respHeaders[boost::to_lower_copy(header.substr(
-                        0,colon))]
-                = header.substr(colon+2,header.size()-colon-3);
-        }
-        //print(header);
+        boost::to_lower(header);
+        size_t colon = header.find(':');
+        if(colon == std::string::npos)
+            continue;
+        m_respHeaders[header.substr(0,colon)]
+            = header.substr(colon+2,header.size()-colon-3);
     }
+
+    handleStatusCode(status_code);
 
     // If the transfer encoding is chunked, bail out.
     if (m_respHeaders.count("transfer-encoding")>0) {
-        if (m_respHeaders["transfer-encoding"]=="chunked" ||
-            m_respHeaders["transfer-encoding"]=="Chunked")
-            Throw(ex::download::BadResponse);
+        if (m_respHeaders["transfer-encoding"]=="chunked")
+            Throw(ex::download::Chunked);
     }
 
     uintmax_t bytesTotal = 0;
     // Determine the size of the response body
     if (m_respHeaders.count("content-length")>0) {
         bytesTotal = boost::lexical_cast<uintmax_t>(
-                m_respHeaders["content-length"]);
+                         m_respHeaders["content-length"]);
     }
 
-    // Find filename
-    if(m_respHeaders.count("Content-Disposition")>0) {
+    // Find filename from headers
+    if(m_respHeaders.count("content-disposition")>0) {
         std::string disposition = boost::lexical_cast<std::string>(
-                    m_respHeaders["Content-Disposition"]);
+                                      m_respHeaders["content-disposition"]);
 
-        int equalto = disposition.find_first_of('=');
-        int length = disposition.length();
-        int first = disposition.find_first_of('"',equalto);
-        int last = disposition.find_first_of('"',first+1);
+        File f("newfile");
+        f.append(disposition);
+
+        size_t equalto = disposition.find_first_of('=');
+        size_t length = disposition.length();
+        size_t first = disposition.find_first_of('"',equalto);
+        size_t last = disposition.find_first_of('"',first+1);
+
+
+        if( equalto!=std::string::npos){
 
         // Format: Content-Disposition: attachment; filename="fname.ext"
         // If apostrophe is present
-        if(first>0 && last>0)
-            // Offset of to exclude the apostrophe
+        if(first!=std::string::npos && last>0)
             disposition = disposition.substr(first +1,last-first+1 -2);
         else
-            // Offset to exclude the equalto
             disposition = disposition.substr(equalto +1, length-equalto+1 -1);
 
+        // Fill filename in remotedata
+        // TODO: save this somewhere permanently
         mptr_rdata->filename(disposition);
+        }
     }
 
     // Find out whether byterange requests are supported
     if (m_respHeaders.count("accept-ranges")>0) {
         mptr_rdata->canPartial(
-                (m_respHeaders["accept-ranges"]=="bytes")?
-                RemoteData::Partial::yes : RemoteData::Partial::no);
+            (m_respHeaders["accept-ranges"]=="bytes")?
+            RemoteData::Partial::yes : RemoteData::Partial::no);
     } else if (!m_range.uninitialized()) {
         if (m_respHeaders.count("content-length")>0)
             mptr_rdata->canPartial(
-                    (bytesTotal==m_range.size())?
-                    RemoteData::Partial::yes : RemoteData::Partial::no);
+                (bytesTotal==m_range.size())?
+                RemoteData::Partial::yes : RemoteData::Partial::no);
         else if (status_code==206)
             mptr_rdata->canPartial(RemoteData::Partial::yes);
     }
@@ -239,13 +249,6 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     if(m_range.uninitialized() && bytesTotal!=0)
         m_range.update(bytesTotal,0);
 
-    // As a last resort, if the size of the incoming stream cannot
-    // be determined, we set it to the largest possible value
-    /*if (m_respHeaders.count("content-length")==0 && m_range.uninitialized()) {
-      m_bytesTotal = std::numeric_limits<uintmax_t>::max()/4);
-      m_range.update(m_range.lb()+m_bytesTotal,m_range.lb());
-      }*/
-    handleStatusCode(status_code);
 }
 
 // Handle an unexpected http status
@@ -256,8 +259,7 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
     // 1xx could be processed further but now we dont
     if (category==1 || category==4 || category==5) {
         Throw(ex::download::BadStatusCode,code);
-    }
-    else if (category==3) {
+    } else if (category==3) {
         // Redirect
         std::string location = m_respHeaders["location"];
         RemoteData* rd = RemoteData::factory(location);
@@ -291,7 +293,6 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
 
             throw Redirect(antiSock);
         }
-        m_state = State::requesting;
     }
 }
 
@@ -308,7 +309,7 @@ void HttpTransaction<SocketType>::writeOut() {
     m_bytesDone = bufBytes;
     m_state = State::downloading;
 
-    //print(m_bytesDone);
+    //show(m_bytesDone);
     boost::system::error_code error;
     while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response, boost::asio::transfer_at_least(1), error))) {
 
@@ -316,7 +317,7 @@ void HttpTransaction<SocketType>::writeOut() {
         // when splitting is performed
         while (m_pauseRequest)
             boost::this_thread::sleep(
-                    boost::posix_time::milliseconds(200));
+                boost::posix_time::milliseconds(200));
         m_pauseRequest = false;
 
         // when range is not resumable
@@ -334,7 +335,7 @@ void HttpTransaction<SocketType>::writeOut() {
 
         boost::this_thread::interruption_point();
     }
-    //print(m_bytesDone);
+    //show(m_bytesDone);
 
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;
@@ -350,8 +351,8 @@ void HttpTransaction<SocketType>::readToSink() {
     boost::asio::streambuf dumie;
     if (mptr_socket->available())
         boost::asio::read(*mptr_socket, dumie,
-                boost::asio::transfer_at_least(
-                    mptr_socket->available()));
+                          boost::asio::transfer_at_least(
+                              mptr_socket->available()));
 }
 
 template <> // Template specialization for SSLSock
@@ -359,8 +360,8 @@ void HttpTransaction<SSLSock>::readToSink() {
     boost::asio::streambuf dumie;
     if (mptr_socket->lowest_layer().available())
         boost::asio::read(*mptr_socket, dumie,
-                boost::asio::transfer_at_least(
-                    mptr_socket->lowest_layer().available()));
+                          boost::asio::transfer_at_least(
+                              mptr_socket->lowest_layer().available()));
 }
 
 // Clear all transaction progress and return to start
@@ -372,10 +373,13 @@ void HttpTransaction<SocketType>::clearProgress() {
     m_statusLine = "";
     //m_beenSplit = false;
     m_respHeaders = std::map<std::string,std::string>();
-    delete mptr_response; mptr_response = new boost::asio::streambuf;
+    delete mptr_response;
+    mptr_response = new boost::asio::streambuf;
 }
 
 template class HttpTransaction<PlainSock>;
 template class HttpTransaction<SSLSock>;
 
 // End file HttpTransaction.cpp
+
+

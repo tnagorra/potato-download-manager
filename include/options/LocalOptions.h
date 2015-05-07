@@ -13,6 +13,12 @@ class LocalOptions : public CommonOptions {
             return "dafuq";
         }
 
+        std::string transaction_filename() const {
+            if (m_vm.count("transaction.filename"))
+                return m_vm["transaction.filename"].as<std::string>();
+            return "";
+        }
+
 };
 
 #endif

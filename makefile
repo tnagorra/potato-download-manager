@@ -4,7 +4,7 @@ OBJDIR:=bin/obj
 BINDIR:=bin
 
 CC=g++
-#CC=clang
+#CC=clang++-3.5
 CFLAGS=-c --std=c++11 -I$(INCDIR)/
 #CFLAGS=-c -Wall -I$(INCDIR)/ --std=c++11
 

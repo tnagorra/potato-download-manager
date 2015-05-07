@@ -53,6 +53,15 @@ class BadResponse : public Error {
                 , o) { }
 };
 
+// Class ex::download::Chunked
+// Says that the file sent by the server is Chunked.
+class Chunked: public Error {
+    public:
+    Chunked(const std::string& o)
+        : Error("Transfer-Encoding is Chunked."
+                , o) { }
+};
+
 // Class ex::download::BadResponse
 // Says that the server replied with a non-favourable status code
 // and the download process cannot be continued further. This
