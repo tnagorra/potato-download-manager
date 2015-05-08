@@ -5,6 +5,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <stdexcept>
 #include "transaction/RemoteData.h"
 #include "transaction/Transaction.h"
 #include "filesystem/File.h"
@@ -95,6 +96,8 @@ class Aggregate{
         // Displays cool information about stuffs
         // and returns no. of lines showed.
         unsigned displayChunks() const;
+
+        void displayExceptions();
 
         // Total data downloaded; includes already saved bytes
         uintmax_t bytesDone() const;
@@ -204,6 +207,9 @@ class Aggregate{
         // Split a Chunk and insert new Chunk after it
         void split(std::vector<Chunk*>::size_type split_index);
 
+        // Throws exception if any of the RemoteTransaction
+        // has failed.
+        void checkValidity() const;
 };
 
 #endif

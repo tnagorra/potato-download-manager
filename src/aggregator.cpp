@@ -19,23 +19,22 @@ int main(int ac, char * av[]) try {
     g.store(globalConfig);
     g.load();
 
-    // if nothing is specified then display sessions
+    // if nothing is specified then display s
     if ( ac <= 1 ) {
         // Find the purgatory and look for sessions
         bool empty = true;
 
-        // If session exists then show all the valid sessions
-        std::vector<std::string> sessionlist = Directory(g.destination_purgatory()).list(Node::DIRECTORY);
-
-        for (int i = 0; i < sessionlist.size(); i++) {
-            std::string confname = sessionlist[i] + "/" + localConfig;
+        // If active session exists then get all the sessions
+        std::vector<std::string> active_sessions = Directory(g.destination_purgatory()).list(Node::DIRECTORY);
+        for (int i = 0; i < active_sessions.size(); i++) {
+            std::string confname = active_sessions[i] + "/" + localConfig;
             if (!File(confname).exists())
                 continue;
 
             LocalOptions l;
             l.store(confname);
             l.load();
-            show(l.transaction_filename());
+            show(l.transaction_path());
             try {
                 Aggregate agg(l.transaction_path(), g.destination_path(),
                               g.destination_purgatory(), l.segment_number(),
@@ -45,13 +44,17 @@ int main(int ac, char * av[]) try {
                 // These are files that aren't resumable
                 show(progressbar(0.00, BARONE, BARTHREE));
             }
+            std::cout << std::endl;
             empty = false;
         }
 
-        std::vector<std::string> session = Directory(g.destination_path()).list(Node::FILE);
-        for (int i = 0; i < session.size(); i++) {
-            show(session[i]);
+        // If complete session exists then get all the sessions
+        std::vector<std::string> complete_sessions = Directory(g.destination_path()).list(Node::FILE);
+        for (int i = 0; i < complete_sessions.size(); i++) {
+            show(complete_sessions[i]);
             show(progressbar(100.00, BARFOUR, BARONE));
+
+            std::cout << std::endl;
             empty = false;
         }
 
@@ -76,7 +79,7 @@ int main(int ac, char * av[]) try {
             // Notify
             l.load();
         } catch ( std::exception & ex) {
-            show( ex.what() );
+            fancyshow(ex.what(), ERROR);
             fancyshow("Try \'aggregator -h\' for more information.", WARNING);
             return 0;
         }
@@ -100,9 +103,10 @@ int main(int ac, char * av[]) try {
         }
         agg.join();
 
-        // TODO No idea why there program waits after this statement
-        // Could be because of writing process or keep-alive connection.
-        fancyshow("Just Wait.", NOTIFY);
+        agg.displayExceptions();
+
+        // Sometimes waits here for a while.
+        fancyshow("Closing!", NOTIFY);
     }
     return 0;
 } catch (std::exception & ex) {

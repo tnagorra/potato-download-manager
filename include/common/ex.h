@@ -8,6 +8,7 @@
 #include<iostream>
 #include<string>
 #include<sstream>
+#include<stdexcept>
 
 // The following macros are helpers for easy exception-throwing.
 // You don't need to remember how many arguments an exception-
@@ -50,31 +51,13 @@ namespace ex{
     // This class derives from the standard c++ exception class, and
     // holds the error message and occurance string. The occurance
     // string is the locality information of the error.
-    class Error: public std::exception {
-
-        protected:
-            std::string msg;        // The error message
-            std::string occurance;  // The occurance string
+    class Error: public std::runtime_error {
 
         public:
             // construct the error object
             Error(const std::string& s, const std::string& o)
-                : msg(s), occurance(o) { }
+                : std::runtime_error(o+"\n"+s) { }
 
-            // return a nice message containing the error message
-            // and occurance.
-            const char* what() const throw() {
-                std::ostringstream out;
-                out << occurance << "\n" << msg;
-                return out.str().c_str();
-                /*
-                std::string str;
-                if (occurance.length() > 0)
-                    str += occurance + "\n";
-                str += "Error: "+msg+"\n";
-                return str.c_str();
-                */
-            }
     };
 
     // Class ex::Null

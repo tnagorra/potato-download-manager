@@ -4,6 +4,7 @@
 #include <vector>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
+#include <stdexcept>
 
 #include "common/ex.h"
 
@@ -18,7 +19,7 @@ class ExBridge {
         // Number of exceptions in the log.
         uintmax_t m_exNumber;
         // Vector to contain exceptions that have been thrown.
-        std::vector<std::exception> m_exceptions;
+        std::vector<std::runtime_error> m_exceptions;
         // Mutex for internal locking
         mutable boost::shared_mutex m_mutex;
 
@@ -30,11 +31,11 @@ class ExBridge {
         // Returns the number of exceptions that have been logged
         uintmax_t number();
         // Register an exception
-        void log(std::exception& exc);
+        void log(std::runtime_error& exc);
         // Returns the exception vector
-        std::vector<std::exception> all();
+        std::vector<std::runtime_error> all();
         // Pops an exception from m_exceptions;
-        std::exception pop();
+        std::runtime_error pop();
 };
 
 #endif

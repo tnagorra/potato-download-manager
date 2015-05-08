@@ -1,11 +1,7 @@
-# Check
-(A) Looks like prettyName inside RemoteData isn't even initialized.
-(A) ExBridge doesn't seem to work correctly.
-
 # Todo
 
-(A) Catch exceptions +BasicTransaction @worker
 (A) Encapsulate the many settings passed to +BasicTransaction in a bucket
+(*) Catch exceptions +BasicTransaction @worker
 (*) Inject LocalOptions inside Aggregate, Save response-filename in ini file
 (*) Get filename from the headers +Aggregate @Aggregate +HttpTransaction
     Note: The filename shouldn't be used for hashed-folder-name
@@ -23,14 +19,11 @@
 (B) Implement speed limit +BasicTransaction
 (B) Prevent Ctrl+C and duplicate processes
     Note: Problem with cross platform compatibility
-(B) Interactive CLI design (Ncurses)
+(B) GUI (gktmm) and CLI design (Ncurses)
     1. Add functionality to update url (incase url is changed)
         Note: change url in local.ini
     2. Scheduled download and Queued download
-(B) Implement a GUI interface
 
-
-(C) Restart failed connections +Aggregate @worker
 (C) Reset slow connections +Aggregate @worker
 (C) Reusing Sockets +Aggregate @Aggregate
 (C) Flush after completion and not before +File @streamCopy
@@ -38,7 +31,6 @@
 (C) Look into removeport80() +Aggregate @Aggregate
     Note: 80 is the default port.
 (C) Eliminate Options class, create new class for R/W using INI/JSON files
-    1. Add "transaction.date" in local.ini for sorting +LocalOptions @LocalOptions
 
 # Test File
 
@@ -55,9 +47,5 @@ Webpage
 http://en.wikipedia.org/wiki/Soybean_cyst_nematode
     Error: Starting Transaction failed.
 
+Nonresumable
 http://176.31.252.128/fil.php?s=srvsc&id=7030376c72485a57633638322f53495a4537323035363135&t=The%20Rain%20Song%20Led%20Zeppelin.mp3&tm=true&dl=1
-    Error: Server reply isn't understood. and also Couldn't connect.
-    And the program waits indefinitely.
-
-
-Require links where filenames are different from name extracted from url.

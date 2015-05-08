@@ -31,8 +31,6 @@ class RemoteData {
         std::string m_server;
         // Resource path, if any
         std::string m_path;
-        // Pretty name
-        std::string m_prettyName;
         // filename
         std::string m_filename;
     private:
@@ -60,8 +58,6 @@ class RemoteData {
         std::string server() const;
         // Returns the path
         std::string path() const;
-        // Returns the prettyName
-        std::string prettyName() const;
 
         // Returns whether partial downloads are allowed
         Partial canPartial() const;

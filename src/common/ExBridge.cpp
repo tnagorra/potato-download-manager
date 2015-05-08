@@ -16,7 +16,7 @@ uintmax_t ExBridge::number() {
 }
 
 // Register an exception
-void ExBridge::log(std::exception& exc) {
+void ExBridge::log(std::runtime_error& exc) {
     boost::upgrade_lock<boost::shared_mutex> lock(m_mutex);
     boost::upgrade_to_unique_lock<boost::shared_mutex> uLock(lock);
     m_exNumber++;
@@ -24,19 +24,19 @@ void ExBridge::log(std::exception& exc) {
 }
 
 // Returns the exception vector
-std::vector<std::exception> ExBridge::all() {
+std::vector<std::runtime_error> ExBridge::all() {
     boost::shared_lock<boost::shared_mutex> m(m_mutex);
     return m_exceptions;
 }
 
 // Pops an exception from m_exceptions;
-std::exception ExBridge::pop() {
+std::runtime_error ExBridge::pop() {
     boost::upgrade_lock<boost::shared_mutex> lock(m_mutex);
     boost::upgrade_to_unique_lock<boost::shared_mutex> uLock(lock);
     if (m_exNumber==0)
-        return std::exception();
+        return std::runtime_error("No exceptions");
     m_exNumber--;
-    std::exception ret = m_exceptions.back();
+    std::runtime_error ret = m_exceptions.back();
     m_exceptions.pop_back();
     return ret;
 }

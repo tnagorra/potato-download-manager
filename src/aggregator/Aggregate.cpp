@@ -95,15 +95,27 @@ void Aggregate::stop() {
         mptr_speed_thread->interrupt();
 }
 
-unsigned Aggregate::displayChunks() const {
-    fancyshow(activeChunks() << " of " << totalChunks(), NOTIFY);
+void Aggregate::displayExceptions() {
+    int size = m_txnExBridge->number();
+    for(int i=0;i<size;i++){
+        fancyshow( m_txnExBridge->pop().what(),ERROR);
+    }
+}
 
-    int j = m_chunk.size();
+unsigned Aggregate::displayChunks() const {
+
+    // Progress bar
+    std::cout << progressbar(progress(), BARONE, BARTWO)
+        << formatTime(timeRemaining()) << "\t"
+        << formatByte(speed()) << "ps\t"<< std::endl;
+
+    int size = m_chunk.size();
 
     // Width of the maximum number
-    int width = std::log10(m_chunk[j-1]->txn()->range().ub())+1;
+    int width = std::log10(m_chunk[size-1]->txn()->range().ub())+1;
 
-    for (auto i = 0; i < j; i++) {
+    // Segments
+    for (auto i = 0; i < size; i++) {
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
         uintmax_t down = m_chunk[i]->txn()->range().lb() + m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
@@ -118,14 +130,14 @@ unsigned Aggregate::displayChunks() const {
         else
             myColor = NOTIFY;
 
-        fancyshow(std::setfill('0') << std::setw(width) << lower << ":" << std::setw(width) << down << ":" << std::setw(width) << higher, myColor);
+        fancyshow(std::setfill('0')
+                << std::setw(width)<< lower << ":"
+                << std::setw(width) << down << ":"
+                << std::setw(width) << higher, myColor);
     }
 
-    std::cout << progressbar(progress(), BARONE, BARTWO) << formatTime(timeRemaining()) << "\t"
-          << formatByte(speed()) << "ps\t"<< std::endl;
-
     // Two more lines for Status and progressbar.
-    return j + 2;
+    return size + 1;
 }
 
 
@@ -265,30 +277,28 @@ void Aggregate::split(std::vector<Chunk*>::size_type split_index) {
 }
 
 void Aggregate::worker() try {
-    //fancyshow("STARTER",NOTIFY);
     try {
+        //fancyshow("STARTER",NOTIFY);
         starter();
         //fancyshow("SPLITTER",NOTIFY);
         splitter();
     } catch (ex::aggregator::NonResumable& e) {
-        // The download wansn't resumable
+        // The download wasn't resumable
         // so splitter() could be skipped
     }
     //fancyshow("JOIN ALL",NOTIFY);
     joinChunks();
+
+    // The errors in RemoteTransaction aren't thrown
+    // Just logged in m_txnExBridge so a check must be done
+    checkValidity();
+
     //fancyshow("MERGER",NOTIFY);
     merger();
-} catch ( ex::Error e ) {
-    m_failed = true;
-    fancyshow(e.what(), ERROR);
 
-    // TODO
-    // To show all the expections in exception bridge
-    // Output of what() gives bad result.
-    /*
-    for(int i=0;i<m_txnExBridge->number();i++)
-        show( m_txnExBridge->pop().what() );
-        */
+} catch ( std::runtime_error e ) {
+    m_failed = true;
+    m_txnExBridge->log(e);
 }
 
 void Aggregate::starter() {
@@ -314,8 +324,6 @@ void Aggregate::starter() {
         // Initialize m_filesize
         m_filesize = researcher->txn()->bytesTotal();
 
-        // TODO: response-filename must be saved somewhere, an interrupted download
-        // will not retain the response-filename
         // If no filename is given then the default url-generated filename is used
         if (researcher->txn()->remoteData().filename() != "") {
             // Remove the filename-from-url and append filename-from-header
@@ -401,7 +409,11 @@ void Aggregate::merger() {
         // first and last file aren't processed
         uintmax_t prev_size = first->size();
         for (unsigned i = 1; i < files.size() - 1; i++) {
+
+            // Status bar
             show(i << " of " << files.size() - 1);
+            // Progress bar
+            std::cout << progressbar(100.0*i/(files.size()-1), BARONE, BARTWO)<< std::endl;
 
             uintmax_t current_size = files[i]->size();
             uintmax_t current_expected_size = std::atoi(files[i]->filename().c_str());
@@ -422,8 +434,11 @@ void Aggregate::merger() {
             prev_size += current_size;
             files[i]->remove();
 
-            std::cout << DELETE;
+            for (int i = 0; i < 2; i++)
+                std::cout << DELETE;
         }
+        // Delete "Merging!"
+        std::cout << DELETE;
     }
     // Move the merged file to safe place
     first->move(destinationFilename(), Node::NEW);
@@ -439,6 +454,14 @@ double Aggregate::aggregateSpeed() const {
         s += (*it)->txn()->speed();
     return s;
 }
+
+void Aggregate::checkValidity() const {
+    for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it)
+        if((*it)->txn()->hasFailed())
+            Throw(ex::Invalid,"Transaction");
+}
+
+
 
 void Aggregate::speed_worker() {
     const double refresh = 0.1;

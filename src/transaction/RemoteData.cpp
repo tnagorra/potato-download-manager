@@ -65,11 +65,6 @@ std::string RemoteData::path() const {
     return m_path;
 }
 
-// Returns the prettyName
-std::string RemoteData::prettyName() const {
-    return m_prettyName;
-}
-
 // Returns the fileName
 std::string RemoteData::filename() const {
     return m_filename;

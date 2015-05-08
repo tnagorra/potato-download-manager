@@ -68,11 +68,9 @@ void HttpTransaction<SocketType>::workerMain() try {
         redir.m_rstp_secure->workerMain();
     }
 
-} catch (std::exception& exc) {
+} catch (std::runtime_error& exc) {
     m_state = State::failed;
     mptr_exbridge->log(exc);
-    // TODO: don't show here but the exception bridge isn't working
-    show(exc.what());
 }
 
 // Create the http request headers and send them
@@ -194,37 +192,35 @@ void HttpTransaction<SocketType>::receiveHeaders() {
             Throw(ex::download::Chunked);
     }
 
-    uintmax_t bytesTotal = 0;
-    // Determine the size of the response body
-    if (m_respHeaders.count("content-length")>0) {
-        bytesTotal = boost::lexical_cast<uintmax_t>(
-                         m_respHeaders["content-length"]);
-    }
-
     // Find filename from headers
     if(m_respHeaders.count("content-disposition")>0) {
         std::string disposition = boost::lexical_cast<std::string>(
-                                      m_respHeaders["content-disposition"]);
+            m_respHeaders["content-disposition"]);
 
+        // Format: Content-Disposition: attachment; filename="fname.ext"
         size_t equalto = disposition.find_first_of('=');
         size_t length = disposition.length();
         size_t first = disposition.find_first_of('"',equalto);
         size_t last = disposition.find_first_of('"',first+1);
 
-
+        // If filename is present, it is after '='
         if( equalto!=std::string::npos){
+            // If apostrophe is present around filename
+            if(first!=std::string::npos && last>0)
+                disposition = disposition.substr(first +1,last-first+1 -2);
+            else
+                disposition = disposition.substr(equalto +1, length-equalto+1 -1);
 
-        // Format: Content-Disposition: attachment; filename="fname.ext"
-        // If apostrophe is present
-        if(first!=std::string::npos && last>0)
-            disposition = disposition.substr(first +1,last-first+1 -2);
-        else
-            disposition = disposition.substr(equalto +1, length-equalto+1 -1);
-
-        // Fill filename in remotedata
-        // TODO: save this somewhere permanently
-        mptr_rdata->filename(disposition);
+            // Fill filename in remotedata
+            mptr_rdata->filename(disposition);
         }
+    }
+
+    uintmax_t bytesTotal = 0;
+    // Determine the size of the response body
+    if (m_respHeaders.count("content-length")>0) {
+        bytesTotal = boost::lexical_cast<uintmax_t>(
+            m_respHeaders["content-length"]);
     }
 
     // Find out whether byterange requests are supported
@@ -300,13 +296,11 @@ void HttpTransaction<SocketType>::writeOut() {
 
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
-    // TODO a check must be kept here!
     if (bufBytes)
         m_reader(writeStream,0,bufBytes);
     m_bytesDone = bufBytes;
     m_state = State::downloading;
 
-    //show(m_bytesDone);
     boost::system::error_code error;
     while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response, boost::asio::transfer_at_least(1), error))) {
 
@@ -332,7 +326,6 @@ void HttpTransaction<SocketType>::writeOut() {
 
         boost::this_thread::interruption_point();
     }
-    //show(m_bytesDone);
 
     if (error!=boost::asio::error::eof) {
         m_state = State::failed;
