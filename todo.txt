@@ -47,5 +47,5 @@ Webpage
 http://en.wikipedia.org/wiki/Soybean_cyst_nematode
     Error: Starting Transaction failed.
 
-Nonresumable
+Nonresumable and filename from header
 http://176.31.252.128/fil.php?s=srvsc&id=7030376c72485a57633638322f53495a4537323035363135&t=The%20Rain%20Song%20Led%20Zeppelin.mp3&tm=true&dl=1

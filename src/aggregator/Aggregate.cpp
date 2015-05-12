@@ -121,9 +121,12 @@ unsigned Aggregate::displayChunks() const {
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
         std::string myColor;
 
-        if (m_chunk[i]->txn()->isComplete())
+        if (m_chunk[i]->txn()->isComplete()){
             myColor = SUCCESS;
-        else if (m_chunk[i]->txn()->hasFailed())
+            // When there is success but downloaded size is invalid
+            if(down != higher)
+                myColor = COLOR(0,CC::PURPLE,CC::BLACK);
+        } else if (m_chunk[i]->txn()->hasFailed())
             myColor = ERROR;
         else if (m_chunk[i]->txn()->isDownloading())
             myColor = WARNING;
@@ -186,10 +189,13 @@ void Aggregate::joinChunks() {
 }
 
 bool Aggregate::isSplitReady() const {
+
     // It is split ready if inactive count is less than 4
     unsigned count = 0;
     for (auto it = m_chunk.begin(); it != m_chunk.end(); ++it) {
-        if (!(*it)->txn()->isDownloading())
+        if (!(*it)->txn()->isDownloading() &&
+            !(*it)->txn()->isComplete() &&
+            !(*it)->txn()->hasFailed())
             count++;
         if (count >= m_inactive_chunks)
             return false;
@@ -368,9 +374,9 @@ void Aggregate::splitter() try {
     while (!isFinished() && !hasFailed()) {
         // Get the bottle neck and split
         if (activeChunks() < m_chunks && isSplitReady() ) {
-            // NOTE: Removing this showed the synronization bug
             std::vector<Chunk*>::size_type bneck = bottleNeck();
             split(bneck);
+
             // Just sleep for a while
             boost::this_thread::sleep(boost::posix_time::millisec(1000));
         }

@@ -327,11 +327,12 @@ void HttpTransaction<SocketType>::writeOut() {
         boost::this_thread::interruption_point();
     }
 
-    if (error!=boost::asio::error::eof) {
+    // EOF is a must
+    if (error!=boost::asio::error::eof)
         m_state = State::failed;
-    }
+    else
+        m_state = State::complete;
 
-    m_state = State::complete;
     m_pauseRequest = false;
 }
 

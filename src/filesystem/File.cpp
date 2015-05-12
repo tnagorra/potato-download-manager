@@ -197,14 +197,14 @@ void File::write(Conflict c) {
 // Creates a File using string, B+T
 // Throws ex::filesystem::AlreadyThere
 void File::write(const std::string& data,Conflict c) {
-    write();
+    write(c);
     m_stream << data;
 }
 
 // Creates a File using istream, B+T ??
 // Throws ex::filesystem::AlreadyThere
 void File::write(std::istream& data,Conflict c,uintmax_t offset,uintmax_t count){
-    write();
+    write(c);
     streamCopy(data, offset, count);
 }
 
