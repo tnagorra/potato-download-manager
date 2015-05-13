@@ -76,4 +76,9 @@ bool Range::uninitialized() const {
     return m_ub == 0 && m_lb == 0;
 }
 
+// Returns if uninitialized
+bool Range::initialized() const {
+    return !uninitialized();
+}
+
 // End File Range.cpp

@@ -8,7 +8,9 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range, unsign
     mptr_rdata(rdata),
     mptr_thread(NULL),
     mptr_speedThread(NULL),
-    m_state(State::idle),
+    m_state((range.initialized() && range.size()==0)?
+            State::complete : State::idle),
+    m_stat(stateString()),
     m_bytesDone(0),
     m_connAttempts(attempts),
     m_attemptWait(wait),
@@ -17,12 +19,7 @@ BasicTransaction::BasicTransaction(RemoteData* rdata, const Range& range, unsign
     m_avgSpeed(0),
     m_hifiSpeed(0)
 {
-
     mptr_response = new boost::asio::streambuf;
-    // If the range has a zero size but is not an unitialized range,
-    // the download is immediately complete
-    if (!m_range.uninitialized() && m_range.size()==0)
-        m_state = State::complete;
 }
 
 // Static factory methods for generating objects of this type.
@@ -147,7 +144,7 @@ bool BasicTransaction::isDownloading() const {
 
 // Returns if download is started (success or failure)
 bool BasicTransaction::isRunning() const {
-    return state()!=State::idle && !isComplete();
+    return state()!=State::idle && !isComplete() && !hasFailed();
 }
 
 // Returns if complete (success or failure)

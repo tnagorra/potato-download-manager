@@ -62,6 +62,7 @@ void HttpTransaction<SocketType>::workerMain() try {
     writeOut();
 } catch (Redirect& redir) {
     m_state = State::requesting;
+    m_stat = stateString();
     if (redir.m_rstp_secure==NULL) {
         redir.m_rstp_plain->workerMain();
     } else {
@@ -70,6 +71,9 @@ void HttpTransaction<SocketType>::workerMain() try {
 
 } catch (std::runtime_error& exc) {
     m_state = State::failed;
+    // During failure the error message will be useful
+    // m_stat = stateString();
+    m_pauseRequest = false;
     mptr_exbridge->log(exc);
 }
 
@@ -83,6 +87,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
     std::ostream rqstream(&request);
     // Set state
     m_state = State::requesting;
+    m_stat = stateString();
 
     // Write the starting line
     rqstream<<dynamic_cast<RemoteDataHttp*>(mptr_rdata)->method()<<
@@ -97,9 +102,10 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
         rqstream<<"Accept: */*\r\n";
     //if (dynamic_cast<RemoteDataHttp*>(mptr_rdata)->header("Connection")=="")
     //rqstream<<"Connection: \r\n";
-    if (!m_range.uninitialized())
+    if (m_range.initialized())
         rqstream<<"Range: bytes="<<m_range.lb()<<"-"<<m_range.ub()-1
                 <<"\r\n";
+
 
     // Now spew the given headers
     std::map<std::string,std::string> headers_map;
@@ -118,6 +124,7 @@ void HttpTransaction<SocketType>::createAndSendRequest() {
         Throw(ex::download::ErrorSendingRequest,err.what());
     }
     m_state = State::waiting;
+    m_stat = stateString();
     // And here too
     boost::this_thread::interruption_point();
 }
@@ -150,6 +157,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     waitData();
 
     m_state = State::ready;
+    m_stat = stateString();
     // Once bytes are available, read some (the status line)
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n");
     boost::this_thread::interruption_point();
@@ -174,6 +182,9 @@ void HttpTransaction<SocketType>::receiveHeaders() {
     boost::asio::read_until(*mptr_socket, *mptr_response, "\r\n\r\n");
     boost::this_thread::interruption_point();
 
+    // File debug("dump.log");
+    // debug.write("Log\n",Node::Conflict::FORCE);
+
     std::string header;
     while(std::getline(resp_strm, header) && header!="\r") {
         boost::to_lower(header);
@@ -182,6 +193,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
             continue;
         m_respHeaders[header.substr(0,colon)]
             = header.substr(colon+2,header.size()-colon-3);
+        // debug.append(header+"\n");
     }
 
     handleStatusCode(status_code);
@@ -228,7 +240,7 @@ void HttpTransaction<SocketType>::receiveHeaders() {
         mptr_rdata->canPartial(
             (m_respHeaders["accept-ranges"]=="bytes")?
             RemoteData::Partial::yes : RemoteData::Partial::no);
-    } else if (!m_range.uninitialized()) {
+    } else if (m_range.initialized()) {
         if (m_respHeaders.count("content-length")>0)
             mptr_rdata->canPartial(
                 (bytesTotal==m_range.size())?
@@ -294,44 +306,62 @@ void HttpTransaction<SocketType>::handleStatusCode(unsigned int code) {
 template <typename SocketType>
 void HttpTransaction<SocketType>::writeOut() {
 
+    m_state = State::downloading;
+    m_stat = stateString();
+
     uintmax_t bufBytes = mptr_response->size();
     std::istream writeStream(mptr_response);
-    if (bufBytes)
+    if (bufBytes){
         m_reader(writeStream,0,bufBytes);
-    m_bytesDone = bufBytes;
-    m_state = State::downloading;
+        m_bytesDone += bufBytes;
+    }
 
     boost::system::error_code error;
-    while ((bufBytes = boost::asio::read(*mptr_socket, *mptr_response, boost::asio::transfer_at_least(1), error))) {
+    while (bufBytes = boost::asio::read(*mptr_socket, *mptr_response, boost::asio::transfer_at_least(1), error)) {
 
-        // This blocks prevents writing to a file
-        // when splitting is performed
+        if (m_bytesDone>m_range.size()) {
+            m_stat = "Downloaded size is greater than requested size.";
+            Throw(ex::Error, "Downloaded size is greater than requested size.");
+        }
+        uintmax_t towrite = m_range.size()-m_bytesDone;
+
+        // when range is not resumable or ...
+        if( m_range.uninitialized() || bufBytes <= towrite  ){
+            m_reader(writeStream,0,bufBytes);
+            m_bytesDone += bufBytes;
+
+            m_stat = std::to_string(bufBytes);
+
+        } else {
+            m_reader(writeStream,0,towrite);
+            m_bytesDone += towrite;
+
+            m_stat = std::to_string(towrite) +" Clipped";
+            error=boost::asio::error::eof;
+            break;
+        }
+
+        // This blocks prevents writing to a file when splitting
         while (m_pauseRequest)
             boost::this_thread::sleep(
                 boost::posix_time::milliseconds(200));
-        m_pauseRequest = false;
-
-        // when range is not resumable
-        if (!m_range.uninitialized() && bufBytes+m_bytesDone >= m_range.size()) {
-            if (m_bytesDone>m_range.size())
-                Throw(ex::Error, "not recoverable situation");
-            m_reader(writeStream,0,m_range.size()-m_bytesDone);
-            m_bytesDone = m_range.size();
-            error=boost::asio::error::eof;
-            break;
-        } else {
-            m_reader(writeStream,0,bufBytes);
-        }
-        m_bytesDone += bufBytes;
 
         boost::this_thread::interruption_point();
     }
 
     // EOF is a must
-    if (error!=boost::asio::error::eof)
-        m_state = State::failed;
-    else
+    if (error==boost::asio::error::eof)
         m_state = State::complete;
+    else
+        m_state = State::failed;
+    // m_stat = stateString();
+
+    // TODO: an error where the loop is terminated without getting
+    // all of requested bytes.
+    if (m_range.initialized() && m_range.size() > m_bytesDone) {
+        m_stat = "Downloaded size is less than Requested size.";
+        Throw(ex::Error,"Downloaded size is less than Requested size.");
+    }
 
     m_pauseRequest = false;
 }
@@ -360,7 +390,9 @@ void HttpTransaction<SSLSock>::readToSink() {
 template <typename SocketType>
 void HttpTransaction<SocketType>::clearProgress() {
     m_state = State::idle;
+    m_stat = stateString();
     m_bytesDone = 0;
+    m_pauseRequest = false;
     m_statusLine = "";
     //m_beenSplit = false;
     m_respHeaders = std::map<std::string,std::string>();

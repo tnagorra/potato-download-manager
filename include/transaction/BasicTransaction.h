@@ -80,6 +80,9 @@ class BasicTransaction {
         double m_instSpeed; // 'Instantaneous' speed
         double m_hifiSpeed; // 'Hifi' speed
 
+        // TODO: for debugging
+        std::string m_stat;
+
     // Public methods (interface)
     public:
         // Constructor. Default Range argument (0,0) means the
@@ -195,6 +198,11 @@ class BasicTransaction {
         void exbridge(ExBridge* exb);
         // Return the ExBridge object
         ExBridge* exbridge() const;
+
+        // Returns the status message
+        std::string stat() const {
+            return m_stat;
+        }
 
 };
 

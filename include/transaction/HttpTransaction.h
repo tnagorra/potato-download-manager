@@ -29,6 +29,7 @@ class HttpTransaction : public Transaction<SocketType> {
     // we will USE these base class members
     using typename Transaction<SocketType>::State;
     using Transaction<SocketType>::m_state;
+    using Transaction<SocketType>::m_stat;
     using Transaction<SocketType>::m_range;
     using Transaction<SocketType>::m_attemptWait;
     using Transaction<SocketType>::m_connAttempts;
@@ -44,6 +45,7 @@ class HttpTransaction : public Transaction<SocketType> {
     using Transaction<SocketType>::connectHost;
     using Transaction<SocketType>::resolveHost;
     using Transaction<SocketType>::resolveHostMain;
+    using Transaction<SocketType>::stateString;
 
     // Private data members
     private:

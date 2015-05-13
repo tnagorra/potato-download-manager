@@ -90,6 +90,7 @@ void Transaction<SocketType>::resolveHostMain() {
 
     // In the 'resolving' state
     m_state = State::resolving;
+    m_stat = stateString();
 
     tcp::resolver resolver(mptr_socket->get_io_service());
     tcp::resolver::query* query;
@@ -143,6 +144,7 @@ void Transaction<SocketType>::connectHost() {
 
     // In the 'connecting' state
     m_state = State::connecting;
+    m_stat = stateString();
 
     tcp::resolver::iterator err_itr, temp_itr;
     do {
@@ -186,6 +188,7 @@ void Transaction<SSLSock>::connectHost() {
 
     // In the 'connecting' state
     m_state = State::connecting;
+    m_stat = stateString();
 
     tcp::resolver::iterator err_itr, temp_itr;
     do {

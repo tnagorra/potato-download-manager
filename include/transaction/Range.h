@@ -53,6 +53,9 @@ class Range {
 
         // Returns if uninitialized
         bool uninitialized() const;
+
+        // Returns if initialized
+        bool initialized() const;
 };
 
 #endif

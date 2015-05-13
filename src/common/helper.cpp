@@ -2,7 +2,7 @@
 
 std::string formatTime(uintmax_t sec) {
     if(sec == std::numeric_limits<uintmax_t>::max())
-        return "dafuq!";
+        return "dafuq ∞";
     std::string s;
     s = std::to_string(sec%60) + "s";
     sec /= 60;
@@ -47,7 +47,7 @@ std::string formatByte(uintmax_t byte){
         case 6: out << "EiB";break;
         case 7: out << "ZiB";break;
         case 8: out << "YiB";break;
-        default : out << "dafuq!";
+        default : out << "dafuq ∞";
     }
     return out.str();
 }

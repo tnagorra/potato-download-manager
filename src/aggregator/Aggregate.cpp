@@ -117,29 +117,28 @@ unsigned Aggregate::displayChunks() const {
     // Segments
     for (auto i = 0; i < size; i++) {
         uintmax_t lower = std::atoi(m_chunk[i]->file()->filename().c_str());
+            // m_chunk[i]->txn()->range().lb();
         uintmax_t down = m_chunk[i]->txn()->range().lb() + m_chunk[i]->txn()->bytesDone();
         uintmax_t higher = m_chunk[i]->txn()->range().ub();
-        std::string myColor;
 
-        if (m_chunk[i]->txn()->isComplete()){
+        std::string myColor;
+        if (m_chunk[i]->txn()->isComplete())
             myColor = SUCCESS;
-            // When there is success but downloaded size is invalid
-            if(down != higher)
-                myColor = COLOR(0,CC::PURPLE,CC::BLACK);
-        } else if (m_chunk[i]->txn()->hasFailed())
+        else if (m_chunk[i]->txn()->hasFailed())
             myColor = ERROR;
         else if (m_chunk[i]->txn()->isDownloading())
             myColor = WARNING;
         else
             myColor = NOTIFY;
 
-        fancyshow(std::setfill('0')
+        fancycout(std::setfill('0')
                 << std::setw(width)<< lower << ":"
                 << std::setw(width) << down << ":"
-                << std::setw(width) << higher, myColor);
+                << std::setw(width) << higher, myColor) << " ";
+        show(m_chunk[i]->txn()->stat());
     }
 
-    // Two more lines for Status and progressbar.
+    // one more line for progress bar
     return size + 1;
 }
 

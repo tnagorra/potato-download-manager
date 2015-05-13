@@ -29,16 +29,14 @@ enum CC {BLACK,RED,GREEN,YELLOW,BLUE,PURPLE,TEAL,WHITE,GRAY};
 #define WARNING COLOR(0,CC::YELLOW,CC::BLACK)
 #define ERROR COLOR(0,CC::RED,CC::BLACK)
 
-#define BARONE COLOR(0, CC::WHITE, CC::BLUE)
-#define BARTWO COLOR(0, CC::BLUE, CC::WHITE)
-#define BARTHREE COLOR(0, CC::BLUE, CC::RED)
-#define BARFOUR COLOR(0, CC::BLUE, CC::GREEN)
+#define BARONE COLOR(0, CC::WHITE, CC::PURPLE)
+#define BARTWO COLOR(0, CC::PURPLE, CC::WHITE)
+#define BARTHREE COLOR(0, CC::PURPLE, CC::RED)
+#define BARFOUR COLOR(0, CC::PURPLE, CC::GREEN)
 
 #define show(thing) std::cout<<thing<<std::endl
 #define fancyshow(thing,color) std::cout << color << thing << DISCOLOR << std::endl
 #define fancycout(thing,color) std::cout << color << thing << DISCOLOR
-
-// Infinity ∞ unicode
 
 // Returns the time in formatted form
 std::string formatTime(uintmax_t time) ;
